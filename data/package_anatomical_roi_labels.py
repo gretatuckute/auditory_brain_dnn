@@ -1,3 +1,8 @@
+"""
+Script for adding anatomical ROI labels to the a df_roi_meta_wo_anat_labels.pkl files (generated from the /NH2015 and /B2021 subfolders
+
+"""
+
 from pathlib import Path
 import pandas as pd
 import numpy as np
@@ -9,9 +14,9 @@ from scipy.stats import spearmanr
 import scipy.io
 from os.path import join
 
-DATADIR = (Path(os.getcwd()) / '..' / '..' / 'data').resolve()
+DATADIR = (Path(os.getcwd()) / '..' / 'data').resolve()
 store_new = False
-target = 'B2021'
+target = 'NH2015'
 
 ## Package MATLAB ROI labels ##
 d_label = {24: ('A1', 'Primary'),
@@ -117,5 +122,5 @@ new_df_meta_roi['roi_anat_hemi'] = lst_roi_anat_hemi
 u, c = np.unique(new_df_meta_roi.dropna().roi_anat_hemi, return_counts=True)
 print(dict(zip(u,c)))
 
-new_df_meta_roi.to_pickle(join(DATADIR, 'neural', target, 'df_roi_meta.pkl'))
-
+if store_new:
+	new_df_meta_roi.to_pickle(join(DATADIR, 'neural', target, 'df_roi_meta.pkl'))

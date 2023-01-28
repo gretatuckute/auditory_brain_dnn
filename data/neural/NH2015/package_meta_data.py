@@ -1,6 +1,7 @@
-from reliability_utils import *
+"""
+Script for storing a meta dataframe for NH2015 and looking into voxel reliability.
 
-"""This script has three main sections:
+This script has three main sections:
 1. Compiling metadata on ROIs and loading voxel metadata & looking into the Kell reliability and Pearson R reliability metrics (April 2021)
 (as reported in Methods section: "Voxelwise modeling: Correcting for reliability of the measured voxel response"
 2. Counting how many voxels are shared across a given coordinate (relevant for plotting) (April 2021)
@@ -8,24 +9,22 @@ from reliability_utils import *
 
 The three sections stores new arrays that are the df_meta_roi for NH2015.
 """
-
-DATADIR = (Path(os.getcwd()) / '..' / '..' / 'data').resolve()
-RESULTDIR = (Path(os.getcwd()) / '..' / 'results').resolve()
+from data.neural.reliability_utils import *
+DATADIR = (Path(os.getcwd()) / '..').resolve()
 
 ## Parameters
 save_new = False # whether to store new versions of meta dataframes
 vox_reliability = True # whether to compute Kell/Pearson-based reliability of voxel (test-retest reliability across individual scans)
 corrected_vox_reliability = True # whether to compute estimated Spearman-Brown corrected voxel reliability
-std_neural = False # whether to look into standard deviation of actual neural data and how that correlates to reliability
-package_meta_df = False # whether to package all the metadata information into a dataframe; requires most of above parameters to be True
-
+std_neural = True # whether to look into standard deviation of actual neural data and how that correlates to reliability
+package_meta_df = True # whether to package all the metadata information into a dataframe; requires most of above parameters to be True
 
 #### Load neural data and metadata ####
 
 ### TARGET - Neural ###
 # Where the voxel data lives, and only get the voxels with 3 runs.
-voxel_data_all = np.load(os.path.join(DATADIR, 'neural', 'NH2015', 'voxel_features_array.npy'))
-voxel_meta_all = np.load(os.path.join(DATADIR, 'neural', 'NH2015', 'voxel_features_meta.npy'))
+voxel_data_all = np.load(os.path.join(DATADIR, 'NH2015', 'voxel_features_array.npy'))
+voxel_meta_all = np.load(os.path.join(DATADIR, 'NH2015', 'voxel_features_meta.npy'))
 is_3 = voxel_meta_all['n_reps'] == 3
 voxel_meta, voxel_data = voxel_meta_all[is_3], voxel_data_all[:, is_3, :]
 
@@ -46,8 +45,8 @@ d_meta = {'subj_idx':voxel_meta['subj_idx'],
 
 df_meta = pd.DataFrame(d_meta)
 
-# ROI masks, these are already excluding voxels from subjects with only 2 runs
-roi_masks = pickle.load(open(os.path.join(DATADIR, f'neural/NH2015/roi_masks.cpy'), 'rb'), encoding='latin1')
+# ROI masks (tonotopic, pitch, music, speech) -- these are already excluding voxels from subjects with only 2 runs
+roi_masks = pickle.load(open(os.path.join(DATADIR, 'NH2015', 'roi_masks.cpy'), 'rb'), encoding='latin1')
 
 d_roi_meta = {}
 all_roi_idx = []  # for testing overlaps
@@ -74,7 +73,7 @@ if vox_reliability:
 		v3 = v[:, 2]
 		proj = ((np.sum(v3.T * v12) / (norm(v3) ** 2))) * v3
 		proj_dot = (np.dot(v3, v12) / (norm(v3) ** 2)) * v3
-		# proj_kell = (((v3.T) / norm(v3)) * v12) * v3
+		# proj_kell = (((v3.T) / norm(v3)) * v12) * v3 # the kell eq (original)
 		r = 1 - ((norm(v12 - proj)) / (norm(v12))) # ORIG! mine
 		r_dot = 1 - ((norm(v12 - proj_dot)) / (norm(v12)))
 		rs.append(r)
@@ -215,7 +214,7 @@ if std_neural:
 	plt.title('Two different ways of computing variability of neural responses')
 	plt.tight_layout()
 	if save_new:
-		plt.savefig('/Volumes/GoogleDrive/My Drive/Research2020/McDermott/voxel_reliability/std_neural_vs_std_mean_neural.pdf',dpi=180)
+		plt.savefig('std_neural_vs_std_mean_neural.pdf',dpi=180)
 	plt.tight_layout()
 	plt.show()
 	
@@ -237,12 +236,12 @@ if std_neural:
 	plt.legend()
 	plt.tight_layout()
 	if save_new:
-		plt.savefig('/Volumes/GoogleDrive/My Drive/Research2020/McDermott/voxel_reliability/kell_vs_pearson.pdf',dpi=180)
+		plt.savefig('kell_vs_pearson.pdf',dpi=180)
 	plt.show()
 	
 	if save_new:
-		np.save('/Volumes/GoogleDrive/My Drive/Research2020/McDermott/voxel_reliability/kell_r_voxels.npy', rs_dot)
-		np.save('/Volumes/GoogleDrive/My Drive/Research2020/McDermott/voxel_reliability/pearson_r_voxels.npy', split_r_median)
+		np.save('kell_r_voxels.npy', rs_dot)
+		np.save('pearson_r_voxels.npy', split_r_median)
 
 ### PACKAGE RELIABILITY METRICS ###
 if package_meta_df:
@@ -255,11 +254,12 @@ if package_meta_df:
 	
 	### CONCAT ALL DFS ###
 	df_full = pd.concat([df_meta, df_roi_meta, df_reliability], axis=1)
-	df_full.to_pickle(os.path.join(DATADIR, f'neural/df_voxel_features_meta.pkl'))
+	if save_new:
+		df_full.to_pickle(os.path.join(DATADIR, 'NH2015', 'df_voxel_features_meta.pkl'))
 	
 	######### ADD SHARED BY METADATA ###########
 	# Based on the unique x and y ras coordinates, add information about how many subjects share a given voxel
-	meta = pd.read_pickle(os.path.join(DATADIR, 'neural/df_voxel_features_meta.pkl'))
+	meta = df_full.copy(deep=True)
 	
 	# find unique coordinates
 	str_ras_coords = [f"{(meta['x_ras'].values[i])}_{meta['y_ras'].values[i]}" for i in range(len(meta))]
@@ -286,13 +286,10 @@ if package_meta_df:
 		# append to shared by column
 		meta.loc[match_row_idx, 'shared_by'] = int(shared_by_count)
 		
-	# meta.to_pickle(os.path.join(DATADIR, f'neural/df_voxel_features_meta_coords_20210419.pkl')) # This was the initial meta version used prior Aug 2021
 	# In Aug 2021, one column was added, according to the code below:
 	
 	### ADD ANY ROI COLUMN TO META ###
 	# Add a column that denotes that a given voxel is in *any* roi
-	meta = pd.read_pickle(os.path.join(DATADIR, f'neural/df_voxel_features_meta_coords_20210419.pkl'))
-	
 	any_roi_array = np.max(np.vstack([meta.tonotopic.values, meta.pitch.values,
 									  meta.music.values, meta.speech.values]), axis=0)
 	
@@ -309,4 +306,4 @@ if package_meta_df:
 	
 	meta = meta[fixed_cols]
 	if save_new:
-		meta.to_pickle(os.path.join(DATADIR, f'neural/df_voxel_features_meta_coords.pkl')) # todo: change this to the new one
+		meta.to_pickle(os.path.join(DATADIR, 'NH2015', 'df_roi_meta_wo_anat_labels.pkl'))

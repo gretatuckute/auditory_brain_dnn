@@ -1,14 +1,16 @@
-from reliability_utils import *
-
 """This script computes the reliability metrics for B2021 as reported in Kell 2018 Methods section:
 Voxelwise modeling: Correcting for reliability of the measured voxel response
 
 I use all 192 sounds.
 
 Note that the metadata that was ultimately used for the B2021 dataset was derived from Dana Boebinger's MATLAB metadata
-(packaged in /GitHub/aud-dnn/data/neural/B2021/package_data_as_python.py)
+(packaged in /GitHub/aud-dnn/data/neural/B2021/package_data_as_python.py), i.e. this script does not store df_roi_meta.pkl.
 
 """
+import os
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from reliability_utils import *
 
 DATADIR = (Path(os.getcwd()) / '..' / '..' / 'data').resolve()
 RESULTDIR = (Path(os.getcwd()) / '..' / 'results').resolve()

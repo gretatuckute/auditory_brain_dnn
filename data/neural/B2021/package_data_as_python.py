@@ -1,3 +1,6 @@
+"""
+Script for packaging B2021 data as as python .npy object (as NH2015) and compile the df_roi_meta.pkl file.
+"""
 from pathlib import Path
 import pandas as pd
 import numpy as np
@@ -23,16 +26,24 @@ for i in sound_meta:
 voxel_data_all = np.load(os.path.join(DATADIR, f'neural/{target}/voxel_features_array.npy'))
 voxel_meta_all = np.load(os.path.join(DATADIR, f'neural/{target}/voxel_features_meta.npy'))
 
-# packaged meta
-df_roi_meta = pd.read_pickle(os.path.join(DATADIR, f'neural/{target}/df_roi_meta.pkl'))
+# packaged meta (just to look at)
+# df_roi_meta = pd.read_pickle(os.path.join(DATADIR, f'neural/{target}/df_roi_meta.pkl'))
 
 ## Load B2021 mat files ##
 mat = scipy.io.loadmat('voxel_responses.mat')
 
 # Store data as a nd array, 3d
 voxel_data_all_B2021 = mat['vals']
+
+# For consistency with NH2015, let's also store a file called voxel_features_meta.npy which contains the voxel_id.
+# The voxel_id was not defined in the original B2021 data, so here it is defined as:
+voxel_id = np.arange(len(mat['subj'].ravel()))
+
 if store_new:
 	np.save('voxel_features_array.npy', voxel_data_all_B2021)
+
+	assert(len(voxel_id) == voxel_data_all_B2021.shape[1])
+	np.save('voxel_features_meta.npy', voxel_id)
 
 n_stim = voxel_data_all_B2021.shape[0]
 n_vox = voxel_data_all_B2021.shape[1]
@@ -67,7 +78,7 @@ meta = pd.DataFrame({'subj_idx':mat['subj'].ravel(),
 					   'hemi': ['rh' if i == 1 else 'lh' for i in mat['hemi'].ravel()],
 					  'x_ras': mat['x_ras'].ravel(),
 					  'y_ras': mat['y_ras'].ravel(),
-					  'voxel_id': np.arange(len(mat['subj'].ravel())),
+					  'voxel_id': voxel_id,
 					  'kell_r_reliability': mat['rel'].ravel() / 100, # Dana's version of it, cf email
 					  'pearson_r_reliability':split_r_median,
 					  'voxel_variability_mean_reps':std_across_splits, # mean across sessions first, then std of neural response across sounds
@@ -103,6 +114,6 @@ for coord_val in unique_coords:
 	meta.loc[match_row_idx, 'shared_by'] = int(shared_by_count)
 
 if store_new:
-	meta.to_pickle('df_roi_meta.pkl')
+	meta.to_pickle('df_roi_meta_wo_anat_labels.pkl')
 
 
