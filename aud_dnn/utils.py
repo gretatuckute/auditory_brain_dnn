@@ -31,36 +31,113 @@ import xarray as xr
 # Set path to current directory
 CURRENT_DIR = Path(__file__).parent.absolute()
 os.chdir(CURRENT_DIR)
-# from model_specs import source_layer_map, d_randnetw # TODO: Do we want these here? They are used for getting the source layer. GT: yes, I previously imported them in AUD_main.py as the source features were fetched there
+
+from resources import d_randnetw
 
 # Set random seed
 np.random.seed(0)
 random.seed(0)
 
+
+##### TARGET (NEURAL/COMPONENT) FUNCTIONS #####
+def get_target(target,
+                stimuli_IDs,
+                DATADIR):
+    """
+    Loads the target data (neural or component) and returns it as a numpy array.
+
+    Parameters
+        target (str): name of the target data (options are 'NH2015', 'NH2015comp', 'B2021')
+        stimuli_IDs (list): list of stimulus IDs (e.g., ['stim5_alarm_clock', 'stim7_applause'])
+        DATADIR (str): path to the data directory
+
+    Returns
+        voxel_data (np.array): target data as a numpy array. Rows are stimuli, columns are voxels or components.
+    """
+
+    if target == 'NH2015':
+        voxel_data_all = np.load(os.path.join(DATADIR, f'neural/{target}/voxel_features_array.npy'))
+        voxel_meta_all = np.load(os.path.join(DATADIR, f'neural/{target}/voxel_features_meta.npy'))
+        is_3 = voxel_meta_all['n_reps'] == 3  # only get the voxels with 3 repetitions (sessions)
+        voxel_meta, voxel_data = voxel_meta_all[is_3], voxel_data_all[:, is_3, :]
+        voxel_id = voxel_meta['voxel_id']
+
+    elif target == 'NH2015comp':
+        comp_data = loadmat(os.path.join(DATADIR, f'neural/{target}/components.mat'))
+        comp_stimuli_IDs = comp_data['stim_names']
+        comp_stimuli_IDs = [x[0] for x in comp_stimuli_IDs[0]]
+
+        comp_names = comp_data['component_names']
+        comp_names = [x[0][0] for x in comp_names]
+
+        comp = comp_data['R']  # R is the response matrix
+
+        # Create a df with stimuli IDs as index and component names as columns
+        df_comp = pd.DataFrame(comp, index=comp_stimuli_IDs, columns=comp_names)
+
+        # Reindex so it is indexed the same way as the neural data and activations (stimuli_IDs)
+        voxel_data = df_comp.reindex(stimuli_IDs)  # for consistency, let's call it voxel_data
+        voxel_id = [] # TODO GET 0 through 5
+
+    elif target == 'B2021':
+        sound_meta_mat = loadmat(os.path.join(DATADIR, f'neural/{target}/stim_info_v4'))['stim_info']
+
+        stimuli_IDs_B2021 = []
+        for i in sound_meta_mat['stim_names'][0][0]:
+            stimuli_IDs_B2021.append((i[0][0].astype(str)))
+
+        assert (stimuli_IDs == stimuli_IDs_B2021[:165])  # same order as NH2015
+
+        voxel_data = np.load(os.path.join(DATADIR, f'neural/{target}/voxel_features_array.npy'))
+        voxel_id = np.load(os.path.join(DATADIR, f'neural/{target}/voxel_features_meta.npy')) # contains the voxel_id as the only field
+
+        # Truncate to only run the first 165 sound set
+        voxel_data = voxel_data[:len(stimuli_IDs), :, :]
+
+    else:
+        raise LookupError(f'Target dataset of interest {target} not found!')
+
+    return voxel_data, voxel_id
+
+
 ##### SOURCE MODEL ACTIVATIONS FUNCTIONS #####
 
 class PytorchWrapper:
-    """
-    Wrapper class for loading pkl files with model activations as dictionaries (key=string, name, value=1D ndarray with activations)
-    """
-    
-    def __init__(self, model_identifier='DS2', CACHEDIR='model-actv-control/', randnetw='False'):
+
+    def __init__(self,
+                 model_identifier,
+                 CACHEDIR='model-actv-control/',
+                 randnetw='False'):
         self.model_identifier = model_identifier
         self.randnetw = randnetw
         self.CACHEDIR = CACHEDIR
-        self.activations = None
-        self.activations_PCs = None
-        self.PCs_explained_var = None
-        self.source_layer = None
+
+        """
+        Wrapper class for loading pkl files with DNN model activations as dictionaries.
+        
+        The pkl files have to live in /CACHE_DIR/model_identifier/ and have to be named as follows:
+            {ID}_activations.pkl, e.g.: stim5_alarm_clock_activations.pkl
+        If randnetw is "True", the pkl files have to be named as follows:
+            {ID}_activations_randnetw.pkl, e.g.: stim5_alarm_clock_activations_randnetw.pkl 
+            (will load activations from permuted network)
+        """
     
-    def get_source_layer(self, source_layer):
-        """Extract layer of interest from dictionary"""
-    
-    def compile_activations(self, ID_order,
-                            source_layer_of_interest='Conv2d(1, 32, kernel_size=(41, 11), stride=(2, 2), padding=(20, 5))--0',
-                            warning=True):
-        # load activations
+    def compile_activations(self,
+                            ID_order,
+                            source_layer_of_interest,):
+        """
+        Compile activations from a folder that contains dictionaries of activations (key=string name, value=1D ndarray with activations)
+        The naming convention of each pkl file is: {ID}_activations.pkl, e.g.: stim5_alarm_clock_activations.pkl
+        If it is permuted, the naming convention is: {ID}_activations_randnetw.pkl, e.g.: stim5_alarm_clock_activations_randnetw.pkl
+
+        Parameters
+            ID_order (list): list of stimulus IDs (e.g., ['stim5_alarm_clock', 'stim7_applause'])
+            source_layer_of_interest (str): name of the source layer of interest (e.g., 'conv1')
+        """
+
+        # Load activations
         ACTVDIR = os.path.join(self.CACHEDIR, self.model_identifier)
+        # Each single pkl file contains the activations for one stimulus (across layers)
         activation_files = [f for f in os.listdir(ACTVDIR) if os.path.isfile(os.path.join(ACTVDIR, f))]
         activation_files = [f for f in activation_files if not f.startswith('.')]
 
@@ -72,14 +149,13 @@ class PytorchWrapper:
         print(activation_files)
         
         if not os.path.exists(ACTVDIR):
-            if warning:
-                warnings.warn(
-                    f'Cache does not exist! \nModel identifier passed in: {self.model_identifier} \n')
-                return
+            warnings.warn(
+                f'Cache does not exist! \nModel identifier passed in: {self.model_identifier} \n')
+            return
         
         assert (len(ID_order) == len(activation_files))
         
-        actv_dict_all = {}  # key: ID, value: activation array
+        actv_dict_all = {}  # key: stimulus ID, value: activations array
         for file in activation_files:
             ID = file.split('_activations')[0]
             activations_file = os.path.join(self.CACHEDIR, self.model_identifier, f'{file}')
@@ -119,20 +195,7 @@ class PytorchWrapper:
         plt.colorbar()
         plt.tight_layout()
         plt.show()
-    
-    def plot_conv_vs_relu(self, actv_dict):
-        """Plot ReLU versus Conv layer for one sound (one actv_dict). For checking whether they are the same"""
-        plt.plot(actv_dict['Conv2d(1, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))--0'],
-                 label='Conv2d_1')
-        plt.plot(actv_dict['ReLU()--0'], label='ReLu_1')
-        plt.legend()
-        plt.show()
-    
-        plt.plot(actv_dict['Linear(in_features=4096, out_features=128, bias=True)--0'],
-                 label='Linear 3', alpha=0.5)
-        plt.plot(actv_dict['ReLU()--8'], label='ReLu_9', alpha=0.5)
-        plt.legend()
-        plt.show()
+
     
     def PCA_activations(self, n_components=3):
         """Compute PCA of activations"""
@@ -144,65 +207,40 @@ class PytorchWrapper:
         
         self.activations_PCs = PCs
         self.PCs_explained_var = explained_var
-    
-    def plot_2D_PCA(self):
-        """Plot 2D PCA of activations"""
-        labels = {
-            str(i): f"PC {i + 1} ({var:.1f}%)"
-            for i, var in enumerate(self.PCs_explained_var * 100)
-        }
-        fig = px.scatter_matrix(
-            self.activations_PCs,
-            labels=labels,
-            opacity=0.4,
-            dimensions=range(np.shape(self.activations_PCs)[1]),
-            symbol_sequence=[2, 0],
-            hover_name=self.activations.index)
-        fig.update_layout(title=f'VGGish - {self.source_layer}')
-        fig.update_traces(diagonal_visible=False)
-        fig.update_layout()
-        fig.show()
-    
-    def plot_3D_PCA(self):
-        """Plot 3D PCA of activations"""
-        labels = {
-            str(i): f"PC {i + 1} ({var:.1f}%)"
-            for i, var in enumerate(self.PCs_explained_var * 100)
-        }
-        fig = go.Figure()
-        fig.add_trace(
-            go.Scatter3d(
-                x=self.activations_PCs[:, 0], y=self.activations_PCs[:, 1], z=self.activations_PCs[:, 2],
-                marker=dict(
-                    size=4,
-                    colorscale='Inferno'),
-                hovertext=self.activations.index, mode='markers', legendgroup='markers',
-                name=None))  # the name here refers to the individual point
-        fig.update_layout(title=f'VGGish - {self.source_layer}')
-        fig.update_layout(scene=dict(xaxis_title=labels['0'],
-                                     yaxis_title=labels['1'],
-                                     zaxis_title=labels['2']))
-        fig.show()
 
 
 def get_source_features(source_model,
                         source_layer,
-                        randnetw='False',
-                        stimuli_IDs=None,
-                        CACHEDIR='/om2/user/gretatu/model-actv/'): # TODO: change cachedir path
+                        source_layer_map,
+                        randnetw,
+                        stimuli_IDs,
+                        CACHEDIR):
     """
-    Gets the activations for a given model and layer. Handles the in-house and external models appropriately.
-    (same code as in AUD_main under the "Source" section)
+    Gets the activations for a given DNN source model and layer.
+    Handles the in-house and external models appropriately.
+
+    Parameters
+        source_model (str): name of the source model (e.g., 'VGGish')
+        source_layer (str): name of the source layer (e.g., 'conv1')
+        source_layer_map (dict): dictionary with keys as the name of the source model and value a dictionary with the
+            keys as the 'pretty', interpretable name of the layer, and the value of the layer in Pytorch (see resources.py)
+        randnetw (str): whether to load activations from permuted network.
+        stimuli_IDs (list): list of stimulus IDs (e.g., ['stim5_alarm_clock', 'stim7_applause']). Only used for external models.
+        CACHEDIR (str): path to the directory where the activations are stored
+
+    Returns
+        source_features (ndarray): activations of the source layer
     """
 
+    ## External models. Has to be loaded using the PytorchWrapper class.
     if source_model in ['DCASE2020', 'DS2', 'VGGish', 'AST', 'ZeroSpeech2020', 'wav2vec', 'wav2vecpower', 'sepformer', 'metricGAN', 'S2T']:
         model = PytorchWrapper(model_identifier=source_model, CACHEDIR=CACHEDIR, randnetw=randnetw)
         source_features = model.compile_activations(ID_order=stimuli_IDs, source_layer_of_interest=source_layer_map[source_model][source_layer])
         source_features = source_features.to_numpy()
-        print(f'Shape of layer {source_layer}: {np.shape(source_features)}')
 
+    ## In-house models. Activations are already compiled across stimuli (sounds).
     elif source_model.startswith('ResNet50') or source_model.startswith('Kell2018') or source_model.startswith('spectemp'):
-        filename = CACHEDIR + f'{source_model}/natsound_activations{d_randnetw[randnetw]}.h5'
+        filename = CACHEDIR + f'/{source_model}/natsound_activations{d_randnetw[randnetw]}.h5'
 
         h5file = h5py.File(filename, 'r')
         layers = h5file['layer_list']
@@ -210,14 +248,15 @@ def get_source_features(source_model,
         for l in layers:
             layer_lst.append(l.decode('utf-8'))
 
-        # take care of different naming of 'final' layer
+        # take care of different naming of 'final' layer (not used for the paper, because we do not include the final layers
+        # in the in-house models to ensure similar number of layers between single-task and multitask models)
         if source_layer == 'final' and source_model.endswith('speaker'):
             source_features = np.asarray(h5file['final/signal/speaker_int'])
         elif source_layer == 'final' and source_model.endswith('audioset'):
             source_features = np.asarray(h5file['final/noise/labels_binary_via_int'])
         # take care of resnet50music having one layer named differently than other resnets
         elif source_layer == 'conv1_relu1' and source_model == ('ResNet50music'):
-            source_features = np.asarray(h5file['relu1']) # named relu1 and not conv1_relu1
+            source_features = np.asarray(h5file['relu1']) # named relu1 and not conv1_relu1. taken care of, such that going forward all resnets have the same layer names.
         # take care of the multitask networks having 3 final layers
         elif source_layer == 'final_word' and source_model.endswith('multitask'):
             source_features = np.asarray(h5file['final/signal/word_int'])
@@ -228,11 +267,11 @@ def get_source_features(source_model,
         else:
             source_features = np.asarray(h5file[source_layer])
 
-        # print(f'Shape of layer {source_layer}: {np.shape(source_features)} and min value is {np.min(source_features)}')
-
     else:
         print(f'Source model {source_model} does not exist yet!')
         raise LookupError()
+
+    print(f'Shape of layer {source_layer}: {np.shape(source_features)} and min value is {np.min(source_features)}')
 
     return source_features
 
@@ -284,7 +323,7 @@ def ridgeRegressSplits(source_features,
             Y_test_std: Std of y_test (neural)
             Y_train_std: Std of y_train (neural)
             warning_constant_flag: 1 if a constant warning occurred, 0 otherwise
-            warning_alpha_limit: 1 if a constant warning occurred for upper alpha bound, 2 if lower bound, 0 otherwise
+            warning_alpha_limit: 1 if a warning occurred for upper alpha bound, 2 if lower bound, 0 otherwise
     
     Base function from Jenelle Feather.
     """
@@ -296,10 +335,12 @@ def ridgeRegressSplits(source_features,
     ## Define train/test splits ##
     X_train = source_features[is_train_data, :]
     Y_train = y[is_train_data]
+
     Y_train_std = np.std(Y_train)
     
     X_test = source_features[is_test_data, :]
     Y_test = y[is_test_data]
+
     Y_test_std = np.std(Y_test)
     
     ## Demean train splits ##
@@ -391,7 +432,9 @@ def ridgeRegressSplits(source_features,
                                               save_plot, warning_constant_flag, voxel_idx, split_idx, alpha, r2, r2_train)
 
 
-    return r_prior_zero_manipulation, r, r2, r2_train, y_pred_test, alpha, \
+    return r_prior_zero_manipulation, r, r2, \
+           r2_train, \
+           y_pred_test, alpha, \
            y_pred_test_std, y_pred_train_std, Y_test_std, Y_train_std, \
            warning_constant_flag, warning_alpha_limit
 
@@ -429,11 +472,12 @@ def ridgeCV_correctedR2(source_features,
     r_prior_zero_manipulation_mean, r_mean, r2_mean, r2_train_mean, \
     y_pred_test_mean, alpha_mean, \
     y_pred_test_std_mean, y_pred_train_std_mean, Y_test_std_mean, Y_train_std_mean, \
-    warning_constant_count_mean, warning_alpha_mean = ridgeRegressSplits(source_features,
-                                                        np.mean(voxel_data, 2)[:, voxel_idx][:, None], # mean over reps
-                                                        is_train_data,
-                                                        is_test_data,
-                                                        possible_alphas,
+    warning_constant_count_mean, warning_alpha_mean = ridgeRegressSplits(
+                                                        source_features=source_features,
+                                                        y=np.mean(voxel_data, 2)[:, voxel_idx][:, None], # mean over reps
+                                                        is_train_data=is_train_data,
+                                                        is_test_data=is_test_data,
+                                                        possible_alphas=possible_alphas,
                                                         voxel_idx=voxel_idx,
                                                         split_idx=split_idx,
                                                         verbose=True,
@@ -443,25 +487,25 @@ def ridgeCV_correctedR2(source_features,
     
     ## Get predicted responses (y hat) for models trained on data using just a single repetition ####
     warning_constant_count_splits = [] # store if a warning happened during the estimation of corrected response
-    for split_idx, split in enumerate([0, 1, 2]):
+    for split_idx_rep, split in enumerate([0, 1, 2]):
         _, _, _, _, y_pred_test_split, _, y_pred_test_std_splits, \
-        _, _, _, warning_constant_count_split, _ = ridgeRegressSplits(source_features,
-                                             voxel_data[:, voxel_idx, split][:, None], # take out one repetition, and fit model on that (last part is to reshape into samples)
-                                             is_train_data,
-                                             is_test_data,
-                                             possible_alphas,
+        _, _, _, warning_constant_count_split, _ = ridgeRegressSplits(source_features=source_features,
+                                             y=voxel_data[:, voxel_idx, split][:, None], # take out one repetition, and fit model on that (last part is to reshape into samples)
+                                             is_train_data=is_train_data,
+                                             is_test_data=is_test_data,
+                                             possible_alphas=possible_alphas,
                                              voxel_idx=voxel_idx,
-                                             split_idx=split_idx,
-                                             verbose=False, # I am not plotting alpha warnings in the rv hat estimation phase
-                                             save_plot=False) # dont save plots within correction estimation phase
+                                             split_idx=split_idx, # The CV split index is the same for all repetitions
+                                             verbose=False, # Do not print out alpha warnings in the rv hat estimation phase
+                                             save_plot=False) # Do not save plots within correction estimation phase
         split_y_pred.append(y_pred_test_split)
         warning_constant_count_splits.append(warning_constant_count_split)
         warning_constant_count_splits_sum = np.sum(warning_constant_count_splits)
         
         # store std of y pred of the models fitted on just two splits
-        if split_idx == 0:
+        if split_idx_rep == 0:
             y_pred_std_split1 = y_pred_test_std_splits
-        elif split_idx == 1:
+        elif split_idx_rep == 1:
             y_pred_std_split2 = y_pred_test_std_splits
         else:
             y_pred_std_split3 = y_pred_test_std_splits
@@ -469,10 +513,10 @@ def ridgeCV_correctedR2(source_features,
     ## Correlate neural data and predictions across pairs of repetitions (splits) ##
     rvs = []
     rv_hats = []
-    for split_idx, split in enumerate([[0, 1], [1, 2], [0, 2]]):
+    for split_idx_rep, split in enumerate([[0, 1], [1, 2], [0, 2]]):
         # corr of neural data
         split_r = np.corrcoef(voxel_data[is_train_data, voxel_idx, split[0]], # compute correlation between e.g. rep 0 responses and rep 1 responses
-                                                voxel_data[is_train_data, voxel_idx, split[1]])[1,0]
+                                         voxel_data[is_train_data, voxel_idx, split[1]])[1,0]
         rvs.append(split_r)
         
         # corr of predicted responses
