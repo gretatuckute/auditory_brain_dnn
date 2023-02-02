@@ -14,6 +14,7 @@ comp_names = comp_data['component_names']
 comp_names = [x[0][0] for x in comp_names]
 
 df_roi_meta = pd.DataFrame({'comp': comp_names,
-							'comp_idx': np.arange(len(comp_names))})
+							'comp_idx': np.arange(len(comp_names)),
+							'voxel_id': np.arange(len(comp_names))}) # for consistency with the neural data
 
 df_roi_meta.to_pickle('df_roi_meta.pkl')

@@ -77,7 +77,7 @@ def get_target(target,
 
         # Reindex so it is indexed the same way as the neural data and activations (stimuli_IDs)
         voxel_data = df_comp.reindex(stimuli_IDs)  # for consistency, let's call it voxel_data
-        voxel_id = [] # TODO GET 0 through 5
+        voxel_id = np.arange(voxel_data.shape[1]) # 0 through 5 -- the component numbers, we will later assert that they match the metadata
 
     elif target == 'B2021':
         sound_meta_mat = loadmat(os.path.join(DATADIR, f'neural/{target}/stim_info_v4'))['stim_info']
@@ -312,11 +312,14 @@ def ridgeRegressSplits(source_features,
         demean_y: whether to demean the y (based on the train set)
 
     Returns:
-            r_prior_zero_manipulation: R prior to setting values to 0 if std(Y_pred) or R<0
-            r: R after setting values to 0 if std(Y_pred) == 0 or R<0
-            r2: R^2
+            r_prior_zero_manipulation: R prior to setting values to 0 if std(Y_pred_test)=0 or R<0 (on the test set)
+            r: R after setting values to 0 if std(Y_pred_test)=0 or R<0 (on the test set)
+            r2: R^2 (on the test set)
             r2_train: R^2 of Y_train and Y_train_pred
             y_pred_test: Y_pred of the test set
+            y_pred_test_rescaled: Y_pred of the test set, rescaled to the original range of Y (i.e., not demeaned using the
+                mean of the train set). Note that the regression still uses demeaned Y if demean_y=True, but we rescale the
+                predictions to the original range of Y post-hoc using scaler_y.
             alpha: Regularization parameter
             y_pred_test_std: Std of y_pred_test
             y_pred_train_std: Std of y_pred_train
@@ -378,6 +381,12 @@ def ridgeRegressSplits(source_features,
     ## Predict test set ##
     y_pred_test = ridgeCrossVal.predict(X_test)
     y_pred_test_std = np.std(y_pred_test)
+
+    ## Obtain a y_pred where the demean transformation is taken out again (to make the magnitude of values comparable to the original y) ##
+    if demean_y:
+        y_pred_test_rescaled = y_pred_test + scaler_y.mean_
+    else:
+        y_pred_test_rescaled = y_pred_test
     
     ## Look into CV splits to find best alpha value ##
     if store_cv:
@@ -415,7 +424,7 @@ def ridgeRegressSplits(source_features,
             if verbose:
                 print(f'Nearly constant array for voxel {voxel_idx}') # tested for the y test array, does not happen.
             
-    else:
+    else: # if the std of predicted responses is zero
         if verbose:
             print(f'WARNING: VOXEL {voxel_idx} is predicted as only the expected value. Setting correlation to zero.')
         r = np.corrcoef(y_pred_test.ravel(), Y_test.ravel())[1,0] # compute because of storing the r prior manipulation
@@ -434,7 +443,8 @@ def ridgeRegressSplits(source_features,
 
     return r_prior_zero_manipulation, r, r2, \
            r2_train, \
-           y_pred_test, alpha, \
+           y_pred_test, y_pred_test_rescaled, \
+           alpha, \
            y_pred_test_std, y_pred_train_std, Y_test_std, Y_train_std, \
            warning_constant_flag, warning_alpha_limit
 
@@ -461,7 +471,27 @@ def ridgeCV_correctedR2(source_features,
         possible_alphas: numpy array of shape (n_alphas, ) with possible alphas to use for regression
         save_plot: boolean, whether to save the diagnostic plot
 
-    :return: r2 mean (not corrected), corrected r2, best alpha value for the model fit on the meaned data across repetitions
+    Returns
+        r_prior_zero_manipulation_mean: float, R prior to setting values to 0 if std(Y_pred)=0 or R<0
+            (on test set, derived from using the mean of the three neural repetitions)
+        r_mean: float, R (on test set, derived from using the mean of the three neural repetitions)
+        r2_mean: float, R^2 (on test set, derived from using the mean of the three neural repetitions)
+        corrected_r2: float, corrected R^2 (Spearman-Brown correction) (on test set, derived from using the mean of the three neural repetitions,
+            but the correction uses the mean of two pairwise neural repetitions)
+        r2_train_mean: float, R^2 (on training set, derived from using the mean of the three neural repetitions)
+        y_pred_test_mean: numpy array of shape (n_samples_test, ), predicted y values (on test set,
+            derived from using the mean of the three neural repetitions)
+        y_pred_test_rescaled_mean: numpy array of shape (n_samples_test, ), predicted y values (on test set,
+            derived from using the mean of the three neural repetitions) rescaled to the mean of the test set (i.e.
+            removing the demeaning transformation that was fitted on the training set)
+        alpha: float, alpha used for regression (on test set, derived from using the mean of the three neural repetitions)
+        y_pred_test_std_mean: float, standard deviation of predicted y values (on test set, derived from using the mean of the three neural repetitions)
+        y_pred_train_std_mean: float, standard deviation of predicted y values (on training set, derived from using the mean of the three neural repetitions)
+        Y_test_std_mean: float, standard deviation of y values (on test set, derived from using the mean of the three neural repetitions)
+        Y_train_std_mean: float, standard deviation of y values (on training set, derived from using the mean of the three neural repetitions)
+        warning_constant_count_mean: int, 1 if a constant warning occurred, 0 otherwise (on test set, derived from using the mean of the three neural repetitions)
+        warning_constant_count_splits_sum: int, sum of constant warnings across splits (in the correction phase, using pairwise repetitions)
+        warning_alpha_mean: int, 1 if upper alpha limit was hit, 2 if lower alpha limit was hit, 0 otherwise (on test set, derived from using the mean of the three neural repetitions)
 
     Base function from Jenelle Feather.
     """
@@ -469,8 +499,10 @@ def ridgeCV_correctedR2(source_features,
     ## Run RidgeCV and return uncorrected r2 ##
     # (mean refers to the fact that the model is fitted on the average of neural responses)
     
-    r_prior_zero_manipulation_mean, r_mean, r2_mean, r2_train_mean, \
-    y_pred_test_mean, alpha_mean, \
+    r_prior_zero_manipulation_mean, r_mean, r2_mean, \
+    r2_train_mean, \
+    y_pred_test_mean, y_pred_test_rescaled_mean, \
+    alpha_mean, \
     y_pred_test_std_mean, y_pred_train_std_mean, Y_test_std_mean, Y_train_std_mean, \
     warning_constant_count_mean, warning_alpha_mean = ridgeRegressSplits(
                                                         source_features=source_features,
@@ -482,14 +514,15 @@ def ridgeCV_correctedR2(source_features,
                                                         split_idx=split_idx,
                                                         verbose=True,
                                                         save_plot=save_plot)
-                                                        
-    split_y_pred = []
-    
+
+
+
     ## Get predicted responses (y hat) for models trained on data using just a single repetition ####
     warning_constant_count_splits = [] # store if a warning happened during the estimation of corrected response
+    split_y_pred = []
     for split_idx_rep, split in enumerate([0, 1, 2]):
-        _, _, _, _, y_pred_test_split, _, y_pred_test_std_splits, \
-        _, _, _, warning_constant_count_split, _ = ridgeRegressSplits(source_features=source_features,
+        _, _, _, _, y_pred_test_split, \
+        _, _, _, _, _, _, warning_constant_count_split, _ = ridgeRegressSplits(source_features=source_features,
                                              y=voxel_data[:, voxel_idx, split][:, None], # take out one repetition, and fit model on that (last part is to reshape into samples)
                                              is_train_data=is_train_data,
                                              is_test_data=is_test_data,
@@ -501,14 +534,7 @@ def ridgeCV_correctedR2(source_features,
         split_y_pred.append(y_pred_test_split)
         warning_constant_count_splits.append(warning_constant_count_split)
         warning_constant_count_splits_sum = np.sum(warning_constant_count_splits)
-        
-        # store std of y pred of the models fitted on just two splits
-        if split_idx_rep == 0:
-            y_pred_std_split1 = y_pred_test_std_splits
-        elif split_idx_rep == 1:
-            y_pred_std_split2 = y_pred_test_std_splits
-        else:
-            y_pred_std_split3 = y_pred_test_std_splits
+
     
     ## Correlate neural data and predictions across pairs of repetitions (splits) ##
     rvs = []
@@ -530,12 +556,12 @@ def ridgeCV_correctedR2(source_features,
     rv_hat = np.nanmax([3 * rv_hat_med / (1 + 2 * rv_hat_med), 0.183]) # Spearman-Brown correction on predicted data
     
     corrected_r2 = r2_mean / (rv * rv_hat) # Test-retest correction
-    # if corrected_r2 > 1:
-    #     print('>1')
-    
-    return r_prior_zero_manipulation_mean, r_mean, r2_mean, corrected_r2, r2_train_mean, alpha_mean, \
+
+    return r_prior_zero_manipulation_mean, r_mean, r2_mean, corrected_r2, \
+           r2_train_mean, \
+           y_pred_test_mean, y_pred_test_rescaled_mean, \
+           alpha_mean, \
            y_pred_test_std_mean, y_pred_train_std_mean, Y_test_std_mean, Y_train_std_mean, \
-           y_pred_std_split1, y_pred_std_split2, y_pred_std_split3, \
            warning_constant_count_mean, warning_constant_count_splits_sum, warning_alpha_mean
 
 

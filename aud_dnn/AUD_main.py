@@ -1,10 +1,10 @@
 from utils import *
 
 DATADIR = (Path(os.getcwd()) / '..' / 'data').resolve()
-RESULTDIR = (Path(os.getcwd()) / '..' / 'results_post-changes1-v2').resolve()
+RESULTDIR = (Path(os.getcwd()) / '..' / 'results_post-changes2-v4').resolve()
 CACHEDIR = (Path(os.getcwd()) / '..' / 'model_actv').resolve().as_posix()
 
-from resources import source_layer_map, d_randnetw
+from resources import source_layer_map
 
 # Set random seed
 import random
@@ -78,7 +78,6 @@ def main(raw_args=None):
     for i in sound_meta:
         stimuli_IDs.append(i[0][:-4].decode("utf-8")) # remove .wav
 
-
     ##### Load target (neural data or components) #####
     voxel_data, voxel_id = get_target(target=args.target,
                              stimuli_IDs=stimuli_IDs,
@@ -114,25 +113,25 @@ def main(raw_args=None):
     r2_voxels_train = np.zeros([n_vox, n_CV_splits])
     alphas = np.zeros([n_vox, n_CV_splits])
 
-    # store std of predicted responses
+    # store std of predicted and actual responses
     y_pred_test_std_mean = np.zeros([n_vox, n_CV_splits]) # predicted
     y_pred_train_std_mean = np.zeros([n_vox, n_CV_splits]) # predicted
     y_test_std_mean = np.zeros([n_vox, n_CV_splits]) # neural
     y_train_std_mean = np.zeros([n_vox, n_CV_splits]) # neural
-    y_pred_std_split1 = np.zeros([n_vox, n_CV_splits])
-    y_pred_std_split2 = np.zeros([n_vox, n_CV_splits])
-    y_pred_std_split3 = np.zeros([n_vox, n_CV_splits])
     
     # store warnings
     warning_constant_mean = np.zeros([n_vox, n_CV_splits]) # whether there is a warning for a constant prediction when fitting on the mean of the three repetitions
     warning_constant_splits = np.zeros([n_vox, n_CV_splits]) # whether there is a warning for a constant prediction when fitting on just two repetitions (for reliability estimation)
-    warning_alphas = np.zeros([n_vox, n_CV_splits])
+    warning_alphas = np.zeros([n_vox, n_CV_splits]) # whether there is a warning for hitting either upper or lower bound of alpha range
     
     # store predictions
     if args.save_preds == 'True':
         # store the predictions for each sound in the test set
         y_preds_test = np.zeros([n_stim, n_CV_splits, n_vox])
         y_preds_test[:] = np.nan # fill with nan, because we wont have every value for every sound (given that some will be in the train set)
+
+        y_preds_test_rescaled = np.zeros([n_stim, n_CV_splits, n_vox]) # if the mean was subtracted during regression, this is a version of the predictions with the mean added back in
+        y_preds_test_rescaled[:] = np.nan
     
     
     all_train_idxs = np.zeros([n_stim, n_CV_splits]) # same split across all voxels
@@ -161,7 +160,7 @@ def main(raw_args=None):
                 r_voxels_test[track_vox_idx, split_idx], \
                 r2_voxels_test[track_vox_idx, split_idx],\
                 r2_voxels_train[track_vox_idx, split_idx],\
-                y_pred_test, \
+                y_pred_test, y_pred_test_rescaled, \
                 alphas[track_vox_idx, split_idx],\
                 y_pred_test_std_mean[track_vox_idx, split_idx], \
                 y_pred_train_std_mean[track_vox_idx, split_idx], \
@@ -175,9 +174,6 @@ def main(raw_args=None):
                                                                               possible_alphas=possible_alphas,
                                                                               voxel_idx=voxel_idx,
                                                                               split_idx=split_idx,)
-                if args.save_preds == 'True':
-                    # Append y_pred_test in the test indices, for the correct voxel, for the correct split
-                    y_preds_test[is_test_data, split_idx, track_vox_idx] = y_pred_test.ravel()
                 
             # Run neural data with correction
             else:
@@ -186,14 +182,12 @@ def main(raw_args=None):
                 r2_voxels_test[track_vox_idx, split_idx],\
                 r2_voxels_test_corrected[track_vox_idx, split_idx],\
                 r2_voxels_train[track_vox_idx, split_idx],\
+                y_pred_test, y_pred_test_rescaled, \
                 alphas[track_vox_idx, split_idx],\
                 y_pred_test_std_mean[track_vox_idx, split_idx], \
                 y_pred_train_std_mean[track_vox_idx, split_idx], \
                 y_test_std_mean[track_vox_idx, split_idx],\
                 y_train_std_mean[track_vox_idx, split_idx], \
-                y_pred_std_split1[track_vox_idx, split_idx],\
-                y_pred_std_split2[track_vox_idx, split_idx],\
-                y_pred_std_split3[track_vox_idx, split_idx],\
                 warning_constant_mean[track_vox_idx, split_idx], \
                 warning_constant_splits[track_vox_idx, split_idx], \
                 warning_alphas[track_vox_idx, split_idx] = ridgeCV_correctedR2(source_features=source_features,
@@ -204,7 +198,14 @@ def main(raw_args=None):
                                                                               is_test_data=is_test_data,
                                                                               possible_alphas=possible_alphas,
                                                                               save_plot=PLOTFOLDER)
-                
+
+            # Store predictions
+            if args.save_preds == 'True':
+                # Append y_pred_test in the test indices, for the correct voxel, for the correct split
+                y_preds_test[is_test_data, split_idx, track_vox_idx] = y_pred_test.ravel()
+                y_preds_test_rescaled[is_test_data, split_idx, track_vox_idx] = y_pred_test_rescaled.ravel()
+
+
             sys.stdout.flush()
             
             # if track_vox_idx == 5:
@@ -212,45 +213,35 @@ def main(raw_args=None):
     
     ## LOAD METADATA ##
     df_roi_meta = pd.read_pickle(os.path.join(DATADIR, f'neural/{args.target}/df_roi_meta.pkl'))
-    
-    # if args.target == 'B2021': # chunked data
-    #     df_roi_meta = df_roi_meta[df_roi_meta.index.isin(np.arange(d_chunk_size[args.target_chunk_count][0], d_chunk_size[args.target_chunk_count][1]))]
-    #
+
     ## CV SPLITS ##
     dict_splits = {'all_train_idxs': all_train_idxs,
                     'all_test_idxs': all_test_idxs}
     
     ## SAVE RESULTS ACROSS CV SPLITS ##
-    # if args.target == 'B2021': # chunked data
-    #     vox_idx_coord = np.arange(d_chunk_size[args.target_chunk_count][0], d_chunk_size[args.target_chunk_count][1])
-    # else:
-    #     vox_idx_coord = np.arange(n_vox)
-
     vox_idx_coord = np.arange(n_vox)
-
     
     ds = xr.Dataset(
-        {"r_prior_zero": (("vox_idx", "splits"), r_voxels_test_prior_zero_manipulation), # todo unify splits split_idx
+        {"r_prior_zero": (("vox_idx", "split_idx"), r_voxels_test_prior_zero_manipulation),
          "r_test": (("vox_idx", "split_idx"), r_voxels_test),
          "r2_test": (("vox_idx", "split_idx"), r2_voxels_test),
-         "r2_test_c": (("vox_idx", "splits"), r2_voxels_test_corrected),
+         "r2_test_c": (("vox_idx", "split_idx"), r2_voxels_test_corrected),
          "r2_train": (("vox_idx", "split_idx"), r2_voxels_train),
-         "alphas": (("vox_idx", "splits"), alphas),
-         "y_pred_test_std_mean": (("vox_idx", "splits"), y_pred_test_std_mean),
-         "y_pred_train_std_mean": (("vox_idx", "splits"), y_pred_train_std_mean),
-         "y_test_std_mean": (("vox_idx", "splits"), y_test_std_mean),
-         "y_train_std_mean": (("vox_idx", "splits"), y_train_std_mean),
-         "y_pred_std_split1": (("vox_idx", "splits"), y_pred_std_split1),
-         "y_pred_std_split2": (("vox_idx", "splits"), y_pred_std_split2),
-         "y_pred_std_split3": (("vox_idx", "splits"), y_pred_std_split3),
+         "alphas": (("vox_idx", "split_idx"), alphas),
+         "y_pred_test_std_mean": (("vox_idx", "split_idx"), y_pred_test_std_mean),
+         "y_pred_train_std_mean": (("vox_idx", "split_idx"), y_pred_train_std_mean),
+         "y_test_std_mean": (("vox_idx", "split_idx"), y_test_std_mean),
+         "y_train_std_mean": (("vox_idx", "split_idx"), y_train_std_mean),
          "warning_constant_mean": (("vox_idx", "split_idx"), warning_constant_mean),
-         "warning_constant_splits": (("vox_idx", "splits"), warning_constant_splits),
-         "warning_alphas": (("vox_idx", "splits"), warning_alphas),
+         "warning_constant_splits": (("vox_idx", "split_idx"), warning_constant_splits),
+         "warning_alphas": (("vox_idx", "split_idx"), warning_alphas),
          },
         coords={
             "vox_idx_coord": vox_idx_coord,
+            "vox_idx": vox_idx_coord,
             "voxel_id": voxel_id,
             "split_idx_coord": np.arange(10),
+            "split_idx": np.arange(10),
             "source_model": ("vox_idx_coord", [str(args.source_model)]*n_vox),
             "source_layer": ("vox_idx_coord", [str(args.source_layer)]*n_vox),
             "randnetw": ("vox_idx_coord", [str(args.randnetw)]*n_vox)},
@@ -286,12 +277,8 @@ def main(raw_args=None):
     df_results = df_results.set_index('voxel_id', drop=False, inplace=False)
     df_results['vox_idx_coord'] = vox_idx_coord
 
-    # concatenate with masks and meta
-    if args.target == 'B2021':
-        df_results.set_index(vox_idx_coord, inplace=True) # set index to match which voxel was run based on the chunk
-
+    # concatenate with metadata
     assert(voxel_id == df_roi_meta.voxel_id.values).all() # Assert that the meta and the results are in the same order (voxel_id)
-
     df_roi_meta = df_roi_meta.set_index('voxel_id', drop=True, inplace=False) # otherwise we end up with two identical voxel_id columns
     assert(df_results.index == df_roi_meta.index).all() # Once more assertion that the meta and the results are in the same order (voxel_id)
 
@@ -303,16 +290,13 @@ def main(raw_args=None):
     df_output['randnetw'] = args.randnetw
     df_output['target'] = args.target
 
-    
-    if args.target == 'B2021': # store with chunk name
-        df_output.to_pickle(os.path.join(RESULTFOLDER, f'df_output_{args.target_chunk_count}.pkl'))
-        pickle.dump(ds, open(os.path.join(RESULTFOLDER, f'ds_{args.target_chunk_count}.pkl'), 'wb'))
-    else:
-        df_output.to_pickle(os.path.join(RESULTFOLDER, 'df_output.pkl'))
-        pickle.dump(ds, open(os.path.join(RESULTFOLDER, 'ds.pkl'), 'wb'))
-        if args.save_preds == 'True':
-            pickle.dump(y_preds_test, open(os.path.join(RESULTFOLDER, 'y_preds_test.pkl'), 'wb'))
-            # Indexed according to stimuli_IDs, and vox order is the same as in the df_roi_metadata
+    ## Save ##
+    df_output.to_pickle(os.path.join(RESULTFOLDER, 'df_output.pkl'))
+    pickle.dump(ds, open(os.path.join(RESULTFOLDER, 'ds.pkl'), 'wb'))
+    if args.save_preds == 'True':
+        pickle.dump(y_preds_test, open(os.path.join(RESULTFOLDER, 'y_preds_test.pkl'), 'wb'))
+        pickle.dump(y_preds_test_rescaled, open(os.path.join(RESULTFOLDER, 'y_preds_test_rescaled.pkl'), 'wb'))
+        # Indexed according to stimuli_IDs, and vox order is the same as in the df_roi_metadata
 
     print(f'Saved results to {RESULTFOLDER}')
 
