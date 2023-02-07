@@ -15,7 +15,7 @@ data/fsavg_surf/voxel_matrix_for_alex.mat
 
 results/*
 
-aud_dnn/model-actv/*
+/model_actv/**
 aud_dnn/prep_and_checks/*
 
 

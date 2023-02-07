@@ -1,7 +1,7 @@
 from utils import *
 
 DATADIR = (Path(os.getcwd()) / '..' / 'data').resolve()
-RESULTDIR = (Path(os.getcwd()) / '..' / 'results_post-changes2-v4').resolve()
+RESULTDIR = (Path(os.getcwd()) / '..' / 'results').resolve()
 CACHEDIR = (Path(os.getcwd()) / '..' / 'model_actv').resolve().as_posix()
 
 from resources import source_layer_map
@@ -20,7 +20,7 @@ Fits a ridge regression model from source (DNN unit activations) to target (brai
 
 def main(raw_args=None):
     parser = argparse.ArgumentParser(description='Fit voxel-wise models in the auditory domain')
-    parser.add_argument('--source_model', default='ResNet50multitask',
+    parser.add_argument('--source_model', default='ResNet50multitaskSeed2',
                         type=str, help='Name of source DNN model.'
                                        'Name of the DNN model from which activations will be used as regressors.'
                                        'Should match the folder name in the CACHEDIR which contains the DNN model activations.')
