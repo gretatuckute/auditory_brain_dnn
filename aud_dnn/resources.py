@@ -45,7 +45,128 @@ d_layer_reindex = {
     'spectemp': ['avgpool'],
 }
 
-# Dictionary with keys as the name of the source DNN model and value a dictionary with the keys as the 'pretty',
+# d_layer_legend = {
+#     'Kell2018music': ['Cochleagram', 'ReLU_1', 'MaxPool2d_1', 'ReLU_2', 'MaxPool2d_2',
+#                       'ReLU_3', 'ReLU_4', 'ReLU_5', 'AvgPool_1', 'ReLU_6', ],
+#     'Kell2018word': ['Cochleagram', 'ReLU_1', 'MaxPool2d_1', 'ReLU_2', 'MaxPool2d_2',
+#                      'ReLU_3', 'ReLU_4', 'ReLU_5', 'AvgPool_1', 'ReLU_6', ],
+#     'Kell2018speaker': ['Cochleagram', 'ReLU_1', 'MaxPool2d_1', 'ReLU_2', 'MaxPool2d_2',
+#                         'ReLU_3', 'ReLU_4', 'ReLU_5', 'AvgPool_1', 'ReLU_6', ],
+#     'Kell2018audioset': ['Cochleagram', 'ReLU_1', 'MaxPool2d_1', 'ReLU_2', 'MaxPool2d_2',
+#                          'ReLU_3', 'ReLU_4', 'ReLU_5', 'AvgPool_1', 'ReLU_6', ],
+#     'Kell2018multitask': ['Cochleagram', 'ReLU_1', 'MaxPool2d_1', 'ReLU_2', 'MaxPool2d_2',
+#                           'ReLU_3', 'ReLU_4', 'ReLU_5', 'AvgPool_1', 'ReLU_6', ],
+#     'Kell2018init': ['Cochleagram', 'ReLU_1', 'MaxPool2d_1', 'ReLU_2', 'MaxPool2d_2',
+#                      'ReLU_3', 'ReLU_4', 'ReLU_5', 'AvgPool_1', 'ReLU_6', ],
+#     'ResNet50music': ['Cochleagram', 'ReLU_1', 'MaxPool_1', 'ResNetBlock_1', 'ResNetBlock_2', 'ResNetBlock_3',
+#                       'ResNetBlock_4', 'AvgPool_1', ],
+#     'ResNet50word': ['Cochleagram', 'ReLU_1', 'MaxPool_1', 'ResNetBlock_1', 'ResNetBlock_2', 'ResNetBlock_3',
+#                      'ResNetBlock_4', 'AvgPool_1', ],
+#     'ResNet50speaker': ['Cochleagram', 'ReLU_1', 'MaxPool_1', 'ResNetBlock_1', 'ResNetBlock_2', 'ResNetBlock_3',
+#                         'ResNetBlock_4', 'AvgPool_1', ],
+#     'ResNet50audioset': ['Cochleagram', 'ReLU_1', 'MaxPool_1', 'ResNetBlock_1', 'ResNetBlock_2', 'ResNetBlock_3',
+#                          'ResNetBlock_4', 'AvgPool_1', ],
+#     'ResNet50multitask': ['Cochleagram', 'ReLU_1', 'MaxPool_1', 'ResNetBlock_1', 'ResNetBlock_2', 'ResNetBlock_3',
+#                           'ResNetBlock_4', 'AvgPool_1', ],
+#     'ResNet50init': ['Cochleagram', 'ReLU_1', 'MaxPool_1', 'ResNetBlock_1', 'ResNetBlock_2', 'ResNetBlock_3',
+#                      'ResNetBlock_4', 'AvgPool_1', ],
+#     'DS2': ['HardTanh_1', 'HardTanh_2',
+#             'LSTM_1', 'LSTM_2', 'LSTM_3', 'LSTM_4', 'LSTM_5', 'Linear_1'],
+#     'wav2vec': ['Embedding', 'Encoder_1', 'Encoder_2', 'Encoder_3', 'Encoder_4', 'Encoder_5', 'Encoder_6',
+#                 'Encoder_7', 'Encoder_8', 'Encoder_9', 'Encoder_10', 'Encoder_11', 'Encoder_12', 'Linear_1'],
+#     'wav2vecpower': ['Embedding', 'Encoder_1', 'Encoder_2', 'Encoder_3', 'Encoder_4', 'Encoder_5', 'Encoder_6',
+#                      'Encoder_7', 'Encoder_8', 'Encoder_9', 'Encoder_10', 'Encoder_11', 'Encoder_12', 'Linear_1'],
+#     'VGGish': ['ReLU_1', 'MaxPool2d_1', 'ReLU_2', 'MaxPool2d_2', 'ReLU_3', 'ReLU_4', 'MaxPool2d_3', 'ReLU_5', 'ReLU_6',
+#                'MaxPool2d_4',
+#                'ReLU_7', 'ReLU_8', 'ReLU_9', ],
+#     'DCASE2020': ['GRU_1', 'GRU_2', 'GRU_3', 'GRU_4', 'Linear_1'],
+#     'AST': ['Embedding', 'Encoder_1', 'Encoder_2', 'Encoder_3', 'Encoder_4', 'Encoder_5', 'Encoder_6',
+#             'Encoder_7', 'Encoder_8', 'Encoder_9', 'Encoder_10', 'Encoder_11', 'Encoder_12', 'Linear_1'],
+#     'ZeroSpeech2020': ['ReLU_1', 'ReLU_2', 'ReLU_3', 'ReLU_4', 'ReLU_5'],
+#     'sepformer': ['Embedding', 'Encoder_1', 'Encoder_2', 'Encoder_3', 'Encoder_4', 'Encoder_5', 'Encoder_6',
+#                   'Encoder_7',
+#                   'Encoder_8',
+#                   'Encoder_9', 'Encoder_10', 'Encoder_11', 'Encoder_12', 'Encoder_13', 'Encoder_14', 'Encoder_15',
+#                   'Encoder_16',
+#                   'Encoder_17', 'Encoder_18', 'Encoder_19', 'Encoder_20', 'Encoder_21', 'Encoder_22', 'Encoder_23',
+#                   'Encoder_24',
+#                   'Encoder_25', 'Encoder_26', 'Encoder_27', 'Encoder_28', 'Encoder_29', 'Encoder_30', 'Encoder_31',
+#                   'Encoder_32'],
+#     'metricGAN': ['LSTM_1', 'LSTM_2', 'LeakyReLU_1', 'Linear_2'],
+#     'S2T': ['Embedding', 'Encoder_1', 'Encoder_2', 'Encoder_3', 'Encoder_4', 'Encoder_5', 'Encoder_6',
+#             'Encoder_7', 'Encoder_8', 'Encoder_9', 'Encoder_10', 'Encoder_11', 'Encoder_12'],
+#     'spectemp': ['avgpool'],
+# 
+# }
+
+
+
+# Dictionary that maps from the layer values in d_layer_reindex to a nice name for plots.
+d_layer_names = {'Kell2018music': {'input_after_preproc': 'Cochleagram', 'relu0': 'ReLU_1', 'maxpool0': 'MaxPool2d_1',
+                                      'relu1': 'ReLU_2', 'maxpool1': 'MaxPool2d_2', 'relu2': 'ReLU_3', 'relu3': 'ReLU_4',
+                                        'relu4': 'ReLU_5', 'avgpool': 'AvgPool_1', 'relufc': 'ReLU_6', },
+                'Kell2018word': {'input_after_preproc': 'Cochleagram', 'relu0': 'ReLU_1', 'maxpool0': 'MaxPool2d_1',
+                                        'relu1': 'ReLU_2', 'maxpool1': 'MaxPool2d_2', 'relu2': 'ReLU_3', 'relu3': 'ReLU_4',
+                                        'relu4': 'ReLU_5', 'avgpool': 'AvgPool_1', 'relufc': 'ReLU_6', },
+                'Kell2018wordSeed2': {'input_after_preproc': 'Cochleagram', 'relu0': 'ReLU_1', 'maxpool0': 'MaxPool2d_1',
+                                        'relu1': 'ReLU_2', 'maxpool1': 'MaxPool2d_2', 'relu2': 'ReLU_3', 'relu3': 'ReLU_4',
+                                        'relu4': 'ReLU_5', 'avgpool': 'AvgPool_1', 'relufc': 'ReLU_6', },
+                 'Kell2018speaker': {'input_after_preproc': 'Cochleagram', 'relu0': 'ReLU_1', 'maxpool0': 'MaxPool2d_1',
+                                        'relu1': 'ReLU_2', 'maxpool1': 'MaxPool2d_2', 'relu2': 'ReLU_3', 'relu3': 'ReLU_4',
+                                        'relu4': 'ReLU_5', 'avgpool': 'AvgPool_1', 'relufc': 'ReLU_6', },
+                    'Kell2018speakerSeed2': {'input_after_preproc': 'Cochleagram', 'relu0': 'ReLU_1', 'maxpool0': 'MaxPool2d_1',
+                                        'relu1': 'ReLU_2', 'maxpool1': 'MaxPool2d_2', 'relu2': 'ReLU_3', 'relu3': 'ReLU_4',
+                                        'relu4': 'ReLU_5', 'avgpool': 'AvgPool_1', 'relufc': 'ReLU_6', },
+                'Kell2018audioset': {'input_after_preproc': 'Cochleagram', 'relu0': 'ReLU_1', 'maxpool0': 'MaxPool2d_1',
+                                        'relu1': 'ReLU_2', 'maxpool1': 'MaxPool2d_2', 'relu2': 'ReLU_3', 'relu3': 'ReLU_4',
+                                        'relu4': 'ReLU_5', 'avgpool': 'AvgPool_1', 'relufc': 'ReLU_6', },
+                'Kell2018audiosetSeed2': {'input_after_preproc': 'Cochleagram', 'relu0': 'ReLU_1', 'maxpool0': 'MaxPool2d_1',
+                                        'relu1': 'ReLU_2', 'maxpool1': 'MaxPool2d_2', 'relu2': 'ReLU_3', 'relu3': 'ReLU_4',
+                                        'relu4': 'ReLU_5', 'avgpool': 'AvgPool_1', 'relufc': 'ReLU_6', },
+                 'Kell2018multitask': {'input_after_preproc': 'Cochleagram', 'relu0': 'ReLU_1', 'maxpool0': 'MaxPool2d_1',
+                                        'relu1': 'ReLU_2', 'maxpool1': 'MaxPool2d_2', 'relu2': 'ReLU_3', 'relu3': 'ReLU_4',
+                                        'relu4': 'ReLU_5', 'avgpool': 'AvgPool_1', 'relufc': 'ReLU_6', },
+                'Kell2018multitaskSeed2': {'input_after_preproc': 'Cochleagram', 'relu0': 'ReLU_1', 'maxpool0': 'MaxPool2d_1',
+                                        'relu1': 'ReLU_2', 'maxpool1': 'MaxPool2d_2', 'relu2': 'ReLU_3', 'relu3': 'ReLU_4',
+                                        'relu4': 'ReLU_5', 'avgpool': 'AvgPool_1', 'relufc': 'ReLU_6', },
+                 'Kell2018init': {'input_after_preproc': 'Cochleagram', 'relu0': 'ReLU_1', 'maxpool0': 'MaxPool2d_1',
+                                        'relu1': 'ReLU_2', 'maxpool1': 'MaxPool2d_2', 'relu2': 'ReLU_3', 'relu3': 'ReLU_4',
+                                        'relu4': 'ReLU_5', 'avgpool': 'AvgPool_1', 'relufc': 'ReLU_6', },
+
+                 'ResNet50music': {'input_after_preproc': 'Cochleagram', 'conv1_relu1': 'ReLU_1', 'maxpool1': 'MaxPool_1',
+                                      'layer1': 'ResNetBlock_1', 'layer2': 'ResNetBlock_2', 'layer3': 'ResNetBlock_3',
+                                        'layer4': 'ResNetBlock_4', 'avgpool': 'AvgPool_1', },
+                 'ResNet50word': {'input_after_preproc': 'Cochleagram', 'conv1_relu1': 'ReLU_1', 'maxpool1': 'MaxPool_1',
+                                        'layer1': 'ResNetBlock_1', 'layer2': 'ResNetBlock_2', 'layer3': 'ResNetBlock_3',
+                                        'layer4': 'ResNetBlock_4', 'avgpool': 'AvgPool_1', },
+                 'ResNet50wordSeed2': {'input_after_preproc': 'Cochleagram', 'conv1_relu1': 'ReLU_1', 'maxpool1': 'MaxPool_1',
+                                        'layer1': 'ResNetBlock_1', 'layer2': 'ResNetBlock_2', 'layer3': 'ResNetBlock_3',
+                                        'layer4': 'ResNetBlock_4', 'avgpool': 'AvgPool_1', },
+                 'ResNet50speaker': {'input_after_preproc': 'Cochleagram', 'conv1_relu1': 'ReLU_1', 'maxpool1': 'MaxPool_1',
+                                        'layer1': 'ResNetBlock_1', 'layer2': 'ResNetBlock_2', 'layer3': 'ResNetBlock_3',
+                                        'layer4': 'ResNetBlock_4', 'avgpool': 'AvgPool_1', },
+                    'ResNet50speakerSeed2': {'input_after_preproc': 'Cochleagram', 'conv1_relu1': 'ReLU_1', 'maxpool1': 'MaxPool_1',
+                                        'layer1': 'ResNetBlock_1', 'layer2': 'ResNetBlock_2', 'layer3': 'ResNetBlock_3',
+                                        'layer4': 'ResNetBlock_4', 'avgpool': 'AvgPool_1', },
+                 'ResNet50audioset': {'input_after_preproc': 'Cochleagram', 'conv1_relu1': 'ReLU_1', 'maxpool1': 'MaxPool_1',
+                                        'layer1': 'ResNetBlock_1', 'layer2': 'ResNetBlock_2', 'layer3': 'ResNetBlock_3',
+                                        'layer4': 'ResNetBlock_4', 'avgpool': 'AvgPool_1', },
+                    'ResNet50audiosetSeed2': {'input_after_preproc': 'Cochleagram', 'conv1_relu1': 'ReLU_1', 'maxpool1': 'MaxPool_1',
+                                        'layer1': 'ResNetBlock_1', 'layer2': 'ResNetBlock_2', 'layer3': 'ResNetBlock_3',
+                                        'layer4': 'ResNetBlock_4', 'avgpool': 'AvgPool_1', },
+                 'ResNet50multitask': {'input_after_preproc': 'Cochleagram', 'conv1_relu1': 'ReLU_1', 'maxpool1': 'MaxPool_1',
+                                        'layer1': 'ResNetBlock_1', 'layer2': 'ResNetBlock_2', 'layer3': 'ResNetBlock_3',
+                                        'layer4': 'ResNetBlock_4', 'avgpool': 'AvgPool_1', },
+                    'ResNet50multitaskSeed2': {'input_after_preproc': 'Cochleagram', 'conv1_relu1': 'ReLU_1', 'maxpool1': 'MaxPool_1',
+                                        'layer1': 'ResNetBlock_1', 'layer2': 'ResNetBlock_2', 'layer3': 'ResNetBlock_3',
+                                        'layer4': 'ResNetBlock_4', 'avgpool': 'AvgPool_1', },
+                    'ResNet50init': {'input_after_preproc': 'Cochleagram', 'conv1_relu1': 'ReLU_1', 'maxpool1': 'MaxPool_1',
+                                        'layer1': 'ResNetBlock_1', 'layer2': 'ResNetBlock_2', 'layer3': 'ResNetBlock_3',
+                                        'layer4': 'ResNetBlock_4', 'avgpool': 'AvgPool_1', },
+                 }
+
+
+                 # Dictionary with keys as the name of the source DNN model and value a dictionary with the keys as the 'pretty',
 # interpretable name of the layer, and the value the name of the layer it was saved as (the PyTorch name).
 # This is only used for the external models given that they are extracted using Pytorch module names.
 source_layer_map = {
@@ -100,17 +221,6 @@ source_layer_map = {
         'ReLU_9': 'ReLU()--8',
         'Post-Processed_Features': 'Post-Processed_Features'
     },
-    # 'ResNet50': {'input_after_preproc': 0,  # general resnet
-    #              'conv1': 1,
-    #              'bn1': 2,
-    #              'relu1': 3,
-    #              'maxpool1': 4,
-    #              'layer1': 5,
-    #              'layer2': 6,
-    #              'layer3': 7,
-    #              'layer4': 8,
-    #              'avgpool': 9,
-    #              'final': 10},
     'AST': {'Embedding': 'Conv2d(1, 768, kernel_size=(16, 16), stride=(10, 10))--0',  # patch embedding, the conv layer
             'Encoder_1': 'Linear(in_features=3072, out_features=768, bias=True)--0',
             'Encoder_2': 'Linear(in_features=3072, out_features=768, bias=True)--1',
@@ -203,5 +313,49 @@ source_layer_map = {
 
 }
 
+###### MORE PLOTTING/FIGURE RELATED ######
+import matplotlib
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+#%% Plot styles
+plt.style.use('seaborn-pastel')
+matplotlib.rcParams['mathtext.fontset'] = 'custom'
+matplotlib.rcParams['mathtext.rm'] = 'Bitstream Vera Sans'
+matplotlib.rcParams['mathtext.it'] = 'Bitstream Vera Sans:italic'
+matplotlib.rcParams['mathtext.bf'] = 'Bitstream Vera Sans:bold'
+matplotlib.rc('font',family='sans-serif')
+plt.rcParams.update({'font.size':12})
+matplotlib.rcParams['grid.alpha'] = 1
+matplotlib.rcParams['xtick.labelsize'] = 'small'
+matplotlib.rcParams['ytick.labelsize'] = 'medium'
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
+matplotlib.rcParams['svg.fonttype'] = 'none'
+
+d_roi_colors = {'all': [sns.color_palette("pastel")[0], sns.color_palette("pastel")[2], sns.color_palette("pastel")[3], sns.color_palette("pastel")[4]],
+			'any_roi': 'orange', 'none': 'darkslateblue',
+			'tonotopic': sns.color_palette("pastel")[0],
+			'pitch': sns.color_palette("pastel")[2],
+			'music': sns.color_palette("pastel")[3],
+			'speech': 'mediumorchid', # sns.color_palette("pastel")[4]
+		 	'lowfreq': 'paleturquoise',
+			'highfreq': 'cadetblue',
+			 'envsounds': 'navajowhite',
+                'Anterior_rh': 'gold',
+                'Anterior_lh': 'gold',
+                'Primary_rh': 'darkorange',
+                'Primary_lh': 'darkorange',
+                'Lateral_rh': 'tomato',
+                'Lateral_lh': 'tomato',
+                'Posterior_rh': 'firebrick',
+                'Posterior_lh': 'firebrick',
+                'Anterior': 'cyan',
+                'Primary': 'springgreen',
+                'Lateral': 'blue',
+                'Posterior': 'magenta',}
+
 d_randnetw = {'True': '_randnetw',
               'False': ''}
+
+

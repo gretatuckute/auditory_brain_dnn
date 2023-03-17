@@ -1,24 +1,34 @@
-import matplotlib.pyplot as plt
-
 from plot_utils_AUD import *
 np.random.seed(0)
 random.seed(0)
-
-run_diag = False
-run_agg = True
-plot_subjectwise = False # for checking how plots look per subject
-run_surf = False
-merge_surface_targets = False
-do_stats = False
-
-concat_over_models = False
 
 ### Directories ###
 date = datetime.datetime.now().strftime("%m%d%Y")
 DATADIR = (Path(os.getcwd()) / '..' / '..' / 'data').resolve()
 RESULTDIR_LOCAL = (Path(os.getcwd()) / '..' / '..' / 'results').resolve()
-PLOTSURFDIR = Path(f'{ROOT}/results/AUD/20210915_median_across_splits_correction/PLOTS_SURF_across-models/')
+PLOTSURFDIR = Path(f'{ROOT}/results/PLOTS_SURF_across-models/')
 SURFDIR = f'{DATADIR}/fsavg_surf/'
+
+### Settings for which plots to make ###
+save = False # Whether to save any plots
+concat_over_models = True
+
+# If concat_over_models = False, we load each individual model and perform the analysis on that
+if not concat_over_models:
+	pred_across_layers = False # SI 2, predictivity for each model across all layers
+	best_layer_cv_nit = True
+
+if concat_over_models:
+	print('todo')
+
+run_agg = True
+
+
+run_surf = False
+merge_surface_targets = False
+
+
+
 
 # Logging
 date = datetime.datetime.now().strftime("%m%d%Y-%T")
@@ -34,11 +44,12 @@ source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell201
 # 				'AST',  'wav2vec', 'VGGish', 'S2T',  'sepformer']
 # source_models = ['wav2vecpower']
 source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',]
+				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
+				 'Kell2018multitaskSeed2', 'ResNet50multitaskSeed2',]
 # source_models = ['AST',  'wav2vec', 'DCASE2020', 'DS2', 'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer']
+# source_models = ['Kell2018multitaskSeed2', 'ResNet50multitaskSeed2']
 
-target = 'B2021'
-randnetw = 'False'
+target = 'NH2015'
 
 print(f'---------- Target: {target} ----------')
 
@@ -127,17 +138,22 @@ if concat_over_models:  # assemble plots across models
 		print('Done!')
 
 	
-	elif target == 'NH2015' or target == 'B2021': # neural data, either Nh2015 or B2021
+	elif target in ['NH2015', 'B2021']: # neural data, either Nh2015 or B2021
 		# BARPLOTS ACROSS MODELS
-		# for sort_flag in [B2021_all_models_performance_order]:
-		# 	for val_flag in ['median_r2_test_c', ]: # 'median_r2_test_c', 'median_r2_test'
-		# 		for agg_flag in ['CV-splits-nit-10']: #'CV-splits-nit-10', 'best_voxelwise', 'LOSO'
-		# 			for randnetw_flag in ['True']: # 'False', 'True'
-		# 				barplot_across_models(source_models, target=target, roi=None, df_meta_roi=df_meta_roi,
-		# 									  save=SAVEDIR_CENTRALIZED, randnetw=randnetw_flag,
-		# 									  aggregation=agg_flag, value_of_interest=val_flag,
-		# 									  sort_by=sort_flag,
-		# 									  add_savestr=f'_{datetag}')
+		for sort_flag in ['performance']:
+			for val_flag in ['median_r2_test_c', ]: # 'median_r2_test_c', 'median_r2_test'
+				for agg_flag in ['CV-splits-nit-10']: #'CV-splits-nit-10', 'best_voxelwise', 'LOSO'
+					for randnetw_flag in ['False']: # 'False', 'True'
+						barplot_across_models(source_models=source_models,
+											  target=target,
+											  roi=None,
+											  df_meta_roi=df_meta_roi,
+											  save=False,
+											  randnetw=randnetw_flag,
+											  aggregation=agg_flag,
+											  value_of_interest=val_flag,
+											  sort_by=sort_flag,
+											  add_savestr=f'_{datetag}')
 		#
 		# # STATS FOR BARPLOTS ACROSS MODELS (bootstrap across subjects)
 		# for val_flag in ['median_r2_test_c', 'median_r2_test']:
@@ -241,16 +257,16 @@ if not concat_over_models:
 	for source_model in source_models:
 		print(f'\n######### MODEL: {source_model} ##########\n')
 		#### Identifier information #####
-		randemb = 'False'
 		mapping = 'AUD-MAPPING-Ridge'
 		alpha_str = '50'
 		
 		#### Paths (source model specific) ####
-		RESULTDIR = (Path(f'{ROOT}/results/AUD/20210915_median_across_splits_correction/{source_model}')).resolve()
-		DIAGDIR = (Path(join(RESULTDIR, f'diagnostics_TARGET-{target}_RANDNETW-{randnetw}_ALPHALIMIT-{alpha_str}')))
-		PLOTDIR = (Path(f'{ROOT}/results/AUD/20210915_median_across_splits_correction/{source_model}/outputs')).resolve()
+		RESULTDIR = (Path(f'{RESULTDIR_ROOT}/{source_model}/')).resolve()
+		PLOTDIR = (Path(f'{RESULTDIR}/outputs/')).resolve()
 		PLOTDIR.mkdir(exist_ok=True)
-		
+		if not save:
+			PLOTDIR = False # if save is False, don't save
+
 		# Load voxel meta
 		df_meta_roi = pd.read_pickle(join(DATADIR, 'neural', target, 'df_roi_meta.pkl'))
 		meta = df_meta_roi.copy(deep=True) # for adding plotting values
@@ -259,9 +275,14 @@ if not concat_over_models:
 		# concat_ds_B2021(source_model='spectemp', output_folders_paths=spectemp_path,
 		# 				df_roi_meta=df_meta_roi, randnetw=randnetw)
 
-		# Load output results
-		output, output_folders = concat_dfs_modelwise(RESULTDIR, mapping=mapping, df_str='df_output', source_model=source_model, target=target,
-													  truncate=None, randemb=randemb, randnetw=randnetw)
+		#### LOAD DATA ####
+		# Trained network
+		output, output_folders = concat_dfs_modelwise(RESULTDIR=RESULTDIR,
+													  mapping=mapping,
+													  df_str='df_output',
+													  source_model=source_model, target=target,
+													  truncate=None,
+													  randnetw='False')
 		output_folders_paths = [join(RESULTDIR, x) for x in output_folders]
 		
 		# Concatenate ds for B2021 (IF NOT DONE YET)
@@ -269,34 +290,88 @@ if not concat_over_models:
 		# 				df_roi_meta=df_meta_roi, randnetw=randnetw)
 		# assert_output_ds_match(output_folders_paths=output_folders_paths)
 		
-		if source_model == 'wav2vec':  # rename 'Logits' to Final
-			output.loc[output.source_layer == 'Logits', 'source_layer'] = 'Final'
-		
 		# Ensure that r2 test corrected does exceed 1
 		output['median_r2_test_c'] = output['median_r2_test_c'].clip(upper=1)
 		output['mean_r2_test_c'] = output['mean_r2_test_c'].clip(upper=1)
-		
-		######### ROI/VOXEL ANALYSES - WITHIN-SUBJECT ERROR ########
-		if run_agg:
-			#### LOAD DATA ####
-			if source_model.endswith('init') or source_model == 'spectemp' or source_model == 'wav2vecpower':
-				plot_score_across_layers(output, source_model=source_model, target=target, ylim=[0, 1], roi=None,
-										 save=PLOTDIR, output_randnetw=None, value_of_interest='median_r2_test_c',
-										 )
 
-			else:
-				if randnetw != 'True':  # otherwise it just reloads..
-					# Get corresponding random network
-					output_randnetw, output_folders_randnetw = concat_dfs_modelwise(RESULTDIR, mapping=mapping, df_str='df_output',
-															  source_model=source_model,
-															  target=target, truncate=None, randemb=randemb,
-															  randnetw='True')
-					output_randnetw['median_r2_test_c'] = output_randnetw['median_r2_test_c'].clip(upper=1)
-					output_randnetw['mean_r2_test_c'] = output_randnetw['mean_r2_test_c'].clip(upper=1)
-					output_folders_paths_randnetw = [join(RESULTDIR, x) for x in output_folders_randnetw]
+		# Permuted network (does not exist for spectemp or init models)
+		if source_model.endswith('init') or source_model == 'spectemp' or source_model in source_models: # FOR NOW, LETS NOT PLOT RANDNETW
+			output_randnetw = None
+			output_folders_paths_randnetw = []
+		else:
+			output_randnetw, output_folders_randnetw = concat_dfs_modelwise(RESULTDIR=RESULTDIR,
+																			mapping=mapping,
+																			df_str='df_output',
+													  						source_model=source_model, target=target,
+																			truncate=None,
+													  						randnetw='True')
+			output_randnetw['median_r2_test_c'] = output_randnetw['median_r2_test_c'].clip(upper=1)
+			output_randnetw['mean_r2_test_c'] = output_randnetw['mean_r2_test_c'].clip(upper=1)
+			output_folders_paths_randnetw = [join(RESULTDIR, x) for x in output_folders_randnetw]
+
+		######### FIGURE OUT WHETHER WE HAVE NEURAL OR COMPONENT TARGET DATA ########
+		if target in ['NH2015', 'B2021']:
+			print(f'Plotting neural data: {target}')
+
+			######### PREDICITIVITY ACROSS ALL LAYERS (SI 2) ########
+			if pred_across_layers:
+
+				# Plot predictivity across all layers, all voxels
+				plot_score_across_layers(output=output,
+										 output_randnetw=output_randnetw,
+										 source_model=source_model,
+										 target=target,
+										 ylim=[0, 1],
+										 roi=None,
+										 save=PLOTDIR,
+										 value_of_interest='median_r2_test_c',)
+
+				# Create one-hot cols with ROI labels for plotting
+				output = add_one_hot_roi_col(df=output,
+											 col='roi_label_general',)
+				# Plot predictivity across all layers, for anatomical ROIs (roi_label_general)
+				plot_score_across_layers(output=output,
+										 output_randnetw=output_randnetw,
+										 source_model=source_model,
+										 target=target,
+										 ylim=[0, 1],
+										 roi='roi_label_general',
+										 save=PLOTDIR,
+										 value_of_interest='median_r2_test_c',)
+				sys.stdout.flush()
+
+			######### FIND BEST LAYER USING INDEPENDENT CV SPLITS (USED IN PAPER) ########
+			if best_layer_cv_nit:
+
+				# Best layer based on CV splits -- TRAINED and PERMUTED NETWORK
+				for collapse_flag in ['median']:
+					for val_flag in ['r2_test_c']:
+						for randnetw_flag in ['False', 'True']:
+							if randnetw_flag == 'True':
+								if output_randnetw is not None:
+									select_r2_test_CV_splits_nit(output_folders_paths=output_folders_paths_randnetw,
+																 df_meta_roi=df_meta_roi,
+																 collapse_over_splits=collapse_flag,
+																 source_model=source_model, target=target,
+																 value_of_interest=val_flag,
+																 randnetw='True', roi=None, save=PLOTDIR, nit=10)
+								else:
+									print('No permuted network data found')
+							elif randnetw_flag == 'False':
+								select_r2_test_CV_splits_nit(output_folders_paths=output_folders_paths,
+															 df_meta_roi=df_meta_roi,
+															 collapse_over_splits=collapse_flag,
+															 source_model=source_model, target=target,
+															 value_of_interest=val_flag,
+															 randnetw='False', roi=None, save=PLOTDIR, nit=10)
+							else:
+								raise ValueError()
+						sys.stdout.flush()
 
 
-			if target == 'NH2015comp':  # components
+			elif target == 'NH2015comp':  # components
+				print(f'Plotting component data: {target}')
+
 				# for randnetw_flag in ['False']:
 				# 	if randnetw_flag == 'True':
 				# 		select_r2_test_CV_splits_nit(output_folders_paths=output_folders_paths_randnetw, df_meta_roi=df_meta_roi, source_model=source_model,
@@ -330,32 +405,9 @@ if not concat_over_models:
 			
 
 			else:  # Neural data
-				if target != 'B2021':  # target = NH2015
-					roi_flags = [None, 'any_roi', 'all']  # Functional ROIs available
-				elif target == 'B2021':  # target = B2021
-					roi_flags = [None]  # No functional ROIs available
-				else:
-					raise ValueError('Target not available')
+				raise ValueError('Target not available')
 
-				# Best layer based on CV splits -- TRAINED and PERMUTED NETWORK, loop over collapsing either 'median' or 'mean'
-				# for collapse_flag in ['median']:
-				# 	for val_flag in ['r2_test', 'r2_test_c']: #
-				# 		for randnetw_flag in ['False', 'True']:  #
-				# 			if randnetw_flag == 'True':  # replace the RANDNETW-False with True in the output folders paths
-				# 				select_r2_test_CV_splits_nit(output_folders_paths_randnetw, df_meta_roi=df_meta_roi,
-				# 											 collapse_over_splits=collapse_flag,
-				# 											 source_model=source_model, target=target,
-				# 											 value_of_interest=val_flag,
-				# 											 randnetw='True', roi=None, save=PLOTDIR, nit=10)
-				# 			elif randnetw_flag == 'False':
-				# 				select_r2_test_CV_splits_nit(output_folders_paths, df_meta_roi=df_meta_roi,
-				# 											 collapse_over_splits=collapse_flag,
-				# 											 source_model=source_model, target=target,
-				# 											 value_of_interest=val_flag,
-				# 											 randnetw=randnetw_flag, roi=None, save=PLOTDIR, nit=10)
-				# 			else:
-				# 				raise ValueError()
-				# 		sys.stdout.flush()
+
 
 				# # # Best layer voxelwise -- TRAINED and PERMUTED NETWORK
 				# for val_flag in ['median_r2_test', 'median_r2_test_c']: #'median_r2_test', 'median_r2_test_c'
@@ -389,31 +441,32 @@ if not concat_over_models:
 				# 			sys.stdout.flush()
 				#
 				# # # # Barplots of best layer for anatomical ROIs -- TRAINED and PERMUTED NETWORK
-				for cond_flag in ['roi_label_general']: # ['roi_label_general','roi_anat_hemi' ]
-					for collapse_flag in ['median', 'mean']: # ['median', 'mean'] # which aggfunc to use when obtaining an aggregate over rel_pos layer index values for each subject
-						for val_flag in ['median_r2_test', 'median_r2_test_c',]: # ['median_r2_test', 'median_r2_test_c',]
-							for randnetw_flag in ['True']: # ['False', 'True',]
-
-									if randnetw_flag == 'True':
-										if source_model.startswith('Kell2018') or source_model.startswith('ResNet50'):
-											layers_to_exclude = ['input_after_preproc']
-										else:
-											layers_to_exclude = None
-											
-										barplot_best_layer_per_anat_ROI(output_randnetw, meta, source_model=source_model,
-																		target=target,
-																		randnetw=randnetw_flag, collapse_over_val_layer=collapse_flag,
-																		save=PLOTDIR, condition_col=cond_flag, value_of_interest=val_flag,
-																		val_layer='rel_pos',
-																		layers_to_exclude=layers_to_exclude)
-									elif randnetw_flag == 'False':
-										barplot_best_layer_per_anat_ROI(output, meta, source_model=source_model, target=target,
-																		randnetw=randnetw_flag, collapse_over_val_layer=collapse_flag,
-																		save=False, condition_col=cond_flag, value_of_interest=val_flag,
-																		val_layer='rel_pos',
-																		layers_to_exclude=None) # PLOTDIR to save!
-									else:
-										raise ValueError()
+				# for cond_flag in ['roi_label_general']: # ['roi_label_general','roi_anat_hemi' ]
+				# 	for collapse_flag in ['median', 'mean']: # ['median', 'mean'] # which aggfunc to use when obtaining an aggregate over rel_pos layer index values for each subject
+				# 		for val_flag in ['median_r2_test', 'median_r2_test_c',]: # ['median_r2_test', 'median_r2_test_c',]
+				# 			for randnetw_flag in ['True']: # ['False', 'True',]
+				#
+				# 					if randnetw_flag == 'True':
+				# 						if source_model.startswith('Kell2018') or source_model.startswith('ResNet50'):
+				# 							layers_to_exclude = ['input_after_preproc']
+				# 						else:
+				# 							layers_to_exclude = None
+				#
+				# 						barplot_best_layer_per_anat_ROI(output_randnetw, meta, source_model=source_model,
+				# 														target=target,
+				# 														randnetw=randnetw_flag, collapse_over_val_layer=collapse_flag,
+				# 														save=PLOTDIR, condition_col=cond_flag, value_of_interest=val_flag,
+				# 														val_layer='rel_pos',
+				# 														layers_to_exclude=layers_to_exclude)
+				# 					elif randnetw_flag == 'False':
+				# 						barplot_best_layer_per_anat_ROI(output, meta, source_model=source_model, target=target,
+				# 														randnetw=randnetw_flag, collapse_over_val_layer=collapse_flag,
+				# 														save=False, condition_col=cond_flag, value_of_interest=val_flag,
+				# 														val_layer='rel_pos',
+				# 														layers_to_exclude=None) # PLOTDIR to save!
+				# 					else:
+				# 						raise ValueError()
+				print('x')
 				
 				# # # # Barplots of best layer for anatomical ROIs -- TRAINED and PERMUTED NETWORK: dimensionality values! (same func as for neural)
 				# for cond_flag in ['roi_label_general']: # ['roi_label_general','roi_anat_hemi' ]
@@ -435,7 +488,7 @@ if not concat_over_models:
 				# 					else:
 				# 						raise ValueError()
 				#
-									sys.stdout.flush()
+									# sys.stdout.flush()
 				#
 				# # R2 across layers -- automatically adds randnetw if loaded
 				# for roi_flag in roi_flags:
@@ -573,144 +626,7 @@ if not concat_over_models:
 					
 					sys.stdout.flush()
 		
-		
-		
-		
-		
-		######### DIAGNOSTIC ANALYSES ########
-		if run_diag:
-			DIAGDIR.mkdir(exist_ok=True)
-			
-			if target == 'NH2015comp':
-				loop_through_comp_diagnostics(output_folders_paths, DIAGDIR=DIAGDIR, source_model=source_model, target=target, randnetw=randnetw)
-				
-				# Aggregate and plot
-				# Related to visualizing warnings
-				plot_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=target, val_of_interest='warning_constant_mean_PERC',ylim=[0, 50], save=True)
-				plot_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=target, val_of_interest='warning_alphas_upper_PERC', ylim=[0, 50], save=True)
-				
-				# Related to negative r test
-				plot_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=target, val_of_interest='neg_r_test_PERC', ylim=[0, 50],save=True)
-				plot_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=target, val_of_interest='neg_r_test_MEDIAN', ylim=[-10, 0],save=True)
-				
-				# Related to NaNs
-				plot_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=target, val_of_interest='nan_r_prior_zero_PERC', ylim=[0, 50],save=True)
-				plot_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=target, val_of_interest='nan_r2_train_PERC', ylim=[0, 50],save=True)
-			
-				
-				# Comparative, e.g. what was a given value for problematic versus nonproblematic voxels/splits
-				plot_two_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=target,
-									 val_of_interest1='r_prior_zero_constant_warning_mean_MEDIAN',
-									 val_of_interest2='r_prior_zero_no_constant_warning_mean_MEDIAN', ymax=None,save=True)
-				plot_two_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=target,
-									 val_of_interest1='r2_train_constant_warning_mean_MEDIAN',
-									 val_of_interest2='r2_train_no_constant_warning_mean_MEDIAN', ymax=None, save=True)
-				plot_two_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=target,
-									 val_of_interest1='alphas_constant_warning_mean_MEDIAN',
-									 val_of_interest2='alphas_no_constant_warning_mean_MEDIAN', ymax=None, save=True)
-			
-			elif target == 'B2021':
-				loop_through_chunked_diagnostics(output_folders_paths, DIAGDIR=DIAGDIR, source_model=source_model, target=target, randnetw=randnetw)
-				
-				for chunk_i in range(4):
-					plot_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=f'{target}_chunk-{chunk_i}',
-									 val_of_interest='warning_constant_mean_PERC', ylim=[0, 50], save=True)
-					plot_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=f'{target}_chunk-{chunk_i}',
-									 val_of_interest='warning_constant_splits_PERC', ylim=[0, 50], save=True)
-					plot_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=f'{target}_chunk-{chunk_i}',
-									 val_of_interest='warning_alphas_upper_PERC', ylim=[0, 50], save=True)
-					
-					# Related to negative r test
-					plot_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=f'{target}_chunk-{chunk_i}',
-									 val_of_interest='neg_r_test_PERC', ylim=[0, 50], save=True)
-					plot_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=f'{target}_chunk-{chunk_i}',
-									 val_of_interest='neg_r_test_MEDIAN', ylim=[-10, 0], save=True)
-					
-					# Related to NaNs
-					plot_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=f'{target}_chunk-{chunk_i}',
-									 val_of_interest='nan_r_prior_zero_PERC', ylim=[0, 50], save=True)
-					plot_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=f'{target}_chunk-{chunk_i}',
-									 val_of_interest='nan_r2_train_PERC', ylim=[0, 50], save=True)
-					
-					# Related to r2 corrected values exceeding 1
-					plot_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=f'{target}_chunk-{chunk_i}',
-									 val_of_interest='exceed1_r2_test_c_PERC', ylim=[0, 50], save=True)
-					plot_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=f'{target}_chunk-{chunk_i}',
-									 val_of_interest='exceed1_r2_test_c_MAX', ylim=[0, 20], save=True)
-					plot_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=f'{target}_chunk-{chunk_i}',
-									 val_of_interest='exceed1_r2_test_c_MEDIAN', ylim=[0, 10], save=True)
-					
-					# look into voxels where the r2 corrected exceeds 1
-					r2_corrected_exceed1(output, source_model=source_model, target=target, save=DIAGDIR)
-					
-			else:
-				loop_through_diagnostics(output_folders_paths, DIAGDIR=DIAGDIR, source_model=source_model, target=target, randnetw=randnetw)
 
-				# Check CV boundary by using log files
-				problematic_vox = check_alpha_ceiling(output_folders_paths, DIAGDIR=DIAGDIR, source_model=source_model,
-													  target=target, randnetw=randnetw, save=True)
-				# Plot alpha versus reliability
-				reliability_vs_alpharange(df_meta_roi, problematic_vox=problematic_vox, source_model=source_model,
-										  target=target, randnetw=randnetw, save=DIAGDIR)
-
-				# Aggregate and plot
-				# Related to visualizing warnings
-				plot_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=target, val_of_interest='warning_constant_mean_PERC', ylim=[0,50], save=True)
-				plot_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=target, val_of_interest='warning_constant_splits_PERC', ylim=[0,50], save=True)
-				plot_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=target, val_of_interest='warning_alphas_upper_PERC', ylim=[0,50], save=True)
-
-				# Related to negative r test
-				plot_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=target, val_of_interest='neg_r_test_PERC', ylim=[0,50], save=True)
-				plot_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=target, val_of_interest='neg_r_test_MEDIAN', ylim=[-10,0], save=True)
-
-				# Related to NaNs
-				plot_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=target, val_of_interest='nan_r_prior_zero_PERC', ylim=[0,50], save=True)
-				plot_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=target, val_of_interest='nan_r2_train_PERC', ylim=[0,50], save=True)
-
-				# Related to r2 corrected values exceeding 1
-				plot_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=target, val_of_interest='exceed1_r2_test_c_PERC', ylim=[0,50], save=True)
-				plot_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=target, val_of_interest='exceed1_r2_test_c_MAX', ylim=[0,20], save=True)
-				plot_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=target, val_of_interest='exceed1_r2_test_c_MEDIAN', ylim=[0,10], save=True)
-
-
-				# Comparative, e.g. what was a given value for problematic versus nonproblematic voxels/splits
-				plot_two_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=target, val_of_interest1='r_prior_zero_constant_warning_mean_MEDIAN',
-									 val_of_interest2='r_prior_zero_no_constant_warning_mean_MEDIAN', ymax=None, save=True)
-				plot_two_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=target, val_of_interest1='r2_test_c_constant_warning_mean_MEDIAN',
-									 val_of_interest2='r2_test_c_no_constant_warning_mean_MEDIAN', ymax=None, save=True)
-				plot_two_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=target, val_of_interest1='r2_train_constant_warning_mean_MEDIAN',
-									 val_of_interest2='r2_train_no_constant_warning_mean_MEDIAN', ymax=None, save=True)
-				plot_two_diagnostics(DIAGDIR, source_model=source_model, randnetw=randnetw, target=target, val_of_interest1='alphas_constant_warning_mean_MEDIAN',
-									 val_of_interest2='alphas_no_constant_warning_mean_MEDIAN', ymax=None, save=True)
-
-				# look into voxels where the r2 corrected exceeds 1
-				r2_corrected_exceed1(output, source_model=source_model, target=target, save=DIAGDIR)
-
-		
-
-			
-		if do_stats:
-			
-			def null_distribution_ind_vox(num_splits=10, num_it=1000):
-				"""
-				Generate a null distribution for individual voxel predictions, from Kell et al., 2018 methods:
-				
-				
-				"""
-				# Check significance of individual voxel predictions
-				mock_corr_medians = []
-				for it in range(num_it):
-					mock_corrs = []
-					for split in range(num_splits):
-						v1 = np.random.normal(size=82, loc=0, scale=1)
-						v2 = np.random.normal(size=82, loc=0, scale=1)
-						
-						mock_corr = np.corrcoef(v1, v2)[1,0]
-						mock_corrs.append(mock_corr)
-				
-					mock_corr_median = np.median(mock_corrs)
-					mock_corr_medians.append(mock_corr_median)
-		
 	
 			
 			
