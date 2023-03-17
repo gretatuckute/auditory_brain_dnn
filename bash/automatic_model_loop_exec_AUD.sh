@@ -1,22 +1,42 @@
 #!/bin/sh
 model="$1"
+target="$2"
 echo $model
-randnetw="True"
+echo $target
+randnetw="False"
+overwrite=0
+resultdir='/mindhive/mcdermott/u/gretatu/auditory_brain_dnn/results/'
 if [ "$model" = "Kell2018" ]; then
   models="Kell2018word Kell2018speaker Kell2018music Kell2018audioset"
   layers="input_after_preproc relu0 maxpool0 relu1 maxpool1 relu2 relu3 relu4 avgpool relufc final"
 fi
+if [ "$model" = "Kell2018Seed2" ]; then
+  models="Kell2018wordSeed2 Kell2018speakerSeed2 Kell2018musicSeed2 Kell2018audiosetSeed2"
+  layers="input_after_preproc relu0 maxpool0 relu1 maxpool1 relu2 relu3 relu4 avgpool relufc final"
+fi
 if [ "$model" = "ResNet50" ]; then
   models="ResNet50word ResNet50speaker ResNet50audioset ResNet50music"
-  layers="input_after_preproc conv1_relu1 maxpool1 layer1 layer2 layer3 layer4 avgpool final" #fixed in main, should run w music
+  layers="input_after_preproc conv1_relu1 maxpool1 layer1 layer2 layer3 layer4 avgpool final"
+fi
+if [ "$model" = "ResNet50Seed2" ]; then
+  models="ResNet50wordSeed2 ResNet50speakerSeed2 ResNet50audiosetSeed2 ResNet50musicSeed2"
+  layers="input_after_preproc conv1_relu1 maxpool1 layer1 layer2 layer3 layer4 avgpool final"
 fi
 if [ "$model" = "Kell2018multitask" ]; then
   models="Kell2018multitask"
-  layers="input_after_preproc relu0 maxpool0 relu1 maxpool1 relu2 relu3 relu4 avgpool relufc final_word final_speaker final_audioset"
+  layers="input_after_preproc relu0 maxpool0 relu1 maxpool1 relu2 relu3 relu4 avgpool relufc"
+fi
+if [ "$model" = "Kell2018multitaskSeed2" ]; then
+  models="Kell2018multitaskSeed2"
+  layers="input_after_preproc relu0 maxpool0 relu1 maxpool1 relu2 relu3 relu4 avgpool relufc"
 fi
 if [ "$model" = "ResNet50multitask" ]; then
   models="ResNet50multitask"
-  layers="input_after_preproc conv1_relu1 maxpool1 layer1 layer2 layer3 layer4 avgpool final_word final_speaker final_audioset"
+  layers="input_after_preproc conv1_relu1 maxpool1 layer1 layer2 layer3 layer4 avgpool"
+fi
+if [ "$model" = "ResNet50multitaskSeed2" ]; then
+  models="ResNet50multitaskSeed2"
+  layers="input_after_preproc conv1_relu1 maxpool1 layer1 layer2 layer3 layer4 avgpool"
 fi
 if [ "$model" = "Kell2018init" ]; then
   models="Kell2018init"
@@ -70,6 +90,7 @@ fi
 echo "About to run models: $models"
 echo "Layers of interest: $layers"
 echo "Random network: $randnetw"
+echo "Target: $target"
 echo ""
 for model in $models ; do
   echo "____________ Model $model ____________"
@@ -78,11 +99,30 @@ for model in $models ; do
       echo "Layer: $layer"
       for flag in $randnetw ; do
         echo "Random network: $flag"
-        sbatch AUD_cpu.sh $model $layer $flag
+
+        # Check whether the file exists in resultdir/model/identifier/df_output.pkl
+        identifier="AUD-MAPPING-Ridge_TARGET-${target}_SOURCE-${model}-${layer}_RANDNETW-${flag}_ALPHALIMIT-50"
+        file_to_look_for="$resultdir/$model/$identifier/df_output.pkl"
+
+        # If overwrite is set to 1, then we don't care if the file exists or not
+        if [ "$overwrite" = "1" ]; then
+          echo "FILE EXISTS: $file_to_look_for"
+          echo "OVERWRITING ......."
+          sbatch AUD_cpu.sh $model $layer $flag $target
+        else
+          # If overwrite is set to 0, then we only run the script if the file doesn't exist
+          if [ -f "$file_to_look_for" ]; then
+            echo "FILE EXISTS: $file_to_look_for"
+            echo "SKIPPING ......."
+          else
+            echo "FILE DOES NOT EXIST: $file_to_look_for"
+            echo "RUNNING ......."
+            sbatch AUD_cpu.sh $model $layer $flag $target
+          fi
+        fi
       done
   done
 done
-
 
 
 

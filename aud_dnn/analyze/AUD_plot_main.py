@@ -33,8 +33,8 @@ source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell201
 # 				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
 # 				'AST',  'wav2vec', 'VGGish', 'S2T',  'sepformer']
 # source_models = ['wav2vecpower']
-# source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-# 				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',]
+source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
+				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',]
 # source_models = ['AST',  'wav2vec', 'DCASE2020', 'DS2', 'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer']
 
 target = 'B2021'
@@ -247,7 +247,7 @@ if not concat_over_models:
 		
 		#### Paths (source model specific) ####
 		RESULTDIR = (Path(f'{ROOT}/results/AUD/20210915_median_across_splits_correction/{source_model}')).resolve()
-		DIAGDIR = (Path(join(RESULTDIR, f'diagnostics_TARGET-{target}_RANDNETW-{randnetw}_RANDEMB-{randemb}_ALPHALIMIT-{alpha_str}')))
+		DIAGDIR = (Path(join(RESULTDIR, f'diagnostics_TARGET-{target}_RANDNETW-{randnetw}_ALPHALIMIT-{alpha_str}')))
 		PLOTDIR = (Path(f'{ROOT}/results/AUD/20210915_median_across_splits_correction/{source_model}/outputs')).resolve()
 		PLOTDIR.mkdir(exist_ok=True)
 		

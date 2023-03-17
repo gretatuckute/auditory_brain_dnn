@@ -1,7 +1,7 @@
 #!/bin/sh
 model="ResNet50multitask"
 randnetw="False"
-layers="layer3"
+layers="layer1 layer3"
 #layers="input_after_preproc relu0 maxpool0 relu1 maxpool1 relu2 relu3 relu4 avgpool relufc final"
 #layers="input_after_preproc conv1_relu1 maxpool1 layer1 layer2 layer3 layer4 avgpool final"
 #layers="GRU_1 GRU_2 GRU_3 GRU_4 Linear"

@@ -24,7 +24,7 @@ def main(raw_args=None):
                         type=str, help='Name of source DNN model.'
                                        'Name of the DNN model from which activations will be used as regressors.'
                                        'Should match the folder name in the CACHEDIR which contains the DNN model activations.')
-    parser.add_argument('--source_layer', default='layer3',
+    parser.add_argument('--source_layer', default='final_word',
                         type=str, help='The source DNN layer from which activations will be used as regressors.')
     parser.add_argument('--target', default='NH2015',
                         type=str, help='Target, i.e. neural data or component data. '
