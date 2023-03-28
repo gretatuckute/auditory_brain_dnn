@@ -10,12 +10,12 @@ PLOTSURFDIR = Path(f'{ROOT}/results/PLOTS_SURF_across-models/')
 SURFDIR = f'{DATADIR}/fsavg_surf/'
 
 ### Settings for which plots to make ###
-save = False # Whether to save any plots
+save = True # Whether to save any plots
 concat_over_models = True
 
 # If concat_over_models = False, we load each individual model and perform the analysis on that
 if not concat_over_models:
-	pred_across_layers = False # SI 2, predictivity for each model across all layers
+	pred_across_layers = True # SI 2, predictivity for each model across all layers
 	best_layer_cv_nit = True
 
 if concat_over_models:
@@ -44,11 +44,14 @@ source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell201
 # 				'AST',  'wav2vec', 'VGGish', 'S2T',  'sepformer']
 # source_models = ['wav2vecpower']
 source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-				 'Kell2018multitaskSeed2', 'ResNet50multitaskSeed2',]
+				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',]
+
 # source_models = ['AST',  'wav2vec', 'DCASE2020', 'DS2', 'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer']
 # source_models = ['Kell2018multitaskSeed2', 'ResNet50multitaskSeed2']
-
+source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
+				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
+				 'Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
+				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
 target = 'NH2015'
 
 print(f'---------- Target: {target} ----------')
@@ -148,7 +151,7 @@ if concat_over_models:  # assemble plots across models
 											  target=target,
 											  roi=None,
 											  df_meta_roi=df_meta_roi,
-											  save=False,
+											  save=SAVEDIR_CENTRALIZED,
 											  randnetw=randnetw_flag,
 											  aggregation=agg_flag,
 											  value_of_interest=val_flag,

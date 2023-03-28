@@ -2316,12 +2316,14 @@ def barplot_across_models(source_models,
         ax.bar(bar_placement, df_grouped[f'{value_of_interest}_mean'].values,
                yerr=df_grouped[f'{value_of_interest}_yerr'].values,
                width=0.3, color=color_order, zorder=2, alpha=alpha)
-        plt.xticks(bar_placement, model_legend, rotation=80, fontsize=13)
+        # xticks dont really align, fix
+        plt.xticks(bar_placement, model_legend, rotation=80, fontsize=13,
+                   ha='right',rotation_mode='anchor')
         plt.ylim([0, 1])
         plt.ylabel(d_value_of_interest[value_of_interest], fontsize=13)
         plt.yticks(fontsize=13)
         plt.title(title_str)
-        plt.tight_layout(pad=1)
+        plt.tight_layout(pad=2.5)
         if save:
             save_str = f'across-models_roi-{roi}_{target}{d_randnetw[randnetw]}_{aggregation}_{yerr_type}_{value_of_interest}{sort_str}{add_savestr}'
             plt.savefig(join(save, f'{save_str}.png'), dpi=180)
