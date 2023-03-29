@@ -1279,62 +1279,16 @@ def plot_score_across_layers(output,
                      label='Lateral', color=d_roi_colors['Lateral'],)
         plt.errorbar(np.arange(len(layer_reindex)), piv_posterior.mean().values, yerr=yerr_posterior, alpha=alpha, lw=2,
                         label='Posterior', color=d_roi_colors['Posterior'],)
-        plt.xticks(np.arange(len(layer_legend)), layer_legend, rotation=label_rotation)
-        plt.ylabel(d_value_of_interest[value_of_interest])
-        plt.title(title_str)
+        plt.xticks(np.arange(len(layer_legend)), layer_legend, rotation=label_rotation,
+                   fontsize=13, ha='right', rotation_mode='anchor')
+        plt.yticks(fontsize=15)
+        plt.ylabel(d_value_of_interest[value_of_interest], fontsize=15)
+        plt.title(title_str, fontsize=16)
         plt.tight_layout(h_pad=1.2)
         plt.ylim(ylim)
         plt.legend(frameon=False)
         if save:
             print('todo')
-        plt.show()
-
-
-
-
-    elif roi == 'any_roi':
-        # extract voxels that belong to any roi
-        piv_roi, yerr_roi = get_subject_pivot(output, source_model, roi=roi, value_of_interest=value_of_interest)
-        if output_randnetw is not None:
-            piv_randnetw, yerr_randnetw = get_subject_pivot(output=output_randnetw, source_model=source_model, roi=roi,
-                                                            value_of_interest=value_of_interest)
-        
-        title_str = f'{d_model_names[source_model]}, {target}, any ROI voxels'
-        layer_legend = d_layer_legend[source_model]
-
-        fig, ax = plt.subplots(figsize=(7, 5))
-        ax.set_box_aspect(0.6)
-        plt.errorbar(np.arange(len(layer_reindex)), piv_roi.mean().values, yerr=yerr_roi, alpha=alpha, lw=2,
-                     color=d_roi_colors[roi])
-        if output_randnetw is not None:
-            plt.errorbar(np.arange(len(layer_reindex)), piv_randnetw.mean().values, yerr=yerr_randnetw,
-                         alpha=alpha_randnetw, lw=2, color=d_roi_colors[roi],
-                         label='Permuted network')
-        plt.xticks(np.arange(len(layer_legend)), layer_legend, rotation=label_rotation)
-        plt.ylabel(d_value_of_interest[value_of_interest])
-        plt.title(title_str)
-        plt.tight_layout(h_pad=1.2)
-        plt.ylim(ylim)
-        plt.legend(frameon=False)
-        if save:
-            plt.savefig(join(SAVEDIR_CENTRALIZED, f'across-layers_roi-any_{source_model}_{target}_{value_of_interest}.png'), dpi=180)
-            plt.savefig(join(SAVEDIR_CENTRALIZED, f'across-layers_roi-any_{source_model}_{target}_{value_of_interest}.svg'), dpi=180)
-            
-            # save csv
-            piv_save = piv_roi.copy(deep=True)
-            df_yerr = pd.DataFrame([yerr_randnetw], columns=piv_save.columns,
-                                   index=['yerr'])  # append yerr to the pivot table that is plotted
-            piv_save = piv_save.append(df_yerr)
-            piv_save.to_csv(join(save, f'across-layers_roi-any_{source_model}_{target}_{value_of_interest}.csv'))
-            
-            if output_randnetw is not None:
-                # save csv randnetw
-                piv_save = piv_randnetw.copy(deep=True)
-                df_yerr = pd.DataFrame([yerr_randnetw], columns=piv_save.columns,
-                                       index=['yerr'])  # append yerr to the pivot table that is plotted
-                piv_save = piv_save.append(df_yerr)
-                piv_save.to_csv(join(save, f'across-layers_roi-any_{source_model}_randnetw_{target}_{value_of_interest}.csv'))
-        
         plt.show()
     
     else:  # no ROI, all voxels
@@ -1353,29 +1307,36 @@ def plot_score_across_layers(output,
             plt.errorbar(np.arange(len(layer_reindex)), piv_randnetw.mean().values, yerr=yerr_randnetw,
                          alpha=alpha_randnetw, lw=2, color=d_roi_colors['none'],
                          label='Permuted network')
-        plt.xticks(np.arange(len(layer_legend)), layer_legend, rotation=label_rotation)
-        plt.ylabel(d_value_of_interest[value_of_interest])
+        plt.xticks(np.arange(len(layer_legend)), layer_legend, rotation=label_rotation,
+                   fontsize=13, ha='right', rotation_mode='anchor')
+        plt.yticks(fontsize=15)
+        plt.ylabel(d_value_of_interest[value_of_interest], fontsize=15)
         plt.ylim(ylim)
-        plt.title(title_str)
+        plt.title(title_str, fontsize=16)
         plt.tight_layout(h_pad=1.2)
         plt.legend(frameon=False)
         if save:
-            plt.savefig(join(SAVEDIR_CENTRALIZED, f'across-layers_roi-{roi}_{source_model}_{target}_{value_of_interest}.png'), dpi=180)
-            plt.savefig(join(SAVEDIR_CENTRALIZED, f'across-layers_roi-{roi}_{source_model}_{target}_{value_of_interest}.svg'), dpi=180)
-            
+            plt.savefig(
+                join(SAVEDIR_CENTRALIZED, f'across-layers_roi-{roi}_{source_model}_{target}_{value_of_interest}.png'), dpi=180)
+            plt.savefig(
+                join(SAVEDIR_CENTRALIZED, f'across-layers_roi-{roi}_{source_model}_{target}_{value_of_interest}.svg'), dpi=180)
+
             # save csv
             piv_save = piv.copy()
-            df_yerr = pd.DataFrame([yerr], columns=piv_save.columns, index=['yerr'])  # append yerr to the pivot table that is plotted
+            df_yerr = pd.DataFrame([yerr], columns=piv_save.columns,
+                                   index=['yerr'])  # append yerr to the pivot table that is plotted
             piv_save = piv_save.append(df_yerr)
             piv_save.to_csv(join(save, f'across-layers_roi-{roi}_{source_model}_{target}_{value_of_interest}.csv'))
-            
+
             if output_randnetw is not None:
                 # save csv randnetw
                 piv_save = piv_randnetw.copy(deep=True)
-                df_yerr = pd.DataFrame([yerr_randnetw], columns=piv_save.columns, index=['yerr'])  # append yerr to the pivot table that is plotted
+                df_yerr = pd.DataFrame([yerr_randnetw], columns=piv_save.columns,
+                                       index=['yerr'])  # append yerr to the pivot table that is plotted
                 piv_save = piv_save.append(df_yerr)
-                piv_save.to_csv(join(save, f'across-layers_roi-{roi}_{source_model}_randnetw_{target}_{value_of_interest}.csv'))
-        
+                piv_save.to_csv(
+                    join(save, f'across-layers_roi-{roi}_{source_model}_randnetw_{target}_{value_of_interest}.csv'))
+
         plt.show()
 
 def load_score_across_layers_across_models(source_models,
@@ -2320,8 +2281,8 @@ def barplot_across_models(source_models,
         plt.xticks(bar_placement, model_legend, rotation=80, fontsize=13,
                    ha='right',rotation_mode='anchor')
         plt.ylim([0, 1])
-        plt.ylabel(d_value_of_interest[value_of_interest], fontsize=13)
-        plt.yticks(fontsize=13)
+        plt.ylabel(d_value_of_interest[value_of_interest], fontsize=15)
+        plt.yticks(fontsize=15)
         plt.title(title_str)
         plt.tight_layout(pad=2.5)
         if save:

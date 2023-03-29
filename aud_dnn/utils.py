@@ -32,7 +32,6 @@ import xarray as xr
 CURRENT_DIR = Path(__file__).parent.absolute()
 os.chdir(CURRENT_DIR)
 
-from resources import d_randnetw
 
 # Set random seed
 np.random.seed(0)
@@ -164,8 +163,8 @@ class PytorchWrapper:
                 actv_dict = pickle.load(f)
             
             # print min values
-            for k, v in actv_dict.items():
-                print(f'{k}: min: {v.min()}')
+            # for k, v in actv_dict.items():
+                # print(f'{k}: min: {v.min()}')
 
             # for k, v in actv_dict.items():
             #     print(f'{k}: shape: {v.shape}')
@@ -231,9 +230,19 @@ def get_source_features(source_model,
     Returns
         source_features (ndarray): activations of the source layer
     """
+    d_randnetw = {'True': '_randnetw',
+                  'False': ''}
 
     ## External models. Has to be loaded using the PytorchWrapper class.
-    if source_model in ['DCASE2020', 'DS2', 'VGGish', 'AST', 'ZeroSpeech2020', 'wav2vec', 'wav2vecpower', 'sepformer', 'metricGAN', 'S2T']:
+    if source_model in ['AST', 'ASTSL01', 'ASTSL10', 'ASTSL01-from-datadir',
+                        'DCASE2020',
+                        'DS2',
+                        'metricGAN', 'metricGANSL01', 'metricGANSL10',
+                        'sepformer', 'sepformerSL01', 'sepformerSL10',
+                        'S2T',
+                        'VGGish', 'VGGishSL01', 'VGGishSL10', 'VGGishSL100',
+                        'wav2vec', 'wav2vecpower',
+                        'ZeroSpeech2020', ]:
         model = PytorchWrapper(model_identifier=source_model, CACHEDIR=CACHEDIR, randnetw=randnetw)
         source_features = model.compile_activations(ID_order=stimuli_IDs, source_layer_of_interest=source_layer_map[source_model][source_layer])
         source_features = source_features.to_numpy()
@@ -271,7 +280,7 @@ def get_source_features(source_model,
         print(f'Source model {source_model} does not exist yet!')
         raise LookupError()
 
-    print(f'Shape of layer {source_layer}: {np.shape(source_features)} and min value is {np.min(source_features)}')
+    # print(f'Shape of layer {source_layer}: {np.shape(source_features)} and min value is {np.min(source_features)}')
 
     return source_features
 

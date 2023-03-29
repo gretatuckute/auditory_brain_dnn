@@ -52,6 +52,17 @@ source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018a
 				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
 				 'Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
 				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
+source_models = [
+				'AST','ASTSL01', 'ASTSL10',
+				 'VGGish', 'VGGishSL01', 'VGGishSL10',
+				 'sepformer', 'sepformerSL01',
+				 'metricGAN', 'metricGANSL01',
+				'metricGANSL10',
+'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
+				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
+# 	'Kell2018wordSeed2', 'Kell2018speakerSeed2', 'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
+# 	'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2', 'ResNet50multitaskSeed2',
+			]
 target = 'NH2015'
 
 print(f'---------- Target: {target} ----------')
