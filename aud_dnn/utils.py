@@ -163,8 +163,8 @@ class PytorchWrapper:
                 actv_dict = pickle.load(f)
             
             # print min values
-            # for k, v in actv_dict.items():
-                # print(f'{k}: min: {v.min()}')
+            for k, v in actv_dict.items():
+                print(f'{k}: min: {v.min()}')
 
             # for k, v in actv_dict.items():
             #     print(f'{k}: shape: {v.shape}')
@@ -280,7 +280,7 @@ def get_source_features(source_model,
         print(f'Source model {source_model} does not exist yet!')
         raise LookupError()
 
-    # print(f'Shape of layer {source_layer}: {np.shape(source_features)} and min value is {np.min(source_features)}')
+    print(f'Shape of layer {source_layer}: {np.shape(source_features)} and min value is {np.min(source_features)}')
 
     return source_features
 

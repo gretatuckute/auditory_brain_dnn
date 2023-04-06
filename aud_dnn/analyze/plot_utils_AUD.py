@@ -10,7 +10,7 @@ from tqdm import tqdm
 from scipy.io import savemat
 import random
 import datetime
-from plotting_specs import *
+# from plotting_specs import *
 import scipy.io as sio
 from scipy.io import loadmat
 import matplotlib.patches as mpatches
@@ -24,7 +24,7 @@ import statsmodels.stats.descriptivestats as ds
 import sys
 from aud_dnn.resources import *
 now = datetime.datetime.now()
-datetag = now.strftime("%Y%m%d")
+datetag = now.strftime("%Y%m%d-%H%M")
 
 np.random.seed(0)
 random.seed(0)
@@ -38,7 +38,7 @@ else:
     print(f' ------------- Running on openmind as {user} -----------')
     ROOT = f'/mindhive/mcdermott/{user}/'
 
-SAVEDIR_CENTRALIZED = f'{ROOT}/results/PLOTS_across-models/'  # make sure that ind. comp. are named in the title
+SAVEDIR_CENTRALIZED = f'{ROOT}/results/PLOTS_across-models/'
 STATSDIR_CENTRALIZED = f'{ROOT}/results/STATS_across-models/'
 RESULTDIR_ROOT = (Path(f'{ROOT}/results/')).resolve()
 
@@ -249,8 +249,12 @@ def get_vox_by_layer_pivot(output,
      Uses voxel_id as index.
     """
     assert (np.sum(np.isnan(output[val_of_interest].values)) == 0)
+
+    # voxel_id is both index and a column, so we need to reset index to get a column. Copy the output df to avoid changing the original
+    assert (output.index.values == output['voxel_id'].values).all()
+    output2 = output.copy(deep=True).reset_index(drop=True)
     
-    p = output.pivot_table(index='voxel_id', columns='source_layer', values=val_of_interest)
+    p = output2.pivot_table(index='voxel_id', columns='source_layer', values=val_of_interest)
     
     # make sure that columns are available for reindexing:
     l_layer_reindex = [i for i in d_layer_reindex[source_model] if
@@ -627,6 +631,9 @@ def select_r2_test_CV_splits_nit(output_folders_paths,
     df_best_layer_r_values_grouped_across_it['source_model'] = source_model
     df_best_layer_r_values_grouped_across_it['target'] = target
     df_best_layer_r_values_grouped_across_it['randnetw'] = randnetw
+    df_best_layer_r_values_grouped_across_it['datetag'] = datetag
+    df_best_layer_r_values_grouped_across_it['nit'] = nit
+    df_best_layer_r_values_grouped_across_it['method'] = 'regr'
     
     if save:
         if target != 'NH2015comp':
@@ -876,7 +883,7 @@ def get_subject_pivot(output, source_model, roi=None, value_of_interest='median_
     :param source_model: str
     :param roi: None or str
     :param value_of_interest: str
-    :param yerr_type: 'sem' or 'std'
+    :param yerr_type: 'sem' or 'std' (within-subject error bar)
     :return: piv, df, the pivot table with subjects as rows, and layers as columns
             yerr, array of sem/std values, within-subject error bar
     """
@@ -1161,12 +1168,13 @@ def plot_score_across_layers(output,
                              value_of_interest='median_r2_test_c',):
     """
     Plot median variance explained across layers.
+    Default error bar is within-subject SEM.
     
     :param output: pd.DataFrame with columns: ['source_model', 'source_layer', 'target', 'roi', '{value_of_interest}']
     :param output_randnetw: same type of df as output, but for permuted network.
     :param source_model: str
     :param roi: None or str. If str, only plot subsets of ROIs. If None, plot all voxels available.
-        Str options are: "roi_label_general" (anatomical ROIs), "func" (functional ROIs; obs only available for NH2015)
+        Str options are: "roi_label_general" (anatomical ROIs)
     :param ylim: list of 2 elements
     :param save: bool
     :param alpha: float, for plotting
@@ -1179,94 +1187,16 @@ def plot_score_across_layers(output,
     layer_reindex = d_layer_reindex[source_model]
     layer_legend = [d_layer_names[source_model][layer] for layer in layer_reindex]
 
-    if roi == 'func':
-        # extract roi voxels
-        piv_tonotopic, yerr_tonotopic = get_subject_pivot(output=output, source_model=source_model, roi='tonotopic',
-                                                    value_of_interest=value_of_interest)
-        piv_pitch, yerr_pitch = get_subject_pivot(output=output, source_model=source_model, roi='pitch',
-                                                  value_of_interest=value_of_interest)
-        piv_music, yerr_music = get_subject_pivot(output=output, source_model=source_model, roi='music',
-                                                  value_of_interest=value_of_interest)
-        piv_speech, yerr_speech = get_subject_pivot(output=output, source_model=source_model, roi='speech',
-                                                    value_of_interest=value_of_interest)
-
-        if output_randnetw is not None:
-            piv_tonotopic_randnetw, yerr_tonotopic_randnetw = get_subject_pivot(output=output_randnetw, source_model=source_model, roi='tonotopic',
-                                                                        value_of_interest=value_of_interest)
-            piv_pitch_randnetw, yerr_pitch_randnetw = get_subject_pivot(output=output_randnetw, source_model=source_model, roi='pitch',
-                                                                        value_of_interest=value_of_interest)
-            piv_music_randnetw, yerr_music_randnetw = get_subject_pivot(output=output_randnetw, source_model=source_model, roi='music',
-                                                                        value_of_interest=value_of_interest)
-            piv_speech_randnetw, yerr_speech_randnetw = get_subject_pivot(output=output_randnetw, source_model=source_model, roi='speech',
-                                                                          value_of_interest=value_of_interest)
-
-        title_str = f'{d_model_names[source_model]}, {target}, ROIs: {roi}'
-
-        fig, ax = plt.subplots(figsize=(7, 5))
-        ax.set_box_aspect(0.6)
-        plt.errorbar(np.arange(len(layer_reindex)), piv_tonotopic.mean().values, yerr=yerr_tonotopic, alpha=alpha, lw=2,
-                     label='Tonotopic', color=d_roi_colors['tonotopic'],)
-        plt.errorbar(np.arange(len(layer_reindex)), piv_pitch.mean().values, yerr=yerr_pitch, alpha=alpha, lw=2,
-                     label='Pitch', color=d_roi_colors['pitch'],)
-        plt.errorbar(np.arange(len(layer_reindex)), piv_music.mean().values, yerr=yerr_music, alpha=alpha, lw=2,
-                     label='Music', color=d_roi_colors['music'],)
-        plt.errorbar(np.arange(len(layer_reindex)), piv_speech.mean().values, yerr=yerr_speech, alpha=alpha, lw=2,
-                     label='Speech', color=d_roi_colors['speech'],)
-        
-        if output_randnetw is not None:
-            plt.errorbar(np.arange(len(layer_reindex)), piv_tonotopic_randnetw.mean().values,
-                         yerr=yerr_tonotopic_randnetw, alpha=alpha_randnetw, lw=2, color=d_roi_colors['tonotopic'], )
-            plt.errorbar(np.arange(len(layer_reindex)), piv_pitch_randnetw.mean().values, yerr=yerr_pitch_randnetw,
-                         alpha=alpha_randnetw, lw=2, color=d_roi_colors['pitch'], )
-            plt.errorbar(np.arange(len(layer_reindex)), piv_music_randnetw.mean().values, yerr=yerr_music_randnetw,
-                         alpha=alpha_randnetw, lw=2, color=d_roi_colors['music'], )
-            plt.errorbar(np.arange(len(layer_reindex)), piv_speech_randnetw.mean().values, yerr=yerr_speech_randnetw,
-                         alpha=alpha_randnetw, lw=2, color=d_roi_colors['speech'], )
-        
-        plt.xticks(np.arange(len(layer_legend)), layer_legend, rotation=label_rotation)
-        plt.ylabel(d_value_of_interest[value_of_interest])
-        plt.title(title_str)
-        plt.tight_layout(h_pad=1.2)
-        plt.ylim(ylim)
-        plt.legend(frameon=False)
-        if save:
-            plt.savefig(join(SAVEDIR_CENTRALIZED, f'across-layers_roi-{roi}_{source_model}_{target}_{value_of_interest}.png'), dpi=180)
-            plt.savefig(join(SAVEDIR_CENTRALIZED, f'across-layers_roi-{roi}_{source_model}_{target}_{value_of_interest}.svg'), dpi=180)
-            
-            # compile csv with all pivot tables
-            piv_lst = []
-            for idx, p in enumerate([piv_tonotopic, piv_pitch, piv_music, piv_speech]):
-                # Append yerr to the pivot table that is plotted
-                piv_save = p.copy(deep=True)
-
-            pd.concat(piv_lst).to_csv(join(save, f'across-layers_roi-{roi}-{selected_rois}_{source_model}_{target}_{value_of_interest}.csv'))
-            
-            if output_randnetw is not None:
-                # compile csv for randnetw
-                piv_lst_randnetw = []
-                for idx, p in enumerate(store_lst_randnetw):
-                    # append yerr to the pivot table that is plotted
-                    piv_save = p[0].copy(deep=True)
-                    df_yerr = pd.DataFrame([p[1]], columns=piv_save.columns,
-                                           index=['yerr'])  # append yerr to the pivot table that is plotted
-                    piv_save = piv_save.append(df_yerr)
-                    piv_save['roi'] = selected_rois[idx]
-                    piv_lst_randnetw.append(piv_save)
-                pd.concat(piv_lst_randnetw).to_csv(
-                    join(save, f'across-layers_{roi}-{selected_rois}_{source_model}_randnetw_{target}_{value_of_interest}.csv'))
-        
-        plt.show()
-
-    elif roi == 'roi_label_general': # Primary, Anterior, Lateral, Posterior
+    if roi == 'roi_label_general': # Primary, Anterior, Lateral, Posterior
         # extract roi voxels
         piv_primary, yerr_primary = get_subject_pivot(output=output, source_model=source_model,
-                                                      roi='Primary', value_of_interest=value_of_interest)
+                                                      roi='Primary', value_of_interest=value_of_interest, yerr_type='sem')
         piv_anterior, yerr_anterior = get_subject_pivot(output=output, source_model=source_model,
-                                                        roi='Anterior', value_of_interest=value_of_interest)
+                                                        roi='Anterior', value_of_interest=value_of_interest, yerr_type='sem')
         piv_lateral, yerr_lateral = get_subject_pivot(output=output, source_model=source_model,
-                                                        roi='Lateral', value_of_interest=value_of_interest)
+                                                        roi='Lateral', value_of_interest=value_of_interest, yerr_type='sem')
         piv_posterior, yerr_posterior = get_subject_pivot(output=output, source_model=source_model,
-                                                        roi='Posterior', value_of_interest=value_of_interest)
+                                                        roi='Posterior', value_of_interest=value_of_interest, yerr_type='sem')
 
         title_str = f'{d_model_names[source_model]}, {target}, {roi}'
         fig, ax = plt.subplots(figsize=(7, 5))
@@ -1280,22 +1210,38 @@ def plot_score_across_layers(output,
         plt.errorbar(np.arange(len(layer_reindex)), piv_posterior.mean().values, yerr=yerr_posterior, alpha=alpha, lw=2,
                         label='Posterior', color=d_roi_colors['Posterior'],)
         plt.xticks(np.arange(len(layer_legend)), layer_legend, rotation=label_rotation,
-                   fontsize=13, ha='right', rotation_mode='anchor')
-        plt.yticks(fontsize=15)
-        plt.ylabel(d_value_of_interest[value_of_interest], fontsize=15)
+                   fontsize=14, ha='right', rotation_mode='anchor')
+        plt.yticks(fontsize=16)
+        plt.ylabel(d_value_of_interest[value_of_interest], fontsize=16)
         plt.title(title_str, fontsize=16)
         plt.tight_layout(h_pad=1.2)
         plt.ylim(ylim)
         plt.legend(frameon=False)
         if save:
-            print('todo')
+            plt.savefig(
+                join(SAVEDIR_CENTRALIZED, f'across-layers_roi-{roi}_{source_model}_{target}_{value_of_interest}.svg'),
+                dpi=180)
+
+            # save csv for each pivot
+            # Iterate over the piv dfs and yerrs
+            lst_pivs = [piv_primary, piv_anterior, piv_lateral, piv_posterior]
+            lst_yerrs = [yerr_primary, yerr_anterior, yerr_lateral, yerr_posterior]
+            lst_roi_labels = ['Primary', 'Anterior', 'Lateral', 'Posterior']
+            for piv, yerr, roi_label in zip(lst_pivs, lst_yerrs, lst_roi_labels):
+                piv_save = piv.copy(deep=True) # copy the pivot table # rename columns to include roi label
+                df_yerr = pd.DataFrame([yerr], columns=piv_save.columns, index=['yerr'])  # append yerr to the pivot table that is plotted
+                piv_save = piv_save.append(df_yerr)
+
+                piv_save.to_csv(join(SAVEDIR_CENTRALIZED, f'across-layers_roi-{roi_label}_{source_model}_{target}_{value_of_interest}.csv'))
+
         plt.show()
     
     else:  # no ROI, all voxels
-        piv, yerr = get_subject_pivot(output, source_model, roi=roi, value_of_interest=value_of_interest)
+        piv, yerr = get_subject_pivot(output=output, source_model=source_model, roi=roi,
+                                      value_of_interest=value_of_interest, yerr_type='sem')
         if output_randnetw is not None:
             piv_randnetw, yerr_randnetw = get_subject_pivot(output=output_randnetw, source_model=source_model, roi=roi,
-                                                            value_of_interest=value_of_interest)
+                                                            value_of_interest=value_of_interest, yerr_type='sem')
         # Plot specs
         title_str = f'{d_model_names[source_model]}, {target}, all voxels'
 
@@ -1308,31 +1254,27 @@ def plot_score_across_layers(output,
                          alpha=alpha_randnetw, lw=2, color=d_roi_colors['none'],
                          label='Permuted network')
         plt.xticks(np.arange(len(layer_legend)), layer_legend, rotation=label_rotation,
-                   fontsize=13, ha='right', rotation_mode='anchor')
-        plt.yticks(fontsize=15)
-        plt.ylabel(d_value_of_interest[value_of_interest], fontsize=15)
+                   fontsize=14, ha='right', rotation_mode='anchor')
+        plt.yticks(fontsize=16)
+        plt.ylabel(d_value_of_interest[value_of_interest], fontsize=16)
         plt.ylim(ylim)
         plt.title(title_str, fontsize=16)
         plt.tight_layout(h_pad=1.2)
         plt.legend(frameon=False)
         if save:
             plt.savefig(
-                join(SAVEDIR_CENTRALIZED, f'across-layers_roi-{roi}_{source_model}_{target}_{value_of_interest}.png'), dpi=180)
-            plt.savefig(
                 join(SAVEDIR_CENTRALIZED, f'across-layers_roi-{roi}_{source_model}_{target}_{value_of_interest}.svg'), dpi=180)
 
             # save csv
-            piv_save = piv.copy()
-            df_yerr = pd.DataFrame([yerr], columns=piv_save.columns,
-                                   index=['yerr'])  # append yerr to the pivot table that is plotted
+            piv_save = piv.copy(deep=True)
+            df_yerr = pd.DataFrame([yerr], columns=piv_save.columns, index=['yerr'])  # append yerr to the pivot table that is plotted
             piv_save = piv_save.append(df_yerr)
             piv_save.to_csv(join(save, f'across-layers_roi-{roi}_{source_model}_{target}_{value_of_interest}.csv'))
 
             if output_randnetw is not None:
                 # save csv randnetw
                 piv_save = piv_randnetw.copy(deep=True)
-                df_yerr = pd.DataFrame([yerr_randnetw], columns=piv_save.columns,
-                                       index=['yerr'])  # append yerr to the pivot table that is plotted
+                df_yerr = pd.DataFrame([yerr_randnetw], columns=piv_save.columns, index=['yerr'])
                 piv_save = piv_save.append(df_yerr)
                 piv_save.to_csv(
                     join(save, f'across-layers_roi-{roi}_{source_model}_randnetw_{target}_{value_of_interest}.csv'))
@@ -2294,12 +2236,19 @@ def barplot_across_models(source_models,
             df_grouped_w_spectemp.to_csv(join(save, f'{save_str}.csv'))
         fig.show()
 
-def scatter_anat_roi_across_models(source_models, target, randnetw='False', save=True, annotate=False,
-                                   condition_col='roi_label_general', collapse_over_val_layer='median',
+def scatter_anat_roi_across_models(source_models,
+                                   target,
+                                   randnetw='False',
+                                   save=True,
+                                   annotate=False,
+                                   condition_col='roi_label_general',
+                                   collapse_over_val_layer='median',
                                    primary_rois=['Primary'],
                                    non_primary_rois=['Anterior'],
-                                   yerr_type='within_subject_sem', save_str='',
-                                   value_of_interest='median_r2_test_c', layer_value_of_interest='rel_pos',
+                                   yerr_type='within_subject_sem',
+                                   save_str='',
+                                   value_of_interest='median_r2_test_c',
+                                   layer_value_of_interest='rel_pos',
                                    layers_to_exclude=None,
                                    stats=True,
                                    alpha=1):
@@ -2325,7 +2274,6 @@ def scatter_anat_roi_across_models(source_models, target, randnetw='False', save
 
     :return: plot
 
-
     """
     if layers_to_exclude:
         layers_exclusion_savestr = f'_layer-exclude-{"-".join(layers_to_exclude)}' # suffix with this
@@ -2338,13 +2286,16 @@ def scatter_anat_roi_across_models(source_models, target, randnetw='False', save
     
     for source_model in source_models:
         if source_model.startswith('Kell2018') or source_model.startswith('ResNet50'):
-            if layers_to_exclude: # todo, make this nicer..
+            if layers_to_exclude:
                 layer_exlusion_str = '-'.join(layers_to_exclude)
+            else:
+                layer_exlusion_str = 'None'
         else:
             layer_exlusion_str = 'None'
                 
         df = pd.read_csv(
-            join(RESULTDIR_ROOT, source_model, 'outputs',
+            join(RESULTDIR_ROOT,
+                 source_model, 'outputs',
                  f'best-layer_barplot_{condition_col}_'
                  f'{source_model}{d_randnetw[randnetw]}_'
                  f'{target}_{yerr_type}_'
@@ -3611,7 +3562,7 @@ def barplot_best_layer_per_anat_ROI(output,
     :param condition_col: string, column in meta df that contains the condition of interest (i.e. the ROI labels)
     :param collapse_over_val_layer: string, metric to use to collapse across conditions. 'median' is the median across conditions,
             which is the default -- hence, the median across layers positions for each voxel, within each ROI, is obtained.
-    :param layers_to_exclude: list of strings, layers to exclude from the analysis.
+    :param layers_to_exclude: list of strings, layers to exclude from the analysis (default is None!)
     
 
     :return: plot
@@ -3632,11 +3583,12 @@ def barplot_best_layer_per_anat_ROI(output,
         print(f'Column {value_of_interest} does not exist in the output df')
         return
     
-    output2 = output.loc[output['randemb'] == 'False']
+    output2 = output.copy(deep=True)
     source_model_check = output2['source_model'].unique()
     assert (len(source_model_check) == 1)
     
-    p = get_vox_by_layer_pivot(output2, source_model, val_of_interest=value_of_interest)
+    p = get_vox_by_layer_pivot(output=output2, source_model=source_model,
+                               val_of_interest=value_of_interest)
     
     ### Exclude layers from the analysis if layers_to_exclude is not None
     if layers_to_exclude is not None:
@@ -3650,38 +3602,8 @@ def barplot_best_layer_per_anat_ROI(output,
                                                      layers_to_exclude=layers_to_exclude,)
     meta_indexed = meta.set_index('voxel_id', inplace=False)
     
-    ###########################################################################
-    # ADD IN THE DIMENSIONALITY VALUES IN idxmax_layer
-    if val_layer.startswith('dim'):
-        # First, load the csv file
-        df_dim = pd.read_csv(join(SAVEDIR_CENTRALIZED,
-                                  f'dim_vs_{target}_across_models-n=19_roi-None_{value_of_interest}_'
-                                  f'20220728.csv'))
-        print(f'Analyzing dim values for {val_layer} using the file: {SAVEDIR_CENTRALIZED}/'
-              f'dim_vs_{target}_across_models-n=19_roi-None_{value_of_interest}_20220728.csv')
-    
-        # Get the correct source model
-        df_dim = df_dim[df_dim['source_model'] == source_model]
-    
-        # For the column layer_pos in idxmax_layer (holds string name of the best layer for that voxel), we want to add a column
-        # which takes the value of the dim value for that layer.
-    
-        # If randnetw is False, then we want to check whether we are obtaining the dim value (val_layer) for the trained network,
-        # which does NOT have randnetw in the name
-        if val_layer.startswith('dim_') and randnetw == 'False':
-            assert ('randnetw' not in val_layer)
-            print(f'val_layer: {val_layer} and randnetw: {randnetw}')
-        if val_layer.startswith('dim_') and randnetw == 'True':
-            assert ('randnetw' in val_layer)
-            print(f'val_layer: {val_layer} and randnetw: {randnetw}')
-    
-        idxmax_layer[f'{val_layer}'] = [df_dim.loc[df_dim.source_layer == x][val_layer].values[0] for x in
-                                        idxmax_layer['layer_pos']]
-    
-    ##############################################################################
-    
     # Count how many ties exist (tie_bool) in the condition col
-    meta_indexed[condition_col] = meta_indexed[condition_col].fillna(0, inplace=False)
+    meta_indexed[condition_col] = meta_indexed[condition_col].fillna(0, inplace=False) # We have strings and NaNs, so fill NaNs with 0
     idxmax_in_cond_col = idxmax_layer.loc[meta_indexed.query(f'{condition_col} != 0').index]
     print(f'Percent of ties in {condition_col}: {(idxmax_in_cond_col.tie_bool.sum() / idxmax_in_cond_col.shape[0]) * 100:.3}%')
     
@@ -3704,7 +3626,7 @@ def barplot_best_layer_per_anat_ROI(output,
     # Assert that plotted results have no nans
     assert(p_plot.isna().sum().sum() == 0)
     
-    color_order = [d_roi_anat_colors[x] for x in p_plot.columns]
+    color_order = [d_roi_colors[x] for x in p_plot.columns]
 
     fig, ax = plt.subplots(figsize=(4, 5))
     plt.title(f'{source_model}{d_randnetw[randnetw]}\n{target}', size='medium')
@@ -3713,7 +3635,6 @@ def barplot_best_layer_per_anat_ROI(output,
            yerr=yerr,
            width=0.3, color=color_order, alpha=0.8)
     plt.xticks(bar_placement, p_plot.columns, rotation=label_rotation)
-    # plt.ylabel('Relative layer position')
     plt.ylabel(d_value_of_interest[val_layer])
     plt.tight_layout()
     if save:
@@ -3728,8 +3649,7 @@ def barplot_best_layer_per_anat_ROI(output,
                    f'{val_layer}-{collapse_over_val_layer}_' \
                    f'{value_of_interest}_' \
                    f'layer-exclude-{layer_exlusion_str}'
-        plt.savefig(join(save, f'{save_str}.png'))
-        plt.savefig(join(SAVEDIR_CENTRALIZED, f'{save_str}.png'))
+        plt.savefig(join(save, f'{save_str}.svg'))
         plt.savefig(join(SAVEDIR_CENTRALIZED, f'{save_str}.svg'))
 
         # compile csv
@@ -3738,6 +3658,14 @@ def barplot_best_layer_per_anat_ROI(output,
                                index=['yerr'])  # append yerr to the pivot table that is plotted
         p_plot_save = p_plot_save.append(df_yerr)
         p_plot_save.to_csv(join(save, f'{save_str}.csv'))
+
+        # Also store the df_plot
+        df_plot['datetag'] = datetag
+        df_plot['value_of_interest'] = value_of_interest
+        df_plot['val_layer'] = val_layer
+
+        df_plot.to_csv(join(save, f'{save_str}_df-plot.csv'))
+
     plt.show()
 
 

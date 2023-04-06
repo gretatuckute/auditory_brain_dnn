@@ -10,23 +10,24 @@ PLOTSURFDIR = Path(f'{ROOT}/results/PLOTS_SURF_across-models/')
 SURFDIR = f'{DATADIR}/fsavg_surf/'
 
 ### Settings for which plots to make ###
-save = True # Whether to save any plots
+save = False # Whether to save any plots
 concat_over_models = True
 
 # If concat_over_models = False, we load each individual model and perform the analysis on that
 if not concat_over_models:
-	pred_across_layers = True # SI 2, predictivity for each model across all layers
-	best_layer_cv_nit = True
+	pred_across_layers = True # SI 2; predictivity for each model across all layers
+	best_layer_cv_nit = True # Basis for Figure 2; obtain best layer for each voxel based on independent CV splits across 10 iterations
+	best_layer_anat_ROI = True # Basis for Figure 7;
 
-if concat_over_models:
-	print('todo')
-
-run_agg = True
-
-
+# deal w these
 run_surf = False
 merge_surface_targets = False
 
+
+if concat_over_models:
+	plot_barplot_across_models = False # Figure 2; barplot of performance across models
+	stats_barplot_across_models = False # Figure 2; stats for barplot of performance across models
+	plot_anat_roi_scatter = True # Figure 7; scatter of performance across models for anatomical ROIs
 
 
 
@@ -37,32 +38,29 @@ if user != 'gt':
 
 source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
 				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-				'AST',  'wav2vec', 'DCASE2020', 'DS2', 'VGGish',  'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer',
-				 'spectemp']
+				'AST',  'wav2vec', 'DCASE2020', 'DS2',   'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer',
+				 ] # 'spectemp' # 'VGGish' was missign rand! 'VGGish',
 # source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
 # 				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
 # 				'AST',  'wav2vec', 'VGGish', 'S2T',  'sepformer']
-# source_models = ['wav2vecpower']
-source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',]
+# source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
+# 				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',]
+# source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
+# 				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
+# 				 'Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
+# 				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
+# source_models = [
+# 				'AST','ASTSL01', 'ASTSL10',
+# 				 'VGGish', 'VGGishSL01', 'VGGishSL10',
+# 				 'sepformer', 'sepformerSL01',
+# 				 'metricGAN', 'metricGANSL01',
+# 				'metricGANSL10',
+# 'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
+# 				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
+# # 	'Kell2018wordSeed2', 'Kell2018speakerSeed2', 'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
+# # 	'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2', 'ResNet50multitaskSeed2',
+# 			]
 
-# source_models = ['AST',  'wav2vec', 'DCASE2020', 'DS2', 'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer']
-# source_models = ['Kell2018multitaskSeed2', 'ResNet50multitaskSeed2']
-source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-				 'Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
-				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
-source_models = [
-				'AST','ASTSL01', 'ASTSL10',
-				 'VGGish', 'VGGishSL01', 'VGGishSL10',
-				 'sepformer', 'sepformerSL01',
-				 'metricGAN', 'metricGANSL01',
-				'metricGANSL10',
-'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-# 	'Kell2018wordSeed2', 'Kell2018speakerSeed2', 'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
-# 	'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2', 'ResNet50multitaskSeed2',
-			]
 target = 'NH2015'
 
 print(f'---------- Target: {target} ----------')
@@ -144,7 +142,7 @@ if concat_over_models:  # assemble plots across models
 												randnetw=randnetw_flag, save=SAVEDIR_CENTRALIZED, add_savestr=savestr)
 	
 	elif target == 'NH2015-B2021':
-		# DETERMINE COLOR SCALE FOR SURFACE MAPS (also copied over to target = NH2015-B2021, but leaving here for now)
+		# DETERMINE COLOR SCALE FOR SURFACE MAPS
 		# if len(source_models) == 19: # All
 		# 	for randnetw_flag in ['False', 'True']:
 		# 		determine_surf_layer_colorscale(target='NH2015-B2021', source_models=source_models, randnetw=randnetw_flag,
@@ -153,97 +151,63 @@ if concat_over_models:  # assemble plots across models
 
 	
 	elif target in ['NH2015', 'B2021']: # neural data, either Nh2015 or B2021
-		# BARPLOTS ACROSS MODELS
-		for sort_flag in ['performance']:
-			for val_flag in ['median_r2_test_c', ]: # 'median_r2_test_c', 'median_r2_test'
-				for agg_flag in ['CV-splits-nit-10']: #'CV-splits-nit-10', 'best_voxelwise', 'LOSO'
-					for randnetw_flag in ['False']: # 'False', 'True'
-						barplot_across_models(source_models=source_models,
-											  target=target,
-											  roi=None,
-											  df_meta_roi=df_meta_roi,
-											  save=SAVEDIR_CENTRALIZED,
-											  randnetw=randnetw_flag,
-											  aggregation=agg_flag,
-											  value_of_interest=val_flag,
-											  sort_by=sort_flag,
-											  add_savestr=f'_{datetag}')
-		#
-		# # STATS FOR BARPLOTS ACROSS MODELS (bootstrap across subjects)
-		# for val_flag in ['median_r2_test_c', 'median_r2_test']:
-		# 	for randnetw_flag in ['False','True']:
-		# 		compare_models_subject_bootstrap(source_models=source_models, target=target, df_meta_roi=df_meta_roi,
-		# 										 save=True, value_of_interest=val_flag,
-		# 							  save_str='all-models_subject-bootstrap',
-		# 							  models1=[ 'ResNet50multitask',],
-		# 							  models2=['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-		# 		 							'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-		# 										],
-		# 							  aggregation='CV-splits-nit-10',
-		# 							  randnetw=randnetw_flag, )
-		
-		# STATS FOR BARPLOTS ACROSS MODELS (if using iteration splits AND subjects)
-		# compare_CV_splits_nit(source_models=source_models, target=target, save=True, value_of_interest='median_r2_test_c',
-		# 					  save_str='inhouse-models_CochCNN9-bootstrapTEST',
-		# 					  models1=['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-		# 		 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-		# 		'AST',  'wav2vec', 'DCASE2020', 'DS2', 'VGGish',  'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer'],
-		# 					  models2=['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-		# 		 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-		# 		'AST',  'wav2vec', 'DCASE2020', 'DS2', 'VGGish',  'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer'],
-		# 					  aggregation='CV-splits-nit-10',
-		# 					  randnetw='False', )
-		# #
-		# # # ANATOMICAL SCATTER PLOTS
-		save_str = '_good-models'
-		for val_flag in ['median_r2_test_c', 'median_r2_test']: # 'median_r2_test_c', 'median_r2_test'
-			for non_primary_flag in ['Anterior', 'Lateral', 'Posterior']:
-				for cond_flag in ['roi_label_general']:
-					for collapse_flag in ['median', 'mean']: # 'median', 'mean'
-						for randnetw_flag in ['True']: # 'True', 'False'
-							scatter_anat_roi_across_models(source_models, target=target, save=SAVEDIR_CENTRALIZED, randnetw=randnetw_flag,
-														   condition_col=cond_flag, collapse_over_val_layer=collapse_flag,
-														   primary_rois=['Primary'],
-														   non_primary_rois=[non_primary_flag], annotate=False, save_str=save_str,
-														   value_of_interest=val_flag,
-														   layers_to_exclude=['input_after_preproc'])
-	
-		# # ANATOMICAL SCATTER PLOTS: dim analyses
-		# save_str = '_inhouse-models_dim'
-		# for val_flag in ['median_r2_test_c']:
-		# 	for non_primary_flag in ['Anterior', 'Lateral', 'Posterior']:
-		# 		for cond_flag in ['roi_label_general']:
-		# 			for collapse_flag in ['median',]:
-		#
-		# 				# TRAINED NETWORK
-		# 				scatter_anat_roi_across_models(source_models, target=target, save=SAVEDIR_CENTRALIZED, randnetw='False',
-		# 											   condition_col=cond_flag, collapse_over_val_layer=collapse_flag,
-		# 											   primary_rois=['Primary'],
-		# 											   non_primary_rois=[non_primary_flag], annotate=False, save_str=save_str,
-		# 											   value_of_interest=val_flag, layer_value_of_interest='dim_demean-True')
-		#
-		# 				# RANDOM NETWORK
-		# 				scatter_anat_roi_across_models(source_models, target=target, save=SAVEDIR_CENTRALIZED, randnetw='True',
-		# 											   condition_col=cond_flag, collapse_over_val_layer=collapse_flag,
-		# 											   primary_rois=['Primary'],
-		# 											   non_primary_rois=[non_primary_flag], annotate=False,
-		# 											   save_str=save_str,
-		# 											   value_of_interest=val_flag,
-		# 											   layer_value_of_interest='dim_randnetw_demean-True')
-					
-	
-	
+
+		# BARPLOTS ACROSS MODELS #
+		if plot_barplot_across_models:
+			for sort_flag in ['performance']:
+				for val_flag in ['median_r2_test_c', ]:
+					for agg_flag in ['CV-splits-nit-10']:
+						for randnetw_flag in ['False']: # 'False', 'True'
+							barplot_across_models(source_models=source_models,
+												  target=target,
+												  roi=None,
+												  df_meta_roi=df_meta_roi,
+												  save=SAVEDIR_CENTRALIZED,
+												  randnetw=randnetw_flag,
+												  aggregation=agg_flag,
+												  value_of_interest=val_flag,
+												  sort_by=sort_flag,
+												  add_savestr=f'_{datetag}')
+
+		# STATS FOR BARPLOTS ACROSS MODELS (bootstrap across subjects)
+		if stats_barplot_across_models:
+			for val_flag in ['median_r2_test_c',]:
+				for randnetw_flag in ['False','True']:
+					compare_models_subject_bootstrap(source_models=source_models, target=target, df_meta_roi=df_meta_roi,
+													 save=True, value_of_interest=val_flag,
+										  save_str='all-models_subject-bootstrap',
+										  models1=[ 'ResNet50multitask',],
+										  models2=['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
+												'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',],
+										  aggregation='CV-splits-nit-10',
+										  randnetw=randnetw_flag, )
+
+		# ANATOMICAL SCATTER PLOTS
+		if plot_anat_roi_scatter:
+			save_str = '_good-models'
+			for val_flag in ['median_r2_test_c']:
+				for non_primary_flag in ['Anterior', 'Lateral', 'Posterior']:
+					for cond_flag in ['roi_label_general']:
+						for collapse_flag in ['median']: # How we collapsed over the relative position value for each subject (median is the default)
+							for randnetw_flag in ['False']: # 'True', 'False'
+								scatter_anat_roi_across_models(source_models=source_models,
+															   target=target,
+															   save=SAVEDIR_CENTRALIZED,
+															   randnetw=randnetw_flag,
+															   condition_col=cond_flag,
+															   collapse_over_val_layer=collapse_flag,
+															   primary_rois=['Primary'],
+															   non_primary_rois=[non_primary_flag],
+															   annotate=False,
+															   save_str=save_str,
+															   value_of_interest=val_flag)
+
 		
 		## LOAD SCORE ACROSS LAYERS (FOR DIMENSIONALITY ANALYSIS -- migrated to DIM_plot_main)
 		# load_score_across_layers_across_models(source_models=source_models,
 		# 									   RESULTDIR_ROOT=RESULTDIR_ROOT,)
 					
-		# DETERMINE COLOR SCALE FOR SURFACE MAPS (also copied over to target = NH2015-B2021, but leaving here for now)
-		# if len(source_models) == 19: # All
-		# 	for randnetw_flag in ['False', 'True']:
-		# 		determine_surf_layer_colorscale(target='NH2015-B2021', source_models=source_models, randnetw=randnetw_flag,
-		# 										save=PLOTSURFDIR)
-		#
+
 		# # Create median surface across models
 		# if len(source_models) == 15: # good models!
 		# 	for val_flag in ['median_r2_test_c', 'median_r2_test']:
@@ -309,7 +273,7 @@ if not concat_over_models:
 		output['mean_r2_test_c'] = output['mean_r2_test_c'].clip(upper=1)
 
 		# Permuted network (does not exist for spectemp or init models)
-		if source_model.endswith('init') or source_model == 'spectemp' or source_model in source_models: # FOR NOW, LETS NOT PLOT RANDNETW
+		if source_model.endswith('init') or source_model == 'spectemp': #or source_model in source_models: # FOR NOW, LETS NOT PLOT RANDNETW
 			output_randnetw = None
 			output_folders_paths_randnetw = []
 		else:
@@ -354,7 +318,7 @@ if not concat_over_models:
 										 value_of_interest='median_r2_test_c',)
 				sys.stdout.flush()
 
-			######### FIND BEST LAYER USING INDEPENDENT CV SPLITS (USED IN PAPER) ########
+			######### FIND BEST LAYER USING INDEPENDENT CV SPLITS (BASIS FOR FIGURE 2) ########
 			if best_layer_cv_nit:
 
 				# Best layer based on CV splits -- TRAINED and PERMUTED NETWORK
@@ -381,6 +345,34 @@ if not concat_over_models:
 							else:
 								raise ValueError()
 						sys.stdout.flush()
+
+			######### OBTAIN BEST LAYER PER ANATOMICAL ROI (BASIS FOR FIGURE 7) ########
+			if best_layer_anat_ROI:
+				# Barplots of best layer for anatomical ROIs -- TRAINED and PERMUTED NETWORK
+				for cond_flag in ['roi_label_general']:  # ['roi_label_general','roi_anat_hemi' ]
+					for collapse_flag in ['median']:  # ['median', 'mean'] # which aggfunc to use when obtaining an aggregate over rel_pos layer index values for each subject.
+						# For the paper, we take the median over rel_pos (relative position) layer index values for each subject. Then, we take the mean over subjects.
+						for val_flag in ['median_r2_test_c', ]:  # ['median_r2_test', 'median_r2_test_c',]
+							for randnetw_flag in ['False', 'True']:  # ['False', 'True',]
+
+								if randnetw_flag == 'True':
+
+									barplot_best_layer_per_anat_ROI(output_randnetw, meta, source_model=source_model,
+																	target=target,
+																	randnetw=randnetw_flag,
+																	collapse_over_val_layer=collapse_flag,
+																	save=PLOTDIR, condition_col=cond_flag,
+																	value_of_interest=val_flag,
+																	val_layer='rel_pos')
+								elif randnetw_flag == 'False':
+									barplot_best_layer_per_anat_ROI(output, meta, source_model=source_model, target=target,
+																	randnetw=randnetw_flag,
+																	collapse_over_val_layer=collapse_flag,
+																	save=PLOTDIR, condition_col=cond_flag,
+																	value_of_interest=val_flag,
+																	val_layer='rel_pos', )
+								else:
+									raise ValueError()
 
 
 			elif target == 'NH2015comp':  # components
@@ -418,108 +410,10 @@ if not concat_over_models:
 				# 	select_r2_test_CV_splits_train_test(source_model=source_model, target=target, randnetw=randnetw_flag, )
 			
 
-			else:  # Neural data
+			else:
 				raise ValueError('Target not available')
 
 
-
-				# # # Best layer voxelwise -- TRAINED and PERMUTED NETWORK
-				# for val_flag in ['median_r2_test', 'median_r2_test_c']: #'median_r2_test', 'median_r2_test_c'
-				# 	for randnetw_flag in ['False', 'True']:
-				# 		if randnetw_flag == 'True':
-				# 			best_layer_voxelwise(output_randnetw, source_model=source_model, target=target,
-				# 								 df_meta_roi=df_meta_roi,
-				# 								 value_of_interest=val_flag, randnetw=randnetw_flag, roi=None,
-				# 								 save=PLOTDIR)
-				# 		elif randnetw_flag == 'False':
-				# 			best_layer_voxelwise(output, source_model=source_model, target=target,
-				# 								 df_meta_roi=df_meta_roi,
-				# 								 value_of_interest=val_flag, randnetw=randnetw_flag, roi=None,
-				# 								 save=PLOTDIR)
-				# 		else:
-				# 			raise ValueError()
-				# 	sys.stdout.flush()
-				#
-				# # Barplots (and obtain LOSO values for across-models plot) -- TRAINED and PERMUTED NETWORK
-				# for roi_flag in roi_flags:
-				# 	for val_flag in ['median_r2_test', 'median_r2_test_c']:
-				# 		for randnetw_flag in ['False', 'True']:
-				# 			if randnetw_flag == 'True':
-				# 				plot_LOSO_best_layer_bars(output_randnetw, source_model=source_model, target=target, roi=roi_flag,
-				# 										  save=PLOTDIR, randnetw=randnetw_flag, value_of_interest=val_flag)
-				# 			elif randnetw_flag == 'False':
-				# 				plot_LOSO_best_layer_bars(output, source_model=source_model, target=target, roi=roi_flag,
-				# 										  save=PLOTDIR, randnetw=randnetw_flag, value_of_interest=val_flag)
-				# 			else:
-				# 				raise ValueError()
-				# 			sys.stdout.flush()
-				#
-				# # # # Barplots of best layer for anatomical ROIs -- TRAINED and PERMUTED NETWORK
-				# for cond_flag in ['roi_label_general']: # ['roi_label_general','roi_anat_hemi' ]
-				# 	for collapse_flag in ['median', 'mean']: # ['median', 'mean'] # which aggfunc to use when obtaining an aggregate over rel_pos layer index values for each subject
-				# 		for val_flag in ['median_r2_test', 'median_r2_test_c',]: # ['median_r2_test', 'median_r2_test_c',]
-				# 			for randnetw_flag in ['True']: # ['False', 'True',]
-				#
-				# 					if randnetw_flag == 'True':
-				# 						if source_model.startswith('Kell2018') or source_model.startswith('ResNet50'):
-				# 							layers_to_exclude = ['input_after_preproc']
-				# 						else:
-				# 							layers_to_exclude = None
-				#
-				# 						barplot_best_layer_per_anat_ROI(output_randnetw, meta, source_model=source_model,
-				# 														target=target,
-				# 														randnetw=randnetw_flag, collapse_over_val_layer=collapse_flag,
-				# 														save=PLOTDIR, condition_col=cond_flag, value_of_interest=val_flag,
-				# 														val_layer='rel_pos',
-				# 														layers_to_exclude=layers_to_exclude)
-				# 					elif randnetw_flag == 'False':
-				# 						barplot_best_layer_per_anat_ROI(output, meta, source_model=source_model, target=target,
-				# 														randnetw=randnetw_flag, collapse_over_val_layer=collapse_flag,
-				# 														save=False, condition_col=cond_flag, value_of_interest=val_flag,
-				# 														val_layer='rel_pos',
-				# 														layers_to_exclude=None) # PLOTDIR to save!
-				# 					else:
-				# 						raise ValueError()
-				print('x')
-				
-				# # # # Barplots of best layer for anatomical ROIs -- TRAINED and PERMUTED NETWORK: dimensionality values! (same func as for neural)
-				# for cond_flag in ['roi_label_general']: # ['roi_label_general','roi_anat_hemi' ]
-				# 	for collapse_flag in ['median']: # ['median', 'mean'] # which aggfunc to use when obtaining an aggregate over rel_pos layer index values for each subject
-				# 		for val_flag in ['median_r2_test_c',]: # ['median_r2_test', 'median_r2_test_c',]
-				# 			for randnetw_flag in ['False', 'True']: # ['False', 'True',]
-				#
-				# 					if randnetw_flag == 'True':
-				# 						barplot_best_layer_per_anat_ROI(output_randnetw, meta, source_model=source_model,
-				# 														target=target,
-				# 														randnetw=randnetw_flag, collapse_over_val_layer=collapse_flag,
-				# 														save=PLOTDIR, condition_col=cond_flag, value_of_interest=val_flag,
-				# 														val_layer='dim_randnetw_demean-True')
-				# 					elif randnetw_flag == 'False':
-				# 						barplot_best_layer_per_anat_ROI(output, meta, source_model=source_model, target=target,
-				# 														randnetw=randnetw_flag, collapse_over_val_layer=collapse_flag,
-				# 														save=PLOTDIR, condition_col=cond_flag, value_of_interest=val_flag,
-				# 														val_layer='dim_demean-True')
-				# 					else:
-				# 						raise ValueError()
-				#
-									# sys.stdout.flush()
-				#
-				# # R2 across layers -- automatically adds randnetw if loaded
-				# for roi_flag in roi_flags:
-				# 	for val_flag in ['median_r2_test_c', 'median_r2_test', ]:
-				# 		plot_score_across_layers(output, source_model=source_model, target=target, ylim=[0, 1],
-				# 								 roi=roi_flag,
-				# 								 save=PLOTDIR, output_randnetw=output_randnetw,
-				# 								 value_of_interest=val_flag)
-				#
-				# if plot_subjectwise:
-				# 	for subj_idx in (
-				# 	output.subj_idx.unique()):  # If running for B2021, was previously for subj_idx in np.arange(1,21): (check if same as output.subj_idx.unique())
-				# 		plot_score_across_layers_per_subject(output, source_model=source_model, subj_idx_lst=[subj_idx],
-				# 											 target=target, ylim=[0, 1], roi=None, save=PLOTDIR,
-				# 											 output_randnetw=output_randnetw,
-				# 											 value_of_interest='median_r2_test_c')
-				#
 		######### SURFACE ANALYSES ########
 		if run_surf:  # surf has to be run with randnetw False and True separately
 			PLOTSURFDIR.mkdir(exist_ok=True)
