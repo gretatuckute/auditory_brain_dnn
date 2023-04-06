@@ -1450,8 +1450,15 @@ def plot_score_across_layers_per_subject(output, output_randnetw=None, source_mo
 
 #### PLOTTING COMPONENT RESPONSES ####
 
-def plot_comp_across_layers(output, source_model, output_randnetw=None, target='', value_of_interest='median_r2_test',
-                            ylim=[0, 1], save=False, alpha=1, alpha_randnetw=0.7,
+def plot_comp_across_layers(output,
+                            source_model,
+                            output_randnetw=None,
+                            target='',
+                            value_of_interest='median_r2_test',
+                            ylim=[0, 1],
+                            save=False,
+                            alpha=1,
+                            alpha_randnetw=0.7,
                             label_rotation=45, ):
     """
     Plot component responses across layers and plot SEM across splits (std across r2 test splits / np.sqrt(num splits-1))
@@ -1469,7 +1476,7 @@ def plot_comp_across_layers(output, source_model, output_randnetw=None, target='
     """
     
     layer_reindex = d_layer_reindex[source_model]
-    layer_legend = d_layer_legend[source_model]
+    layer_legend = [d_layer_names[source_model][l] for l in layer_reindex]
     value_of_interest_suffix = '_'.join(value_of_interest.split('_')[1:]) # remove 'median_'
     
     # Get layer position info
@@ -1666,23 +1673,25 @@ def select_r2_test_CV_splits_train_test(source_model, target, randnetw='False', 
                  f'best-layer-CV-splits-train-test_per-comp_{source_model}{d_randnetw[randnetw]}_{target}_{value_of_interest}.csv'))
 
 
-def scatter_NH2015comp_resp_vs_pred(source_model, target, df_meta_roi,
-                                    value_of_interest='median_r2_test', save=False,
+def scatter_NH2015comp_resp_vs_pred(source_model,
+                                    target, df_meta_roi,
+                                    value_of_interest='median_r2_test',
+                                    save=False,
                                     comp_to_plot=['lowfreq', 'highfreq', 'envsounds', 'pitch', 'speech', 'music'],
-                                    randnetw='False', alphalimit='50', mapping='Ridge',
-                                    generate_scatter_plot=False, obtain_partial_corr=True, nit=10,
-                                    add_savestr=''):
+                                    randnetw='False',
+                                    alphalimit='50',
+                                    mapping='Ridge',
+                                    generate_scatter_plot=False,
+                                    obtain_partial_corr=True,
+                                    nit=10,
+                                    add_savestr='',
+                                    alpha_dot=1):
     """Plot scatter of component responses versus actual responses, colored according to sound categories
     
-    Selection of which layer to plot: select most frequently occurring layer for each component:
-        return most frequent layer for each component. If ties, return a random one
+    Selection of which layer to plot: select most frequently occurring layer for each component (across 10 iterations
+    of the layer selection procedure): return most frequent layer for each component. If ties, return a random one.
     
     """
-    if randnetw == 'False':
-        alpha_dot = 1
-    else:
-        alpha_dot = 1
-        
     # Load the actual component data
     comp_data = load_comp_responses()
     
@@ -1701,12 +1710,15 @@ def scatter_NH2015comp_resp_vs_pred(source_model, target, df_meta_roi,
 
         
         
-    else:
-        df_best_layer_across_it = pd.read_csv(join(RESULTDIR_ROOT, source_model, 'outputs',
-        f'best-layer-CV-splits-nit-{nit}_per-comp_{source_model}{d_randnetw[randnetw]}_{target}_{value_of_interest}_stats.csv')).set_index('comp', drop=False
-                                                                                                                                    )
+    else: # We have to load the layer selection proecedure results, otherwise we do not know which layer to plot
+        df_best_layer_across_it = pd.read_csv(join(RESULTDIR_ROOT,
+                                                   source_model,
+                                                   'outputs',
+                                                   f'best-layer-CV-splits-nit-{nit}_per-comp_'
+                                                   f'{source_model}{d_randnetw[randnetw]}_'
+                                                   f'{target}_{value_of_interest}_stats.csv')).set_index('comp', drop=False)
         ### WHICH LAYER TO PLOT ###
-        # select most frequently occurring layer for each component: return most frequent layer for each component. If ties, return a random one
+        # select most frequently occurring layer for each component: return most frequent layer for each component. If ties, return a random one of the best ones
         lst_best_layer_per_comp = []
         for c in df_best_layer_across_it.comp.unique():
             df_comp = df_best_layer_across_it.query(f'comp == "{c}"')
@@ -1726,14 +1738,19 @@ def scatter_NH2015comp_resp_vs_pred(source_model, target, df_meta_roi,
             lst_best_layer_per_comp.append(df_best_layer_comp)
         
         df_best_layer_comp = pd.concat(lst_best_layer_per_comp)
+
         # Append output folders
         df_best_layer_comp['output_folder'] = [f'{RESULTDIR_ROOT}/{source_model}/AUD-MAPPING-{mapping}_TARGET-{target}_SOURCE-{source_model}-' \
                                     f'{x[1].layer_pos}_RANDEMB-False_RANDNETW-{randnetw}_ALPHALIMIT-{alphalimit}' for x in df_best_layer_comp.iterrows()]
             
         ### WHICH R2 VALUE TO SHOW ###
         # Get a df_best_layer_comp df with output folders and value of interest based on CVsplits nit 10 (aggregated across 10 iterations)
-        df_agg_scores =  pd.read_csv(join(RESULTDIR_ROOT, source_model, 'outputs',
-        f'best-layer-CV-splits-nit-10_per-comp_{source_model}{d_randnetw[randnetw]}_{target}_{value_of_interest}.csv')).set_index('comp', drop=False)
+        df_agg_scores =  pd.read_csv(join(RESULTDIR_ROOT,
+                                          source_model,
+                                          'outputs',
+                                           f'best-layer-CV-splits-nit-10_per-comp_'
+                                           f'{source_model}{d_randnetw[randnetw]}_'
+                                           f'{target}_{value_of_interest}.csv')).set_index('comp', drop=False)
     
     if generate_scatter_plot:
         for i, comp in enumerate(comp_to_plot):

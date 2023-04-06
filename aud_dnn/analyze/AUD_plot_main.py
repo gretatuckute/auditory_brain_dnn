@@ -10,14 +10,14 @@ PLOTSURFDIR = Path(f'{ROOT}/results/PLOTS_SURF_across-models/')
 SURFDIR = f'{DATADIR}/fsavg_surf/'
 
 ### Settings for which plots to make ###
-save = False # Whether to save any plots
-concat_over_models = True
+save = True # Whether to save any plots
+concat_over_models = False
 
 # If concat_over_models = False, we load each individual model and perform the analysis on that
 if not concat_over_models:
 	pred_across_layers = True # SI 2; predictivity for each model across all layers
-	best_layer_cv_nit = True # Basis for Figure 2; obtain best layer for each voxel based on independent CV splits across 10 iterations
-	best_layer_anat_ROI = True # Basis for Figure 7;
+	best_layer_cv_nit = True # Basis for Figure 2 for neural, basis for Figure 5 for components; obtain best layer for each voxel based on independent CV splits across 10 iterations
+	best_layer_anat_ROI = False # Basis for Figure 7 for neural;
 
 # deal w these
 run_surf = False
@@ -25,10 +25,15 @@ merge_surface_targets = False
 
 
 if concat_over_models:
-	plot_barplot_across_models = False # Figure 2; barplot of performance across models
-	stats_barplot_across_models = False # Figure 2; stats for barplot of performance across models
-	plot_anat_roi_scatter = True # Figure 7; scatter of performance across models for anatomical ROIs
+	plot_barplot_across_models = False # Figure 2 for neural, Figure 5 for components; barplot of performance across models
+	plot_barplot_across_inhouse_models = False # Figure 8A) for components (in-house models)
+	plot_scatter_comp_vs_comp = False # Figure 8B) for components (in-house models)
+	stats_barplot_across_models = False # Figure 2 neural; stats for barplot of performance across models
+	plot_anat_roi_scatter = False # Figure 7 neural; scatter of performance across models for anatomical ROIs
+	plot_scatter_pred_vs_actual = True # Figure 4, scatter for components
 
+
+target = 'NH2015comp'
 
 
 # Logging
@@ -60,8 +65,8 @@ source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell201
 # # 	'Kell2018wordSeed2', 'Kell2018speakerSeed2', 'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
 # # 	'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2', 'ResNet50multitaskSeed2',
 # 			]
+source_models = ['ResNet50multitask']
 
-target = 'NH2015'
 
 print(f'---------- Target: {target} ----------')
 
@@ -70,29 +75,106 @@ if concat_over_models:  # assemble plots across models
 		df_meta_roi = pd.read_pickle(join(DATADIR, 'neural', target, 'df_roi_meta.pkl'))
 	
 	if target == 'NH2015comp': # components
+
+		### For plotting all models barplot (Figure 5) ###
+		if plot_barplot_across_models:
+
+			##### Best layer component predictions across models (independently selected layer) ####
+			save_str = f''
+			for sort_flag in ['performance']: #'performance', NH2015_all_models_performance_order
+				for randnetw_flag in ['True', 'False']: # 'False', 'True'
+					barplot_components_across_models(source_models=source_models,
+													 target=target,
+													 df_meta_roi=df_meta_roi,
+													 randnetw=randnetw_flag,
+													 value_of_interest='median_r2_test',
+													 sem_of_interest='median_r2_test_sem_over_it',
+													 save=SAVEDIR_CENTRALIZED,
+													 save_str=save_str,
+													 include_spectemp=True,
+													 sort_by=sort_flag,
+													 add_in_spacing_bar=False)
+
+		### For plotting in-house models barplot (Figure 8A) ###
+		if plot_barplot_across_inhouse_models:
+			save_str = f'_task-grouped-ymin-0.2-empty-bar-new-spacing-inhouse-models'
+
+			#### Best layer component predictions across models (independently selected layer) ####
+			for sort_flag in [['Kell2018word', 'ResNet50word', 'Kell2018speaker', 'ResNet50speaker', 'Kell2018music',  'ResNet50music',
+							   'Kell2018audioset','ResNet50audioset', 'Kell2018multitask','ResNet50multitask',]]: #'performance', NH2015_all_models_performance_order
+				for randnetw_flag in ['False', 'True']:
+					barplot_components_across_models(source_models=source_models,
+													 target=target,
+													 df_meta_roi=df_meta_roi,
+													 randnetw=randnetw_flag,
+													 value_of_interest='median_r2_test',
+													 sem_of_interest='median_r2_test_sem_over_it',
+													 save=SAVEDIR_CENTRALIZED,
+													 save_str=save_str,
+													 include_spectemp=True,
+													 sort_by=sort_flag,
+													 add_in_spacing_bar=True)
+
 		
-		### For plotting in-house models barplot (Figure 6) ###
-		# save_str = f'_task-grouped-ymin-0.2-empty-bar-new-spacing-inhouse-models'
-		# # #### Best layer component predictions across models (independently selected layer) ####
-		# for sort_flag in [['Kell2018word', 'ResNet50word', 'Kell2018speaker', 'ResNet50speaker', 'Kell2018music',  'ResNet50music',
-		# 				   'Kell2018audioset','ResNet50audioset', 'Kell2018multitask','ResNet50multitask',]]: #'performance', NH2015_all_models_performance_order
-		# 	for randnetw_flag in ['False', 'True']:
-		# 		barplot_components_across_models(source_models=source_models, target=target, df_meta_roi=df_meta_roi,
-		# 										 randnetw=randnetw_flag, value_of_interest='median_r2_test',
-		# 										 sem_of_interest='median_r2_test_sem_over_it',
-		# 										 save=SAVEDIR_CENTRALIZED, save_str=save_str, include_spectemp=True,
-		# 										 sort_by=sort_flag, add_in_spacing_bar=True)
-				
-		### For plotting all models barplot (part of Figure 6) ###
-		# save_str = f'_replot-alpha-1'
-		# # #### Best layer component predictions across models (independently selected layer) ####
-		# for sort_flag in [NH2015_all_models_performance_order]: #'performance', NH2015_all_models_performance_order
-		# 	for randnetw_flag in ['True', 'False']: # 'False', 'True'
-		# 		barplot_components_across_models(source_models=source_models, target=target, df_meta_roi=df_meta_roi,
-		# 										 randnetw=randnetw_flag, value_of_interest='median_r2_test',
-		# 										 sem_of_interest='median_r2_test_sem_over_it',
-		# 										 save=SAVEDIR_CENTRALIZED, save_str=save_str, include_spectemp=True,
-		# 										 sort_by=sort_flag, add_in_spacing_bar=False)
+		#### Scatter: comp1 vs comp2 predictivity across models (Figure 8B) ####
+		if plot_scatter_comp_vs_comp:
+			save_str = '_inhouse-models_symbols-no-err'
+
+			#### Best layer component predictions across models (independently selected layer) as scatters ####
+
+			for randnetw_flag in [ 'False', 'True',]:
+				if randnetw_flag == 'False':
+					ylim = [0.5, 1]
+				else:
+					ylim = [0, 1]
+
+				scatter_components_across_models(source_models=source_models,
+												 target=target,
+												 df_meta_roi=df_meta_roi,
+												 randnetw=randnetw_flag,
+												 aggregation='CV-splits-nit-10',
+												 save=SAVEDIR_CENTRALIZED,
+												 save_str=save_str,
+												 include_spectemp=False,
+												 ylim=ylim,
+												 value_of_interest='median_r2_test',
+												 sem_of_interest='median_r2_test_sem_over_it')
+
+				# ## Associated statistics - comp1 vs comp2 comparions for models of interest ##
+				################### UPDATE THIS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+				compare_CV_splits_nit(source_models=source_models, target=target, df_meta_roi=df_meta_roi,
+									  save=True, save_str='all-models-bootstrap',
+									  models1 = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
+					 			'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
+								'AST',  'wav2vec', 'DCASE2020', 'DS2', 'VGGish',  'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer'],
+									  models2 = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
+					 			'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
+								'AST',  'wav2vec', 'DCASE2020', 'DS2', 'VGGish',  'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer'],
+									  aggregation='CV-splits-nit-10',
+									  randnetw=randnetw_flag,)
+				compare_CV_splits_nit(source_models=source_models, target=target, save=True, save_str='inhouse-models_CochResNet50-bootstrap',
+									  models1=['ResNet50word', 'ResNet50speaker', 'ResNet50multitask','ResNet50audioset', 'ResNet50music'],
+									  models2=['ResNet50word', 'ResNet50speaker', 'ResNet50multitask','ResNet50audioset', 'ResNet50music'],
+									  aggregation='CV-splits-nit-10',
+									  randnetw=randnetw_flag, )
+
+
+		#### Predicted versus actual components (independently selected layer - most frequent one) ####
+		if plot_scatter_pred_vs_actual:
+			savestr = '_with_p-vals-TEST'
+
+			for source_model in source_models:
+				for randnetw_flag in ['False','True']:
+					if source_model == 'spectemp' and randnetw_flag == 'True':
+						continue
+
+					scatter_NH2015comp_resp_vs_pred(source_model=source_model,
+													target=target,
+													df_meta_roi=df_meta_roi,
+													randnetw=randnetw_flag,
+													save=SAVEDIR_CENTRALIZED,
+													add_savestr=savestr)
+
 
 		#### Analyze best layer (not independently selected, just the argmax layer) ####
 		# for randnetw_flag in [ 'True']:
@@ -102,44 +184,7 @@ if concat_over_models:  # assemble plots across models
 		# 									 value_of_interest='rel_pos',
 		# 									 )
 		
-		#### Scatter: comp1 vs comp2 predictivity across models ####
-		# for randnetw_flag in [ 'False', 'True',]:
-		# 	if randnetw_flag == 'False':
-		# 		ylim = [0.5, 1]
-		# 	else:
-		# 		ylim = [0, 1]
-		#
-		# 	scatter_components_across_models(source_models=source_models, target=target, df_meta_roi=df_meta_roi,
-		# 									 randnetw=randnetw_flag, aggregation='CV-splits-nit-10',
-		# 									 save=SAVEDIR_CENTRALIZED, save_str='_inhouse-models_symbols-no-err', include_spectemp=False,ylim=ylim,
-		# 									 value_of_interest='median_r2_test', sem_of_interest='median_r2_test_sem_over_it')
-		#
-		# 	# ## Associated statistics - comp1 vs comp2 comparions for models of interest ##
-		# 	compare_CV_splits_nit(source_models=source_models, target=target, df_meta_roi=df_meta_roi,
-		# 						  save=True, save_str='all-models-bootstrap',
-		# 						  models1 = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-		# 		 			'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-		# 					'AST',  'wav2vec', 'DCASE2020', 'DS2', 'VGGish',  'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer'],
-		# 						  models2 = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-		# 		 			'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-		# 					'AST',  'wav2vec', 'DCASE2020', 'DS2', 'VGGish',  'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer'],
-		# 						  aggregation='CV-splits-nit-10',
-		# 						  randnetw=randnetw_flag,)
-			# compare_CV_splits_nit(source_models=source_models, target=target, save=True, save_str='inhouse-models_CochResNet50-bootstrap',
-			# 					  models1=['ResNet50word', 'ResNet50speaker', 'ResNet50multitask','ResNet50audioset', 'ResNet50music'],
-			# 					  models2=['ResNet50word', 'ResNet50speaker', 'ResNet50multitask','ResNet50audioset', 'ResNet50music'],
-			# 					  aggregation='CV-splits-nit-10',
-			# 					  randnetw=randnetw_flag, )
-		
-		
-		#### Predicted versus actual components (independently selected layer - most frequent one) ####
-		savestr = '_with_p-vals-TEST'
-		for source_model in source_models:
-			for randnetw_flag in ['False','True']:
-				if source_model == 'spectemp' and randnetw_flag == 'True':
-					continue
-				scatter_NH2015comp_resp_vs_pred(source_model=source_model, target=target, df_meta_roi=df_meta_roi,
-												randnetw=randnetw_flag, save=SAVEDIR_CENTRALIZED, add_savestr=savestr)
+
 	
 	elif target == 'NH2015-B2021':
 		# DETERMINE COLOR SCALE FOR SURFACE MAPS
@@ -273,7 +318,7 @@ if not concat_over_models:
 		output['mean_r2_test_c'] = output['mean_r2_test_c'].clip(upper=1)
 
 		# Permuted network (does not exist for spectemp or init models)
-		if source_model.endswith('init') or source_model == 'spectemp': #or source_model in source_models: # FOR NOW, LETS NOT PLOT RANDNETW
+		if source_model.endswith('init') or source_model == 'spectemp' or source_model in source_models: # FOR NOW, LETS NOT PLOT RANDNETW
 			output_randnetw = None
 			output_folders_paths_randnetw = []
 		else:
@@ -375,43 +420,57 @@ if not concat_over_models:
 									raise ValueError()
 
 
-			elif target == 'NH2015comp':  # components
-				print(f'Plotting component data: {target}')
+		elif target == 'NH2015comp':  # components
+			print(f'Plotting component data: {target}')
 
-				# for randnetw_flag in ['False']:
-				# 	if randnetw_flag == 'True':
-				# 		select_r2_test_CV_splits_nit(output_folders_paths=output_folders_paths_randnetw, df_meta_roi=df_meta_roi, source_model=source_model,
-				# 								 target=target, value_of_interest='r2_test', randnetw=randnetw_flag, save=PLOTDIR)
-				# 	elif randnetw_flag == 'False':
-				# 		select_r2_test_CV_splits_nit(output_folders_paths=output_folders_paths, df_meta_roi=df_meta_roi, source_model=source_model,
-				# 								 target=target, value_of_interest='r2_test', randnetw=randnetw_flag, save=PLOTDIR)
-				# 	else:
-				# 		raise ValueError()
-				
-				
-				# # Plot components across layers, and store 'across-layers_{source_model}_NH2015comp_{value_of_intereset}.csv'
-				plot_comp_across_layers(output=output, source_model=source_model, output_randnetw=output_randnetw,
-										target=target, save=PLOTDIR, value_of_interest='median_r2_test')
-				plot_comp_across_layers(output=output, source_model=source_model, output_randnetw=output_randnetw,
-										target=target, save=PLOTDIR, value_of_interest='median_r2_train')
-				#
-				# # Per component, find the best layer and obtain the associated r2 test score (stores the 'best-layer-argmax_per-comp_{source_model}_NH2015comp_{value_of_interest}.csv')
-				# # Trained and permuted:
-				# for randnetw_flag in ['False','True']:
-				# 	obtain_best_layer_per_comp(source_model=source_model, target=target, randnetw=randnetw_flag,
-				# 							   value_of_interest='median_r2_test', sem_of_interest='sem_r2_test', )
-				# 	obtain_best_layer_per_comp(source_model=source_model, target=target, randnetw=randnetw_flag,
-				# 							   value_of_interest='median_r2_train', sem_of_interest='sem_r2_train', )
-				#
-				# # Per component, select the best layer based on r2 train and get the r2 test value for that layer
-				# # (stores the f'best-layer-CV-splits-train-test_per-comp_{source_model}_NH2015_{value_of_interest}.csv')
-				# # Also use this info to denote which scatterplot (resp vs pred) layer is used.
-				# for randnetw_flag in ['False','True']:
-				# 	select_r2_test_CV_splits_train_test(source_model=source_model, target=target, randnetw=randnetw_flag, )
-			
+			######### PREDICITIVITY ACROSS ALL LAYERS (NOT USED IN PAPER) ########
+			# Plot components across layers, and store 'across-layers_{source_model}_NH2015comp_{value_of_intereset}.csv'
+			if pred_across_layers:
+				plot_comp_across_layers(output=output,
+										source_model=source_model,
+										output_randnetw=output_randnetw,
+										target=target,
+										save=PLOTDIR,
+										value_of_interest='median_r2_test')
 
-			else:
-				raise ValueError('Target not available')
+
+
+			######### FIND BEST LAYER USING INDEPENDENT CV SPLITS (BASIS FOR FIGURE 5) ########
+			if best_layer_cv_nit:
+				for randnetw_flag in ['False']:
+					if randnetw_flag == 'True':
+						select_r2_test_CV_splits_nit(output_folders_paths=output_folders_paths_randnetw,
+													 df_meta_roi=df_meta_roi,
+													 source_model=source_model,
+													 target=target,
+													 value_of_interest='r2_test',
+													 randnetw=randnetw_flag,
+													 save=PLOTDIR)
+					elif randnetw_flag == 'False':
+						select_r2_test_CV_splits_nit(output_folders_paths=output_folders_paths,
+													 df_meta_roi=df_meta_roi,
+													 source_model=source_model,
+													 target=target,
+													 value_of_interest='r2_test',
+													 randnetw=randnetw_flag,
+													 save=PLOTDIR)
+					else:
+						raise ValueError()
+
+
+
+			# # Per component, find the best layer and obtain the associated r2 test score (stores the 'best-layer-argmax_per-comp_{source_model}_NH2015comp_{value_of_interest}.csv')
+			# # Trained and permuted:
+			# for randnetw_flag in ['False','True']:
+			# 	obtain_best_layer_per_comp(source_model=source_model, target=target, randnetw=randnetw_flag,
+			# 							   value_of_interest='median_r2_test', sem_of_interest='sem_r2_test', )
+			# 	obtain_best_layer_per_comp(source_model=source_model, target=target, randnetw=randnetw_flag,
+			# 							   value_of_interest='median_r2_train', sem_of_interest='sem_r2_train', )
+			#
+
+
+		else:
+			raise ValueError('Target not available')
 
 
 		######### SURFACE ANALYSES ########
