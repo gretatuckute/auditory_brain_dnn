@@ -4,6 +4,10 @@ data/.DS_Store
 
 # Directories
 data/stimuli/165_natural_sounds_16kHz/*
+data/stimuli/165_natural_sounds_16kHz_SL01/*
+data/stimuli/165_natural_sounds_16kHz_SL10/*
+data/stimuli/165_natural_sounds_16kHz_SL100/*
+data/stimuli/multiply_waveform_SL.py
 data/stimuli/165_natural_sounds/*
 data/fsavg_surf/**
 data/neural/B2021/voxel**
@@ -12,6 +16,7 @@ data/source_networks/**
 data/source_models_dim/**
 data/RSA/**
 data/fsavg_surf/voxel_matrix_for_alex.mat
+figure_compilation/**
 
 results/*
 

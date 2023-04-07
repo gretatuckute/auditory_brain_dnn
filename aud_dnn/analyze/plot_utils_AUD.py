@@ -501,7 +501,7 @@ def select_r2_test_CV_splits_nit(output_folders_paths,
     
     Run the same procedure across n_it samples.
 
-    Obtain the median across voxels per subject.
+    Obtain the median across voxels per subject
     """
     print(f'\nFUNC: select_r2_test_CV_splits_nit\nMODEL: {source_model}, value_of_interest: {value_of_interest}, collapse_over_splits: {collapse_over_splits}, randnetw: {randnetw}\n')
     ## FOR LOGGING ##
@@ -977,10 +977,16 @@ def obtain_spectemp_val(roi, target, value_of_interest='median_r2_test_c', yerr=
     return piv.reset_index(drop=True)
 
 
-def obtain_spectemp_val_CV_splits_nit(roi, target, df_meta_roi,
-                                      value_of_interest='median_r2_test_c', nit=10,
-                                      collapse_over_splits='median', save=True,
-                                      mapping='Ridge', randemb='False', alphalimit='50', store_for_stats=True,
+def obtain_spectemp_val_CV_splits_nit(roi,
+                                      target,
+                                      df_meta_roi,
+                                      value_of_interest='median_r2_test_c',
+                                      nit=10,
+                                      collapse_over_splits='median',
+                                      save=True,
+                                      mapping='Ridge',
+                                      alphalimit='50',
+                                      store_for_stats=True,
                                       randnetw='False'):
     """
     Obtain value from the spectemp model by taking median of voxels for each subject.
@@ -1003,7 +1009,7 @@ def obtain_spectemp_val_CV_splits_nit(roi, target, df_meta_roi,
     
     # Load spectemp output!
     ds = pd.read_pickle(f'{RESULTDIR_ROOT}/spectemp/AUD-MAPPING-{mapping}_TARGET-{target}_SOURCE-spectemp-' \
-                                    f'avgpool_RANDEMB-{randemb}_RANDNETW-False_ALPHALIMIT-{alphalimit}/ds.pkl')
+                                    f'avgpool_RANDNETW-False_ALPHALIMIT-{alphalimit}/ds.pkl')
     
     # Get value of interest without the 'median'/'mean' appended to it
     value_of_interest_suffix = '_'.join(value_of_interest.split('_')[1:])
@@ -1095,6 +1101,9 @@ def obtain_spectemp_val_CV_splits_nit(roi, target, df_meta_roi,
     df_best_layer_r_values_grouped_across_it['pos'] = 1 # dummy
     df_best_layer_r_values_grouped_across_it['rel_pos'] = 1 # dummy
     df_best_layer_r_values_grouped_across_it['roi'] = roi
+    df_best_layer_r_values_grouped_across_it['datetag'] = datetag
+    df_best_layer_r_values_grouped_across_it['nit'] = nit
+    df_best_layer_r_values_grouped_across_it['method'] = 'regr'
     
     if target == 'NH2015comp':
         df_best_layer_r_values_grouped_across_it['comp_idx'] = df_best_layer_r_values_grouped_across_it.index
@@ -1106,7 +1115,7 @@ def obtain_spectemp_val_CV_splits_nit(roi, target, df_meta_roi,
     
     if save:
         PLOTDIR = (
-            Path(f'{ROOT}/results/AUD/20210915_median_across_splits_correction/spectemp/outputs')).resolve() # create path to the output spectemp dir
+            Path(f'{ROOT}/results/spectemp/outputs')).resolve() # create path to the output spectemp dir
         if target != 'NH2015comp':
             save_str = f'best-layer_CV-splits-nit-{nit}_roi-{roi}_spectemp_{target}{d_randnetw[randnetw]}_{value_of_interest_post_collapse}.csv'
         else:
@@ -1121,7 +1130,8 @@ def obtain_spectemp_val_CV_splits_nit(roi, target, df_meta_roi,
     return df_best_layer_r_values_grouped_across_it
 
 
-def obtain_NH2015comp_spectemp_val(target, value_of_interest='median_r2_test'):
+def obtain_NH2015comp_spectemp_val(target,
+                                   value_of_interest='median_r2_test'):
     """
     Obtain value from the spectemp model as predicted by NH2015comp.
     If the value is median_r2_test, then yerr will be fetched as std_r2_test and divided by (10-1) to obtain SEM.
@@ -1134,10 +1144,13 @@ def obtain_NH2015comp_spectemp_val(target, value_of_interest='median_r2_test'):
     
     # Load spectemp output!
     output, _ = concat_dfs_modelwise(
-        (Path(f'/Users/gt/om2/results/AUD/20210915_median_across_splits_correction/spectemp')).resolve(),
-        mapping='AUD-MAPPING-Ridge', df_str='df_output',
-        source_model='spectemp', target=target,
-        truncate=None, randemb='False', randnetw='False')
+        (Path(f'{RESULTDIR_ROOT}/spectemp')).resolve(),
+        mapping='AUD-MAPPING-Ridge',
+        df_str='df_output',
+        source_model='spectemp',
+        target=target,
+        truncate=None,
+        randnetw='False')
     
     value_of_interest_suffix = '_'.join(value_of_interest.split('_')[1:])
     
@@ -1674,14 +1687,14 @@ def select_r2_test_CV_splits_train_test(source_model, target, randnetw='False', 
 
 
 def scatter_NH2015comp_resp_vs_pred(source_model,
-                                    target, df_meta_roi,
+                                    target,
                                     value_of_interest='median_r2_test',
                                     save=False,
                                     comp_to_plot=['lowfreq', 'highfreq', 'envsounds', 'pitch', 'speech', 'music'],
                                     randnetw='False',
                                     alphalimit='50',
                                     mapping='Ridge',
-                                    generate_scatter_plot=False,
+                                    generate_scatter_plot=True,
                                     obtain_partial_corr=True,
                                     nit=10,
                                     add_savestr='',
@@ -1699,14 +1712,15 @@ def scatter_NH2015comp_resp_vs_pred(source_model,
     # Get the output folder name
     if source_model == 'spectemp':
         # Get output folder
-        df_best_layer_comp = obtain_output_folders_for_any_comp_model(target=target, source_model='spectemp',
-                                                                          value_of_interest=value_of_interest,)
-        # Get scores
-        # df_agg_scores = obtain_spectemp_val_CV_splits_nit(roi=None, target=target, df_meta_roi=df_meta_roi,
-        #                                                      value_of_interest=value_of_interest,
-        #                                                      nit=10)
-        df_agg_scores = pd.read_csv(join(RESULTDIR_ROOT, source_model, 'outputs',
-                                         f'best-layer-CV-splits-nit-{nit}_per-comp_spectemp_{target}{d_randnetw[randnetw]}_{value_of_interest}.csv'))
+        df_best_layer_comp = obtain_output_folders_for_any_comp_model(target=target,
+                                                                      source_model='spectemp',
+                                                                      value_of_interest=value_of_interest,)
+        # Get the aggregate spectemp scores (which were also obtained over 10 iterations)
+        df_agg_scores = pd.read_csv(join(RESULTDIR_ROOT,
+                                         source_model,
+                                         'outputs',
+                                         f'best-layer-CV-splits-nit-{nit}_'
+                                         f'per-comp_spectemp_{target}{d_randnetw[randnetw]}_{value_of_interest}.csv')).set_index('comp', drop=False)
 
         
         
@@ -1740,12 +1754,13 @@ def scatter_NH2015comp_resp_vs_pred(source_model,
         df_best_layer_comp = pd.concat(lst_best_layer_per_comp)
 
         # Append output folders
-        df_best_layer_comp['output_folder'] = [f'{RESULTDIR_ROOT}/{source_model}/AUD-MAPPING-{mapping}_TARGET-{target}_SOURCE-{source_model}-' \
-                                    f'{x[1].layer_pos}_RANDEMB-False_RANDNETW-{randnetw}_ALPHALIMIT-{alphalimit}' for x in df_best_layer_comp.iterrows()]
+        df_best_layer_comp['output_folder'] = [f'{RESULTDIR_ROOT}/{source_model}/' \
+                                               f'AUD-MAPPING-{mapping}_TARGET-{target}_SOURCE-{source_model}-' \
+                                               f'{x[1].layer_pos}_RANDNETW-{randnetw}_ALPHALIMIT-{alphalimit}' for x in df_best_layer_comp.iterrows()]
             
         ### WHICH R2 VALUE TO SHOW ###
         # Get a df_best_layer_comp df with output folders and value of interest based on CVsplits nit 10 (aggregated across 10 iterations)
-        df_agg_scores =  pd.read_csv(join(RESULTDIR_ROOT,
+        df_agg_scores = pd.read_csv(join(RESULTDIR_ROOT,
                                           source_model,
                                           'outputs',
                                            f'best-layer-CV-splits-nit-10_per-comp_'
@@ -1757,6 +1772,13 @@ def scatter_NH2015comp_resp_vs_pred(source_model,
             # Load the predicted component data
             comp_data_pred = load_pred_comp_responses(output_folder_path=df_best_layer_comp.query(f'comp == "{comp}"').output_folder.values[0],
                                                       target=target, )
+
+            # Get min and max of component responses and predicted component responses
+            min_resp = min(comp_data[comp].min(), comp_data_pred[comp].min())
+            max_resp = max(comp_data[comp].max(), comp_data_pred[comp].max())
+            # Offset the min and max by 5% of the range for axis limits
+            min_resp -= 0.05 * (max_resp - min_resp)
+            max_resp += 0.05 * (max_resp - min_resp)
             
             assert(comp_data.index == comp_data_pred.index).all()
             comp_data['category_label'] = comp_data_pred.category_label
@@ -1769,11 +1791,13 @@ def scatter_NH2015comp_resp_vs_pred(source_model,
             plt.title(
                 f'Component {i+1}: "{d_comp_names[comp]}-selective" {d_randnetw[randnetw][1:]}\n'
                 f'{df_best_layer_comp.loc[comp].source_model} {df_best_layer_comp.loc[comp].layer_legend},'
-                f' median $R^2$: {df_agg_scores.loc[comp][value_of_interest]:.3}', fontsize=11)
-            plt.xlabel('Actual')
-            plt.xticks(size=10)
-            plt.yticks(size=10)
-            plt.ylabel('Predicted')
+                f' median $R^2$: {df_agg_scores.loc[comp][value_of_interest]:.2}', fontsize=11)
+            plt.xlabel('Actual', fontsize=15)
+            plt.xticks(size=15)
+            plt.yticks(size=15)
+            plt.xlim(min_resp, max_resp)
+            plt.ylim(min_resp, max_resp)
+            plt.ylabel('Predicted', fontsize=15)
             classes = list(d_sound_category_colors.keys())
             classes_polished = [d_sound_category_names[x] for x in classes]
             class_colours = list(d_sound_category_colors.values())
@@ -1781,6 +1805,12 @@ def scatter_NH2015comp_resp_vs_pred(source_model,
             for i in range(0, len(class_colours)):
                 recs.append(mpatches.Rectangle((0, 0), 1, 1, fc=class_colours[i]))
             plt.legend(recs, classes_polished, bbox_to_anchor=(1, 1.))
+            # Plot the layer name (df_best_layer_comp.loc[comp].layer_legend) in the top left corner of the axes, with a bit of offset
+            plt.text(min_resp + 0.035 * (max_resp - min_resp), max_resp - 0.07 * (max_resp - min_resp),
+                     df_best_layer_comp.loc[comp].layer_legend, fontsize=15)
+            # Plot the R2 value in the lower right corner of the axes, with a bit of offset
+            plt.text(max_resp - 0.27 * (max_resp - min_resp), min_resp + 0.02 * (max_resp - min_resp),
+                     f'$R^2$: {df_agg_scores.loc[comp][value_of_interest]:.2}', fontsize=15)
             plt.tight_layout()
             if save:
                 save_str = f'scatter-comp-{comp}_resp-vs-pred_' \
@@ -1788,7 +1818,7 @@ def scatter_NH2015comp_resp_vs_pred(source_model,
                            f'{df_best_layer_comp.loc[comp].layer_pos}_' \
                            f'{target}_{value_of_interest}{add_savestr}'
                 plt.savefig(join(save, f'{save_str}.svg'), dpi=180)
-                plt.savefig(join(save, f'{save_str}.png'), dpi=180)
+                # plt.savefig(join(save, f'{save_str}.png'), dpi=180)
             plt.show()
         
     if obtain_partial_corr: # correlate only e.g. only the speech category sounds
@@ -1911,16 +1941,28 @@ def load_comp_responses():
     
     return voxel_data
 
-def load_pred_comp_responses(output_folder_path, target):
+def load_pred_comp_responses(output_folder_path,
+                             target,
+                             load_rescaled=True):
     """Load the predicted component responses which is a 3D np array:
     Sounds (165); CV splits (10); components (6)
     
     Given that not all sounds are in each split, obtain the nanmean across splits.
+
+    If load_rescaled is True, load the rescaled version of the predicted component responses (which means that we added
+    the mean back, such that the test values are not zero-centered). This is the default because the axes between true
+    component values and predicted components values align better.
+
     """
     if output_folder_path.startswith('/rdma/vast-') and user == 'gt': # om path, fix to local path if running locally
         output_folder_path = output_folder_path.replace('/rdma/vast-rdma/vast/evlab/gretatu/', ROOT)
-        
-    y_preds_test_data = pd.read_pickle(join(output_folder_path, 'y_preds_test.pkl'))
+
+    if load_rescaled:
+        suffix = '_rescaled'
+    else:
+        suffix = ''
+
+    y_preds_test_data = pd.read_pickle(join(output_folder_path, f'y_preds_test{suffix}.pkl'))
     
     # Given that not all sounds are in each test split, obtain the nanmean across splits.
     y_preds_test = np.nanmean(y_preds_test_data, axis=1)
@@ -1964,8 +2006,12 @@ def obtain_output_folders_for_best_comp_layers(target, value_of_interest='median
     
     return df
 
-def obtain_output_folders_for_any_comp_model(target, source_model, value_of_interest='median_r2_test',
-                                         mapping='Ridge', randemb='False', randnetw='False', alphalimit='50',):
+def obtain_output_folders_for_any_comp_model(target,
+                                             source_model,
+                                             value_of_interest='median_r2_test',
+                                             mapping='Ridge',
+                                             randnetw='False',
+                                             alphalimit='50',):
     """Get strings of the output folder names (return as df) for a given source model of interest.
     Take the best layer for each component for that source model. Return which output folders (i.e.,
     which layer it was"""
@@ -1981,10 +2027,13 @@ def obtain_output_folders_for_any_comp_model(target, source_model, value_of_inte
     # Make sure that component order is as expected
     df = df.set_index('comp').reindex(['lowfreq', 'highfreq', 'envsounds', 'pitch', 'speech', 'music'])
     
-    output_folders = [join(RESULTDIR_ROOT, source_model,
-                           f'AUD-MAPPING-{mapping}_TARGET-{target}_SOURCE-{source_model}-{x[1].source_layer}_'
-                           f'RANDEMB-{randemb}_RANDNETW-{randnetw}_ALPHALIMIT-{alphalimit}')
-                      for x in df.iterrows()]
+    output_folders = [join(RESULTDIR_ROOT,
+                           source_model,
+                           f'AUD-MAPPING-{mapping}_'
+                           f'TARGET-{target}_'
+                           f'SOURCE-{source_model}-{x[1].source_layer}_'
+                           f'RANDNETW-{randnetw}_ALPHALIMIT-{alphalimit}')
+                           for x in df.iterrows()]
 
     df['output_folder'] = output_folders
     
@@ -2005,7 +2054,8 @@ def barplot_across_models(source_models,
                           aggregation='CV-splits-nit-10',
                           sort_by=True,
                           yerr_type='within_subject_sem',
-                          add_savestr=''):
+                          add_savestr='',
+                          alpha=1):
     """
     Plot median variance explained across models for voxels in a given ROI or all ROIs.
     The score can be loaded using various select best layer approaches such as CV-splits-nit-10 (default)
@@ -2015,9 +2065,6 @@ def barplot_across_models(source_models,
     :param value_of_interest:
     :return:
     """
-    
-    alpha = 1
-    
     # Obtain LOSO/voxelwise scores for the ROI of interest!
     df_lst = []
     for source_model in source_models:
@@ -2030,9 +2077,10 @@ def barplot_across_models(source_models,
         else:
             raise ValueError(f'aggregation {aggregation} not recognized')
         
-        df = pd.read_csv(
-            join(RESULTDIR_ROOT, source_model, 'outputs',
-                 load_str))
+        df = pd.read_csv(join(RESULTDIR_ROOT,
+                               source_model,
+                              'outputs',
+                               load_str))
         df.rename(columns={'Unnamed: 0': 'subj_idx'}, inplace=True)
         # Sometimes subj_idx already exists, so if it is repeated, drop it
         df = df.loc[:,~df.columns.duplicated()]
@@ -2136,26 +2184,23 @@ def barplot_across_models(source_models,
             fig.show()
         
     else: # For all voxels and voxels in any ROI
-        # if aggregation.startswith('CV-splits-nit'): # also obtain spectemp value based on random splits
-        #     load_str = f'best-layer_{aggregation}_roi-{roi}_spectemp{d_randnetw[randnetw]}_{target}_{value_of_interest}.csv'
-        #
-        #     # If ever in need of re-saving piv_spectemp (for now, using the compiled versions)
-        #     # piv_spectemp = obtain_spectemp_val_CV_splits_nit(roi=roi, target=target, df_meta_roi=df_meta_roi,
-        #     #                                                  value_of_interest=value_of_interest,
-        #     #                                                  nit=int(aggregation.split('-')[-1]))
-        #
-        #     piv_spectemp = pd.read_csv(
-        #         join(RESULTDIR_ROOT, 'spectemp', 'outputs', load_str))
-        #     # Sometimes subj_idx already exists, so if it is repeated, drop it
-        #     piv_spectemp = piv_spectemp.loc[:, ~piv_spectemp.columns.duplicated()].drop(
-        #         columns=['nit.1', 'subj_idx.1'])
-        #
-        # else:
-        #     piv_spectemp = obtain_spectemp_val(roi=roi, target=target, value_of_interest=value_of_interest)
-        #
-        # df_all = df_all.append(piv_spectemp)
+        if aggregation.startswith('CV-splits-nit'): # also obtain spectemp value based on random splits
+            load_str = f'best-layer_{aggregation}_roi-{roi}_' \
+                       f'spectemp{d_randnetw[randnetw]}_{target}_{value_of_interest}.csv'
 
-        
+            piv_spectemp = pd.read_csv(join(RESULTDIR_ROOT,
+                                            'spectemp',
+                                            'outputs',
+                                            load_str))
+            # Sometimes subj_idx already exists, so if it is repeated, drop it
+            piv_spectemp = piv_spectemp.loc[:, ~piv_spectemp.columns.duplicated()].drop(
+                columns=['nit.1', 'subj_idx.1'])
+
+        else:
+            piv_spectemp = obtain_spectemp_val(roi=roi, target=target, value_of_interest=value_of_interest)
+
+        df_all = df_all.append(piv_spectemp)
+
         ## Obtain mean and within-subject error bar (i.e. within-subject error bar)
         # for each cond (model), subtract the mean across cond. then, each subject will have a demeaned array
         if yerr_type.startswith('within_subject'):
@@ -2193,7 +2238,6 @@ def barplot_across_models(source_models,
                               inplace=True)
 
         df_grouped_w_spectemp = df_grouped.copy(deep=True)
-        # Todo, add in metadata about target etc here
 
         # drop the spectemp row (we want to plot it separately)
         df_spectemp = df_grouped.loc[df_grouped['source_model'] == 'spectemp']
@@ -2224,15 +2268,16 @@ def barplot_across_models(source_models,
 
         fig, ax = plt.subplots(figsize=(6, 7.5))
         ax.set_box_aspect(0.8)
-        # ax.hlines(xmin=xmin, xmax=xmax, y=df_spectemp[f'{value_of_interest}_mean'].values, color='darkgrey',
-        #           zorder=2)
-        # plt.fill_between(
-        #     [(bar_placement[0] - np.diff(bar_placement) / 2)[0],
-        #      (bar_placement[-1] + np.diff(bar_placement) / 2)[0]],
-        #     df_spectemp[f'{value_of_interest}_mean'].values - df_spectemp[f'{value_of_interest}_yerr'].values,
-        #     # plot yerr for spectemp too
-        #     df_spectemp[f'{value_of_interest}_mean'].values + df_spectemp[f'{value_of_interest}_yerr'].values,
-        #     color='gainsboro')
+        ax.hlines(xmin=xmin, xmax=xmax,
+                  y=df_spectemp[f'{value_of_interest}_mean'].values, color='darkgrey',
+                  zorder=2)
+        plt.fill_between(
+            [(bar_placement[0] - np.diff(bar_placement) / 2)[0],
+             (bar_placement[-1] + np.diff(bar_placement) / 2)[0]],
+            df_spectemp[f'{value_of_interest}_mean'].values - df_spectemp[f'{value_of_interest}_yerr'].values,
+            # plot yerr for spectemp too
+            df_spectemp[f'{value_of_interest}_mean'].values + df_spectemp[f'{value_of_interest}_yerr'].values,
+            color='gainsboro')
         ax.bar(bar_placement, df_grouped[f'{value_of_interest}_mean'].values,
                yerr=df_grouped[f'{value_of_interest}_yerr'].values,
                width=0.3, color=color_order, zorder=2, alpha=alpha)
@@ -2249,7 +2294,16 @@ def barplot_across_models(source_models,
             plt.savefig(join(save, f'{save_str}.png'), dpi=180)
             plt.savefig(join(save, f'{save_str}.svg'), dpi=180)
 
-            # save csv
+            # save csv and log more info
+            df_grouped_w_spectemp['roi'] = roi
+            df_grouped_w_spectemp['target'] = target
+            df_grouped_w_spectemp['randnetw'] = randnetw
+            df_grouped_w_spectemp['aggregation'] = aggregation
+            df_grouped_w_spectemp['yerr_type'] = yerr_type
+            df_grouped_w_spectemp['value_of_interest'] = value_of_interest
+            df_grouped_w_spectemp['sort_by'] = sort_by
+            df_grouped_w_spectemp['add_savestr'] = add_savestr
+            df_grouped_w_spectemp['n_models'] = len(df_grouped_w_spectemp)
             df_grouped_w_spectemp.to_csv(join(save, f'{save_str}.csv'))
         fig.show()
 
@@ -2369,10 +2423,10 @@ def scatter_anat_roi_across_models(source_models,
     if not layer_value_of_interest.startswith('dim') and randnetw == 'False' and save_str != '_all-models':
         ax.set_yticks(np.arange(ylim[0] * 10, (ylim[1] + 0.2) * 10, 2) / 10)
         ax.set_xticks(np.arange(ylim[0] * 10, (ylim[1] + 0.2) * 10, 2) / 10)
-    ax.tick_params(axis='x', labelsize=12)
-    ax.tick_params(axis='y', labelsize=12)
-    ax.set_xlabel(f'Relative best layer: {primary_rois}', size=9)
-    ax.set_ylabel(f'Relative best layer {non_primary_rois}', size=9)
+    ax.tick_params(axis='x', labelsize=17)
+    ax.tick_params(axis='y', labelsize=17)
+    ax.set_xlabel(f'Relative best layer: {primary_rois}', size=17)
+    ax.set_ylabel(f'Relative best layer {non_primary_rois}', size=17)
     ax.set_title(f'{target} {d_randnetw[randnetw][1:]} collapse: {collapse_over_val_layer}, {layer_value_of_interest}', size='medium')
     ax.set_aspect('equal')
     if annotate:
@@ -2384,6 +2438,7 @@ def scatter_anat_roi_across_models(source_models,
     for i in range(0, len(class_colours)):
         recs.append(mpatches.Rectangle((0, 0), 1, 1, fc=class_colours[i]))
     fig.legend(recs, classes_polished_name, bbox_to_anchor=(1.0, 1.))
+    plt.tight_layout()
     if save:
         save_str = f'across-models_scatter{d_annotate[annotate]}{save_str}_' \
                    f'{yerr_type}_{condition_col}_' \

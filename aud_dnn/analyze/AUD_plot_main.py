@@ -10,14 +10,14 @@ PLOTSURFDIR = Path(f'{ROOT}/results/PLOTS_SURF_across-models/')
 SURFDIR = f'{DATADIR}/fsavg_surf/'
 
 ### Settings for which plots to make ###
-save = True # Whether to save any plots
-concat_over_models = False
+save = True # Whether to save any plots/csvs
+concat_over_models = True
 
 # If concat_over_models = False, we load each individual model and perform the analysis on that
 if not concat_over_models:
 	pred_across_layers = True # SI 2; predictivity for each model across all layers
 	best_layer_cv_nit = True # Basis for Figure 2 for neural, basis for Figure 5 for components; obtain best layer for each voxel based on independent CV splits across 10 iterations
-	best_layer_anat_ROI = False # Basis for Figure 7 for neural;
+	best_layer_anat_ROI = True # Basis for Figure 7 for neural;
 
 # deal w these
 run_surf = False
@@ -25,29 +25,35 @@ merge_surface_targets = False
 
 
 if concat_over_models:
+	# Shared for neural and components
 	plot_barplot_across_models = False # Figure 2 for neural, Figure 5 for components; barplot of performance across models
+	stats_barplot_across_models = False # Figure 2 neural; stats for barplot of performance across models
+
+	# Neural specific
+	plot_anat_roi_scatter = True # Figure 7 neural; scatter of performance across models for anatomical ROIs
+
+	# Component specific
 	plot_barplot_across_inhouse_models = False # Figure 8A) for components (in-house models)
 	plot_scatter_comp_vs_comp = False # Figure 8B) for components (in-house models)
-	stats_barplot_across_models = False # Figure 2 neural; stats for barplot of performance across models
-	plot_anat_roi_scatter = False # Figure 7 neural; scatter of performance across models for anatomical ROIs
 	plot_scatter_pred_vs_actual = True # Figure 4, scatter for components
 
 
 target = 'NH2015comp'
-
 
 # Logging
 date = datetime.datetime.now().strftime("%m%d%Y-%T")
 if user != 'gt':
 	sys.stdout = open(join(RESULTDIR_ROOT, 'logs', f'out-{date}.log'), 'a+')
 
+# All models (n=19)
 source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
 				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-				'AST',  'wav2vec', 'DCASE2020', 'DS2',   'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer',
-				 ] # 'spectemp' # 'VGGish' was missign rand! 'VGGish',
-# source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-# 				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-# 				'AST',  'wav2vec', 'VGGish', 'S2T',  'sepformer']
+				'AST',  'wav2vec', 'DCASE2020', 'DS2',  'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer',
+				 ]
+# Models above spectemp baseline (n=15)
+source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
+				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
+				'AST',  'wav2vec', 'VGGish', 'S2T',  'sepformer']
 # source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
 # 				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',]
 # source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
@@ -65,7 +71,7 @@ source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell201
 # # 	'Kell2018wordSeed2', 'Kell2018speakerSeed2', 'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
 # # 	'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2', 'ResNet50multitaskSeed2',
 # 			]
-source_models = ['ResNet50multitask']
+source_models = ['ResNet50multitask', 'spectemp']
 
 
 print(f'---------- Target: {target} ----------')
@@ -73,6 +79,10 @@ print(f'---------- Target: {target} ----------')
 if concat_over_models:  # assemble plots across models
 	if target != 'NH2015-B2021':
 		df_meta_roi = pd.read_pickle(join(DATADIR, 'neural', target, 'df_roi_meta.pkl'))
+
+	# Decide whether we want to store plots
+	if not save:
+		SAVEDIR_CENTRALIZED = None
 	
 	if target == 'NH2015comp': # components
 
@@ -161,7 +171,7 @@ if concat_over_models:  # assemble plots across models
 
 		#### Predicted versus actual components (independently selected layer - most frequent one) ####
 		if plot_scatter_pred_vs_actual:
-			savestr = '_with_p-vals-TEST'
+			savestr = ''
 
 			for source_model in source_models:
 				for randnetw_flag in ['False','True']:
@@ -170,10 +180,11 @@ if concat_over_models:  # assemble plots across models
 
 					scatter_NH2015comp_resp_vs_pred(source_model=source_model,
 													target=target,
-													df_meta_roi=df_meta_roi,
 													randnetw=randnetw_flag,
 													save=SAVEDIR_CENTRALIZED,
-													add_savestr=savestr)
+													add_savestr=savestr,
+													generate_scatter_plot=True,
+													obtain_partial_corr=False,)
 
 
 		#### Analyze best layer (not independently selected, just the argmax layer) ####
@@ -212,7 +223,7 @@ if concat_over_models:  # assemble plots across models
 												  aggregation=agg_flag,
 												  value_of_interest=val_flag,
 												  sort_by=sort_flag,
-												  add_savestr=f'_{datetag}')
+												  add_savestr=f'')
 
 		# STATS FOR BARPLOTS ACROSS MODELS (bootstrap across subjects)
 		if stats_barplot_across_models:
@@ -229,7 +240,13 @@ if concat_over_models:  # assemble plots across models
 
 		# ANATOMICAL SCATTER PLOTS
 		if plot_anat_roi_scatter:
-			save_str = '_good-models'
+			if len(source_models) == 19:
+				save_str = '_all-models'
+			elif len(source_models) == 15:
+				save_str = '_good-models'
+			else:
+				save_str = f'_{len(source_models)}-models'
+
 			for val_flag in ['median_r2_test_c']:
 				for non_primary_flag in ['Anterior', 'Lateral', 'Posterior']:
 					for cond_flag in ['roi_label_general']:
@@ -241,11 +258,12 @@ if concat_over_models:  # assemble plots across models
 															   randnetw=randnetw_flag,
 															   condition_col=cond_flag,
 															   collapse_over_val_layer=collapse_flag,
-															   primary_rois=['Primary'],
+															   primary_rois=['Primary', ], # 'Primary',
 															   non_primary_rois=[non_primary_flag],
 															   annotate=False,
 															   save_str=save_str,
-															   value_of_interest=val_flag)
+															   value_of_interest=val_flag,
+															   stats=False) # !!!!!!!!
 
 		
 		## LOAD SCORE ACROSS LAYERS (FOR DIMENSIONALITY ANALYSIS -- migrated to DIM_plot_main)
@@ -318,7 +336,7 @@ if not concat_over_models:
 		output['mean_r2_test_c'] = output['mean_r2_test_c'].clip(upper=1)
 
 		# Permuted network (does not exist for spectemp or init models)
-		if source_model.endswith('init') or source_model == 'spectemp' or source_model in source_models: # FOR NOW, LETS NOT PLOT RANDNETW
+		if source_model.endswith('init') or source_model == 'spectemp': #or source_model in source_models: # FOR NOW, LETS NOT PLOT RANDNETW
 			output_randnetw = None
 			output_folders_paths_randnetw = []
 		else:
@@ -332,266 +350,277 @@ if not concat_over_models:
 			output_randnetw['mean_r2_test_c'] = output_randnetw['mean_r2_test_c'].clip(upper=1)
 			output_folders_paths_randnetw = [join(RESULTDIR, x) for x in output_folders_randnetw]
 
-		######### FIGURE OUT WHETHER WE HAVE NEURAL OR COMPONENT TARGET DATA ########
-		if target in ['NH2015', 'B2021']:
-			print(f'Plotting neural data: {target}')
+		##### First, check if have spectemp. Then, only aggregate the data and do not make more plots #####
+		if source_model == 'spectemp':
+			if target == 'NH2015comp':
+				val_flags = ['median_r2_test'] # Uncorrected r2
+			else:
+				val_flags = ['median_r2_test_c']
 
-			######### PREDICITIVITY ACROSS ALL LAYERS (SI 2) ########
-			if pred_across_layers:
+			print(f'Aggregating data for {source_model} model')
+			for collapse_flag in ['median']:
+				for val_flag in val_flags:
+					obtain_spectemp_val_CV_splits_nit(roi=None,
+													  target=target,
+													  df_meta_roi=df_meta_roi,
+													  collapse_over_splits=collapse_flag,
+													  value_of_interest=val_flag,
+													  nit=10)
+		else: # Move on to all other possible analyses for models
 
-				# Plot predictivity across all layers, all voxels
-				plot_score_across_layers(output=output,
-										 output_randnetw=output_randnetw,
-										 source_model=source_model,
-										 target=target,
-										 ylim=[0, 1],
-										 roi=None,
-										 save=PLOTDIR,
-										 value_of_interest='median_r2_test_c',)
+			######### FIGURE OUT WHETHER WE HAVE NEURAL OR COMPONENT TARGET DATA ########
+			if target in ['NH2015', 'B2021']:
+				print(f'Plotting neural data: {target}')
 
-				# Create one-hot cols with ROI labels for plotting
-				output = add_one_hot_roi_col(df=output,
-											 col='roi_label_general',)
-				# Plot predictivity across all layers, for anatomical ROIs (roi_label_general)
-				plot_score_across_layers(output=output,
-										 output_randnetw=output_randnetw,
-										 source_model=source_model,
-										 target=target,
-										 ylim=[0, 1],
-										 roi='roi_label_general',
-										 save=PLOTDIR,
-										 value_of_interest='median_r2_test_c',)
-				sys.stdout.flush()
+				######### PREDICITIVITY ACROSS ALL LAYERS (SI 2) ########
+				if pred_across_layers:
 
-			######### FIND BEST LAYER USING INDEPENDENT CV SPLITS (BASIS FOR FIGURE 2) ########
-			if best_layer_cv_nit:
+					# Plot predictivity across all layers, all voxels
+					plot_score_across_layers(output=output,
+											 output_randnetw=output_randnetw,
+											 source_model=source_model,
+											 target=target,
+											 ylim=[0, 1],
+											 roi=None,
+											 save=PLOTDIR,
+											 value_of_interest='median_r2_test_c',)
 
-				# Best layer based on CV splits -- TRAINED and PERMUTED NETWORK
-				for collapse_flag in ['median']:
-					for val_flag in ['r2_test_c']:
-						for randnetw_flag in ['False', 'True']:
-							if randnetw_flag == 'True':
-								if output_randnetw is not None:
-									select_r2_test_CV_splits_nit(output_folders_paths=output_folders_paths_randnetw,
+					# Create one-hot cols with ROI labels for plotting
+					output = add_one_hot_roi_col(df=output,
+												 col='roi_label_general',)
+					# Plot predictivity across all layers, for anatomical ROIs (roi_label_general)
+					plot_score_across_layers(output=output,
+											 output_randnetw=output_randnetw,
+											 source_model=source_model,
+											 target=target,
+											 ylim=[0, 1],
+											 roi='roi_label_general',
+											 save=PLOTDIR,
+											 value_of_interest='median_r2_test_c',)
+					sys.stdout.flush()
+
+				######### FIND BEST LAYER USING INDEPENDENT CV SPLITS (BASIS FOR FIGURE 2) ########
+				if best_layer_cv_nit:
+
+					# Best layer based on CV splits -- TRAINED and PERMUTED NETWORK
+					for collapse_flag in ['median']:
+						for val_flag in ['r2_test_c']:
+							for randnetw_flag in ['False', 'True']:
+								if randnetw_flag == 'True':
+									if output_randnetw is not None:
+										select_r2_test_CV_splits_nit(output_folders_paths=output_folders_paths_randnetw,
+																	 df_meta_roi=df_meta_roi,
+																	 collapse_over_splits=collapse_flag,
+																	 source_model=source_model, target=target,
+																	 value_of_interest=val_flag,
+																	 randnetw='True', roi=None, save=PLOTDIR, nit=10)
+									else:
+										print('No permuted network data found')
+								elif randnetw_flag == 'False':
+									select_r2_test_CV_splits_nit(output_folders_paths=output_folders_paths,
 																 df_meta_roi=df_meta_roi,
 																 collapse_over_splits=collapse_flag,
 																 source_model=source_model, target=target,
 																 value_of_interest=val_flag,
-																 randnetw='True', roi=None, save=PLOTDIR, nit=10)
-								else:
-									print('No permuted network data found')
-							elif randnetw_flag == 'False':
-								select_r2_test_CV_splits_nit(output_folders_paths=output_folders_paths,
-															 df_meta_roi=df_meta_roi,
-															 collapse_over_splits=collapse_flag,
-															 source_model=source_model, target=target,
-															 value_of_interest=val_flag,
-															 randnetw='False', roi=None, save=PLOTDIR, nit=10)
-							else:
-								raise ValueError()
-						sys.stdout.flush()
-
-			######### OBTAIN BEST LAYER PER ANATOMICAL ROI (BASIS FOR FIGURE 7) ########
-			if best_layer_anat_ROI:
-				# Barplots of best layer for anatomical ROIs -- TRAINED and PERMUTED NETWORK
-				for cond_flag in ['roi_label_general']:  # ['roi_label_general','roi_anat_hemi' ]
-					for collapse_flag in ['median']:  # ['median', 'mean'] # which aggfunc to use when obtaining an aggregate over rel_pos layer index values for each subject.
-						# For the paper, we take the median over rel_pos (relative position) layer index values for each subject. Then, we take the mean over subjects.
-						for val_flag in ['median_r2_test_c', ]:  # ['median_r2_test', 'median_r2_test_c',]
-							for randnetw_flag in ['False', 'True']:  # ['False', 'True',]
-
-								if randnetw_flag == 'True':
-
-									barplot_best_layer_per_anat_ROI(output_randnetw, meta, source_model=source_model,
-																	target=target,
-																	randnetw=randnetw_flag,
-																	collapse_over_val_layer=collapse_flag,
-																	save=PLOTDIR, condition_col=cond_flag,
-																	value_of_interest=val_flag,
-																	val_layer='rel_pos')
-								elif randnetw_flag == 'False':
-									barplot_best_layer_per_anat_ROI(output, meta, source_model=source_model, target=target,
-																	randnetw=randnetw_flag,
-																	collapse_over_val_layer=collapse_flag,
-																	save=PLOTDIR, condition_col=cond_flag,
-																	value_of_interest=val_flag,
-																	val_layer='rel_pos', )
+																 randnetw='False', roi=None, save=PLOTDIR, nit=10)
 								else:
 									raise ValueError()
+							sys.stdout.flush()
+
+				######### OBTAIN BEST LAYER PER ANATOMICAL ROI (BASIS FOR FIGURE 7) ########
+				if best_layer_anat_ROI:
+					# Barplots of best layer for anatomical ROIs -- TRAINED and PERMUTED NETWORK
+					for cond_flag in ['roi_label_general']:  # ['roi_label_general','roi_anat_hemi' ]
+						for collapse_flag in ['median']:  # ['median', 'mean'] # which aggfunc to use when obtaining an aggregate over rel_pos layer index values for each subject.
+							# For the paper, we take the median over rel_pos (relative position) layer index values for each subject. Then, we take the mean over subjects.
+							for val_flag in ['median_r2_test_c', ]:  # ['median_r2_test', 'median_r2_test_c',]
+								for randnetw_flag in ['False', 'True']:  # ['False', 'True',]
+
+									if randnetw_flag == 'True':
+
+										barplot_best_layer_per_anat_ROI(output=output_randnetw,
+																		meta=meta,
+																		source_model=source_model, target=target,
+																		randnetw=randnetw_flag,
+																		collapse_over_val_layer=collapse_flag,
+																		save=PLOTDIR, condition_col=cond_flag,
+																		value_of_interest=val_flag,
+																		val_layer='rel_pos')
+									elif randnetw_flag == 'False':
+										barplot_best_layer_per_anat_ROI(output=output, meta=meta,
+																		source_model=source_model, target=target,
+																		randnetw=randnetw_flag,
+																		collapse_over_val_layer=collapse_flag,
+																		save=PLOTDIR, condition_col=cond_flag,
+																		value_of_interest=val_flag,
+																		val_layer='rel_pos', )
+									else:
+										raise ValueError()
 
 
-		elif target == 'NH2015comp':  # components
-			print(f'Plotting component data: {target}')
+			elif target == 'NH2015comp':  # components
+				print(f'Plotting component data: {target}')
 
-			######### PREDICITIVITY ACROSS ALL LAYERS (NOT USED IN PAPER) ########
-			# Plot components across layers, and store 'across-layers_{source_model}_NH2015comp_{value_of_intereset}.csv'
-			if pred_across_layers:
-				plot_comp_across_layers(output=output,
-										source_model=source_model,
-										output_randnetw=output_randnetw,
-										target=target,
-										save=PLOTDIR,
-										value_of_interest='median_r2_test')
-
-
-
-			######### FIND BEST LAYER USING INDEPENDENT CV SPLITS (BASIS FOR FIGURE 5) ########
-			if best_layer_cv_nit:
-				for randnetw_flag in ['False']:
-					if randnetw_flag == 'True':
-						select_r2_test_CV_splits_nit(output_folders_paths=output_folders_paths_randnetw,
-													 df_meta_roi=df_meta_roi,
-													 source_model=source_model,
-													 target=target,
-													 value_of_interest='r2_test',
-													 randnetw=randnetw_flag,
-													 save=PLOTDIR)
-					elif randnetw_flag == 'False':
-						select_r2_test_CV_splits_nit(output_folders_paths=output_folders_paths,
-													 df_meta_roi=df_meta_roi,
-													 source_model=source_model,
-													 target=target,
-													 value_of_interest='r2_test',
-													 randnetw=randnetw_flag,
-													 save=PLOTDIR)
-					else:
-						raise ValueError()
-
-
-
-			# # Per component, find the best layer and obtain the associated r2 test score (stores the 'best-layer-argmax_per-comp_{source_model}_NH2015comp_{value_of_interest}.csv')
-			# # Trained and permuted:
-			# for randnetw_flag in ['False','True']:
-			# 	obtain_best_layer_per_comp(source_model=source_model, target=target, randnetw=randnetw_flag,
-			# 							   value_of_interest='median_r2_test', sem_of_interest='sem_r2_test', )
-			# 	obtain_best_layer_per_comp(source_model=source_model, target=target, randnetw=randnetw_flag,
-			# 							   value_of_interest='median_r2_train', sem_of_interest='sem_r2_train', )
-			#
-
-
-		else:
-			raise ValueError('Target not available')
-
-
-		######### SURFACE ANALYSES ########
-		if run_surf:  # surf has to be run with randnetw False and True separately
-			PLOTSURFDIR.mkdir(exist_ok=True)
-			save_full_surface = True
-			
-			##### Generate plots by plotting certain values of interest directly on the surface #####
-			val_flags = ['kell_r_reliability', 'roi_label_general', 'pearson_r_reliability', 'shared_by']
-			
-			# Transform values
-			for val_flag in val_flags:
-				# Transformations
-				if val_flag.endswith('reliability'):
-					val_flag_to_plot = f'{val_flag}*10'
-				elif val_flag == 'roi_label_general':
-					val_flag_to_plot = 'roi_label_general_int'
-				else:
-					val_flag_to_plot = val_flag
-					
-				df_plot_direct = direct_plot_val_surface(output=output,
+				######### FIND BEST LAYER USING INDEPENDENT CV SPLITS (BASIS FOR FIGURE 5) ########
+				if best_layer_cv_nit:
+					for randnetw_flag in ['False','True']: # ['False', 'True']:
+						if randnetw_flag == 'True':
+							if output_randnetw is not None:
+								select_r2_test_CV_splits_nit(output_folders_paths=output_folders_paths_randnetw,
+															 df_meta_roi=df_meta_roi,
+															 source_model=source_model,
+															 target=target,
+															 value_of_interest='r2_test',
+															 randnetw=randnetw_flag,
+															 save=PLOTDIR)
+							else:
+								print(f'No permuted network data found for NH2015comp, source model {source_model}')
+						elif randnetw_flag == 'False':
+							select_r2_test_CV_splits_nit(output_folders_paths=output_folders_paths,
 														 df_meta_roi=df_meta_roi,
-														 val=val_flag,)
-				
-				# Make sure we take the median across shared coordinates across subjects!
-				df_plot_direct_median = create_avg_subject_surface(df_plot=df_plot_direct,
-																   source_model=source_model,
-																   val_of_interest=val_flag_to_plot, # does not really matter here besides for logging..
-																   meta=meta,
-																   save=PLOTSURFDIR,
-																   target=target,
-																   randnetw=randnetw,
-																   plot_val_of_interest=val_flag_to_plot,
-																   save_full_surface=True)
-				
-				# Dump to mat file
-				dump_for_surface_writing_direct(df_plot_direct=df_plot_direct_median,
-												val='median_plot_val',#val_flag_to_plot,
+														 source_model=source_model,
+														 target=target,
+														 value_of_interest='r2_test',
+														 randnetw=randnetw_flag,
+														 save=PLOTDIR)
+						else:
+							raise ValueError()
+
+
+
+				# # Per component, find the best layer and obtain the associated r2 test score (stores the 'best-layer-argmax_per-comp_{source_model}_NH2015comp_{value_of_interest}.csv')
+				# # Trained and permuted:
+				# for randnetw_flag in ['False','True']:
+				# 	obtain_best_layer_per_comp(source_model=source_model, target=target, randnetw=randnetw_flag,
+				# 							   value_of_interest='median_r2_test', sem_of_interest='sem_r2_test', )
+				# 	obtain_best_layer_per_comp(source_model=source_model, target=target, randnetw=randnetw_flag,
+				# 							   value_of_interest='median_r2_train', sem_of_interest='sem_r2_train', )
+				#
+
+
+			else:
+				raise ValueError('Target not available')
+
+
+			######### SURFACE ANALYSES ########
+			if run_surf:  # surf has to be run with randnetw False and True separately
+				PLOTSURFDIR.mkdir(exist_ok=True)
+				save_full_surface = True
+
+				##### Generate plots by plotting certain values of interest directly on the surface #####
+				val_flags = ['kell_r_reliability', 'roi_label_general', 'pearson_r_reliability', 'shared_by']
+
+				# Transform values
+				for val_flag in val_flags:
+					# Transformations
+					if val_flag.endswith('reliability'):
+						val_flag_to_plot = f'{val_flag}*10'
+					elif val_flag == 'roi_label_general':
+						val_flag_to_plot = 'roi_label_general_int'
+					else:
+						val_flag_to_plot = val_flag
+
+					df_plot_direct = direct_plot_val_surface(output=output,
+															 df_meta_roi=df_meta_roi,
+															 val=val_flag,)
+
+					# Make sure we take the median across shared coordinates across subjects!
+					df_plot_direct_median = create_avg_subject_surface(df_plot=df_plot_direct,
+																	   source_model=source_model,
+																	   val_of_interest=val_flag_to_plot, # does not really matter here besides for logging..
+																	   meta=meta,
+																	   save=PLOTSURFDIR,
+																	   target=target,
+																	   randnetw=randnetw,
+																	   plot_val_of_interest=val_flag_to_plot,
+																	   save_full_surface=True)
+
+					# Dump to mat file
+					dump_for_surface_writing_direct(df_plot_direct=df_plot_direct_median,
+													val='median_plot_val',#val_flag_to_plot,
+													 source_model=source_model,
+													 SURFDIR=SURFDIR,
+													 randnetw=randnetw,
+													 subfolder_name=f'TYPE=subj-median-direct_PLOTVAL={val_flag_to_plot}_{target}')
+
+				######## Surface argmax plots #########
+				for val_flag in ['median_r2_test_c', 'median_r2_test']:
+					for plot_val_flag in ['pos', 'rel_pos']:
+
+						## SUBJECT-WISE ARGMAX ANALYSIS ##
+						df_plot, layer_names = surface_argmax(output, source_model=source_model, target=target, randnetw=randnetw,
+															  value_of_interest=val_flag, hist=True, save=PLOTSURFDIR)
+
+						# Dump subject-wise mat files
+						dump_for_surface_writing(vals=df_plot[plot_val_flag],
+												 meta=meta,
 												 source_model=source_model,
-												 SURFDIR=SURFDIR,
+												 SURFDIR=False,  # SURFDIR
 												 randnetw=randnetw,
-												 subfolder_name=f'TYPE=subj-median-direct_PLOTVAL={val_flag_to_plot}_{target}')
-			
-			######## Surface argmax plots #########
-			for val_flag in ['median_r2_test_c', 'median_r2_test']:
-				for plot_val_flag in ['pos', 'rel_pos']:
-					
-					## SUBJECT-WISE ARGMAX ANALYSIS ##
-					df_plot, layer_names = surface_argmax(output, source_model=source_model, target=target, randnetw=randnetw,
-														  value_of_interest=val_flag, hist=True, save=PLOTSURFDIR)
-					
-					# Dump subject-wise mat files
-					dump_for_surface_writing(vals=df_plot[plot_val_flag],
-											 meta=meta,
-											 source_model=source_model,
-											 SURFDIR=False,  # SURFDIR
-											 randnetw=randnetw,
-											 subfolder_name=f'TYPE=subj-argmax_METRIC={val_flag}_PLOTVAL={plot_val_flag}_'
-															f'{target}')
-					
-					## AVERAGE SUBJECT ##
-					if merge_surface_targets:  # load the other target dataset
-						# Load output results
-						output2, _ = concat_dfs_modelwise(RESULTDIR, mapping=mapping, df_str='df_output',
-														  source_model=source_model, target=d_target[target],
-														  truncate=None, randemb=randemb, randnetw=randnetw)
-						# Load meta
-						df_meta_roi2 = pd.read_pickle(join(DATADIR, 'neural', d_target[target], 'df_roi_meta.pkl'))
-						meta2 = df_meta_roi2.copy(deep=True)  # for adding plotting values
-						meta2['target'] = d_target[target]
-						
-						if source_model == 'wav2vec':  # rename 'Logits' to Final
-							output2.loc[output2.source_layer == 'Logits', 'source_layer'] = 'Final'
-						
-						# Ensure that r2 test corrected does exceed 1
-						output2['median_r2_test_c'] = output2['median_r2_test_c'].clip(upper=1)
-						
-						df_plot2, layer_names2 = surface_argmax(output2, source_model=source_model, target=d_target[target],
-																randnetw=randnetw, value_of_interest=val_flag, hist=True,
-																save=PLOTSURFDIR)
-						
-						# Also save subjwise files for target 2
-						dump_for_surface_writing(df_plot2[plot_val_flag], meta2, source_model, SURFDIR, randnetw=randnetw,
 												 subfolder_name=f'TYPE=subj-argmax_METRIC={val_flag}_PLOTVAL={plot_val_flag}_'
-																f'{d_target[target]}')
-						
-						# Store median subject surface map for secondary dataset
-						median_subj2 = create_avg_subject_surface(df_plot=df_plot2, meta=meta2, source_model=source_model, save=PLOTSURFDIR,
-																  target=d_target[target], val_of_interest=val_flag,
-																  plot_val_of_interest=plot_val_flag, randnetw=randnetw, save_full_surface=True)
-						dump_for_surface_writing_avg(median_subj2, source_model, SURFDIR, randnetw=randnetw,
-													 subfolder_name=f'TYPE=subj-median-argmax_METRIC={val_flag}_PLOTVAL={plot_val_flag}_'
+																f'{target}')
+
+						## AVERAGE SUBJECT ##
+						if merge_surface_targets:  # load the other target dataset
+							# Load output results
+							output2, _ = concat_dfs_modelwise(RESULTDIR, mapping=mapping, df_str='df_output',
+															  source_model=source_model, target=d_target[target],
+															  truncate=None, randemb=randemb, randnetw=randnetw)
+							# Load meta
+							df_meta_roi2 = pd.read_pickle(join(DATADIR, 'neural', d_target[target], 'df_roi_meta.pkl'))
+							meta2 = df_meta_roi2.copy(deep=True)  # for adding plotting values
+							meta2['target'] = d_target[target]
+
+							if source_model == 'wav2vec':  # rename 'Logits' to Final
+								output2.loc[output2.source_layer == 'Logits', 'source_layer'] = 'Final'
+
+							# Ensure that r2 test corrected does exceed 1
+							output2['median_r2_test_c'] = output2['median_r2_test_c'].clip(upper=1)
+
+							df_plot2, layer_names2 = surface_argmax(output2, source_model=source_model, target=d_target[target],
+																	randnetw=randnetw, value_of_interest=val_flag, hist=True,
+																	save=PLOTSURFDIR)
+
+							# Also save subjwise files for target 2
+							dump_for_surface_writing(df_plot2[plot_val_flag], meta2, source_model, SURFDIR, randnetw=randnetw,
+													 subfolder_name=f'TYPE=subj-argmax_METRIC={val_flag}_PLOTVAL={plot_val_flag}_'
 																	f'{d_target[target]}')
-						
-						assert (layer_names == layer_names2).all()
-						
-						# Median subj, based on both datasets
-						meta['target'] = target
-						median_subj = create_avg_subject_surface_merge_targets(df_plot1=df_plot, meta1=meta,
-																			   df_plot2=df_plot2, meta2=meta2, plot_val_of_interest=plot_val_flag)
-						
-						# Plot histogram for layer preference across voxels from both datasets
-						surface_argmax_hist_merge_datasets(df_plot1=df_plot, df_plot2=df_plot2, source_model=source_model,
-														   save=PLOTSURFDIR, randnetw=randnetw, layer_names=layer_names)
-						
+
+							# Store median subject surface map for secondary dataset
+							median_subj2 = create_avg_subject_surface(df_plot=df_plot2, meta=meta2, source_model=source_model, save=PLOTSURFDIR,
+																	  target=d_target[target], val_of_interest=val_flag,
+																	  plot_val_of_interest=plot_val_flag, randnetw=randnetw, save_full_surface=True)
+							dump_for_surface_writing_avg(median_subj2, source_model, SURFDIR, randnetw=randnetw,
+														 subfolder_name=f'TYPE=subj-median-argmax_METRIC={val_flag}_PLOTVAL={plot_val_flag}_'
+																		f'{d_target[target]}')
+
+							assert (layer_names == layer_names2).all()
+
+							# Median subj, based on both datasets
+							meta['target'] = target
+							median_subj = create_avg_subject_surface_merge_targets(df_plot1=df_plot, meta1=meta,
+																				   df_plot2=df_plot2, meta2=meta2, plot_val_of_interest=plot_val_flag)
+
+							# Plot histogram for layer preference across voxels from both datasets
+							surface_argmax_hist_merge_datasets(df_plot1=df_plot, df_plot2=df_plot2, source_model=source_model,
+															   save=PLOTSURFDIR, randnetw=randnetw, layer_names=layer_names)
+
+							# Dump the average (median across subjects) brain to the surface
+							dump_for_surface_writing_avg(median_subj, source_model, SURFDIR, randnetw=randnetw,
+														 subfolder_name=f'TYPE=subj-median-argmax_METRIC={val_flag}_PLOTVAL={plot_val_flag}'
+																		f'_{target}-{d_target[target]}')
+
+						# Just use the first output to create the surface for primary target (independent of whether I am merging or not)
+						median_subj1 = create_avg_subject_surface(df_plot=df_plot, meta=meta, source_model=source_model, save=PLOTSURFDIR,
+																	  target=target, val_of_interest=val_flag,
+																	  plot_val_of_interest=plot_val_flag, randnetw=randnetw, save_full_surface=True)
+
 						# Dump the average (median across subjects) brain to the surface
-						dump_for_surface_writing_avg(median_subj, source_model, SURFDIR, randnetw=randnetw,
+						dump_for_surface_writing_avg(median_subj1, source_model, SURFDIR, randnetw=randnetw,
 													 subfolder_name=f'TYPE=subj-median-argmax_METRIC={val_flag}_PLOTVAL={plot_val_flag}'
-																	f'_{target}-{d_target[target]}')
-					
-					# Just use the first output to create the surface for primary target (independent of whether I am merging or not)
-					median_subj1 = create_avg_subject_surface(df_plot=df_plot, meta=meta, source_model=source_model, save=PLOTSURFDIR,
-																  target=target, val_of_interest=val_flag,
-																  plot_val_of_interest=plot_val_flag, randnetw=randnetw, save_full_surface=True)
-					
-					# Dump the average (median across subjects) brain to the surface
-					dump_for_surface_writing_avg(median_subj1, source_model, SURFDIR, randnetw=randnetw,
-												 subfolder_name=f'TYPE=subj-median-argmax_METRIC={val_flag}_PLOTVAL={plot_val_flag}'
-																f'_{target}')
-					
-					sys.stdout.flush()
+																	f'_{target}')
+
+						sys.stdout.flush()
 		
 
 	
