@@ -11,17 +11,15 @@ SURFDIR = f'{DATADIR}/fsavg_surf/'
 
 ### Settings for which plots to make ###
 save = True # Whether to save any plots/csvs
-concat_over_models = True
+concat_over_models = False
 
 # If concat_over_models = False, we load each individual model and perform the analysis on that
 if not concat_over_models:
-	pred_across_layers = True # SI 2; predictivity for each model across all layers
-	best_layer_cv_nit = True # Basis for Figure 2 for neural, basis for Figure 5 for components; obtain best layer for each voxel based on independent CV splits across 10 iterations
-	best_layer_anat_ROI = True # Basis for Figure 7 for neural;
-
-# deal w these
-run_surf = False
-merge_surface_targets = False
+	pred_across_layers = False # SI 2; predictivity for each model across all layers
+	best_layer_cv_nit = False # Basis for Figure 2 for neural, basis for Figure 5 for components; obtain best layer for each voxel based on independent CV splits across 10 iterations
+	best_layer_anat_ROI = False # Basis for Figure 7 for neural; best layer for each anatomical ROI
+	run_surf_argmax = True # Basis for Figure 6 for neural, dump argmax surface position to .mat file
+	run_surf_direct_val = False # plotting arbitrary values on the surface (not used in paper)
 
 
 if concat_over_models:
@@ -38,7 +36,7 @@ if concat_over_models:
 	plot_scatter_pred_vs_actual = True # Figure 4, scatter for components
 
 
-target = 'NH2015comp'
+target = 'NH2015'
 
 # Logging
 date = datetime.datetime.now().strftime("%m%d%Y-%T")
@@ -71,7 +69,7 @@ source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell201
 # # 	'Kell2018wordSeed2', 'Kell2018speakerSeed2', 'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
 # # 	'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2', 'ResNet50multitaskSeed2',
 # 			]
-source_models = ['ResNet50multitask', 'spectemp']
+source_models = ['AST']
 
 
 print(f'---------- Target: {target} ----------')
@@ -156,17 +154,17 @@ if concat_over_models:  # assemble plots across models
 									  save=True, save_str='all-models-bootstrap',
 									  models1 = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
 					 			'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-								'AST',  'wav2vec', 'DCASE2020', 'DS2', 'VGGish',  'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer'],
+								'AST', 'wav2vec', 'DCASE2020', 'DS2', 'VGGish',  'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer'],
 									  models2 = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
 					 			'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-								'AST',  'wav2vec', 'DCASE2020', 'DS2', 'VGGish',  'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer'],
+								'AST', 'wav2vec', 'DCASE2020', 'DS2', 'VGGish',  'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer'],
 									  aggregation='CV-splits-nit-10',
 									  randnetw=randnetw_flag,)
 				compare_CV_splits_nit(source_models=source_models, target=target, save=True, save_str='inhouse-models_CochResNet50-bootstrap',
 									  models1=['ResNet50word', 'ResNet50speaker', 'ResNet50multitask','ResNet50audioset', 'ResNet50music'],
 									  models2=['ResNet50word', 'ResNet50speaker', 'ResNet50multitask','ResNet50audioset', 'ResNet50music'],
 									  aggregation='CV-splits-nit-10',
-									  randnetw=randnetw_flag, )
+									  randnetw=randnetw_flag,)
 
 
 		#### Predicted versus actual components (independently selected layer - most frequent one) ####
@@ -311,10 +309,6 @@ if not concat_over_models:
 		# Load voxel meta
 		df_meta_roi = pd.read_pickle(join(DATADIR, 'neural', target, 'df_roi_meta.pkl'))
 		meta = df_meta_roi.copy(deep=True) # for adding plotting values
-		
-		# spectemp_path = [f'{ROOT}/results/AUD/20210915_median_across_splits_correction/spectemp/AUD-MAPPING-Ridge_TARGET-B2021_SOURCE-spectemp-avgpool_RANDEMB-False_RANDNETW-False_ALPHALIMIT-50']
-		# concat_ds_B2021(source_model='spectemp', output_folders_paths=spectemp_path,
-		# 				df_roi_meta=df_meta_roi, randnetw=randnetw)
 
 		#### LOAD DATA ####
 		# Trained network
@@ -336,7 +330,7 @@ if not concat_over_models:
 		output['mean_r2_test_c'] = output['mean_r2_test_c'].clip(upper=1)
 
 		# Permuted network (does not exist for spectemp or init models)
-		if source_model.endswith('init') or source_model == 'spectemp': #or source_model in source_models: # FOR NOW, LETS NOT PLOT RANDNETW
+		if source_model.endswith('init') or source_model == 'spectemp' or source_model in source_models: # FOR NOW, LETS NOT PLOT RANDNETW
 			output_randnetw = None
 			output_folders_paths_randnetw = []
 		else:
@@ -497,17 +491,75 @@ if not concat_over_models:
 				# 							   value_of_interest='median_r2_train', sem_of_interest='sem_r2_train', )
 				#
 
-
 			else:
 				raise ValueError('Target not available')
 
 
 			######### SURFACE ANALYSES ########
-			if run_surf:  # surf has to be run with randnetw False and True separately
+			if run_surf_argmax:
 				PLOTSURFDIR.mkdir(exist_ok=True)
-				save_full_surface = True
 
-				##### Generate plots by plotting certain values of interest directly on the surface #####
+				if not save:
+					PLOTSURFDIR = False # if save is False, then do not save the plots
+					SURFDIR = False
+
+				######## Surface argmax plots #########
+				for randnetw_flag in ['False', 'True']:
+
+					if randnetw_flag == 'True' and output_randnetw is None:
+						print(f'No permuted network data found for {target}, source model {source_model}')
+						continue
+
+					else:
+						for val_flag in ['median_r2_test_c', ]:
+							for plot_val_flag in ['pos', 'rel_pos']: #
+
+								## SUBJECT-WISE ARGMAX ANALYSIS ##
+								# First, obtain the argmax layer for each voxel
+								df_plot, layer_names = surface_argmax(output=output,
+																	  source_model=source_model,
+																	  target=target,
+																	  randnetw=randnetw_flag,
+																	  value_of_interest=val_flag,
+																	  hist=True,
+																	  save=PLOTSURFDIR)
+
+								# Second, dump subject-wise mat files
+								dump_for_surface_writing(vals=df_plot[plot_val_flag],
+														 meta=meta,
+														 source_model=source_model,
+														 SURFDIR=SURFDIR,
+														 randnetw=randnetw_flag,
+														 subfolder_name=f'TYPE=subj-argmax_'
+																		f'METRIC={val_flag}_'
+																		f'PLOTVAL={plot_val_flag}_'
+																		f'{target}')
+
+								# Third, obtain a median subject surface
+								median_subj = create_avg_subject_surface(df_plot=df_plot,
+																		 meta=meta,
+																		 source_model=source_model,
+																		 save=PLOTSURFDIR,
+																		 target=target,
+																		 val_of_interest=val_flag,
+																		 plot_val_of_interest=plot_val_flag,
+																		 randnetw=randnetw_flag)
+
+								# Dump the average (median across subjects) brain to the surface
+								dump_for_surface_writing_avg(median_subj=median_subj,
+															 source_model=source_model,
+															 SURFDIR=SURFDIR,
+															 randnetw=randnetw_flag,
+															 subfolder_name=f'TYPE=subj-median-argmax_'
+																			f'METRIC={val_flag}_'
+																			f'PLOTVAL={plot_val_flag}_'
+																			f'{target}')
+
+
+			##### Generate plots by plotting certain values of interest directly on the surface #####
+			if run_surf_direct_val:
+
+				# Not used in paper, but can come in handy
 				val_flags = ['kell_r_reliability', 'roi_label_general', 'pearson_r_reliability', 'shared_by']
 
 				# Transform values
@@ -522,105 +574,30 @@ if not concat_over_models:
 
 					df_plot_direct = direct_plot_val_surface(output=output,
 															 df_meta_roi=df_meta_roi,
-															 val=val_flag,)
+															 val=val_flag, )
 
 					# Make sure we take the median across shared coordinates across subjects!
 					df_plot_direct_median = create_avg_subject_surface(df_plot=df_plot_direct,
 																	   source_model=source_model,
-																	   val_of_interest=val_flag_to_plot, # does not really matter here besides for logging..
+																	   val_of_interest=val_flag_to_plot,
+																	   # does not really matter here besides for logging..
 																	   meta=meta,
 																	   save=PLOTSURFDIR,
 																	   target=target,
-																	   randnetw=randnetw,
-																	   plot_val_of_interest=val_flag_to_plot,
-																	   save_full_surface=True)
+																	   randnetw='False',
+																	   plot_val_of_interest=val_flag_to_plot,)
 
 					# Dump to mat file
 					dump_for_surface_writing_direct(df_plot_direct=df_plot_direct_median,
-													val='median_plot_val',#val_flag_to_plot,
-													 source_model=source_model,
-													 SURFDIR=SURFDIR,
-													 randnetw=randnetw,
-													 subfolder_name=f'TYPE=subj-median-direct_PLOTVAL={val_flag_to_plot}_{target}')
+													val='median_plot_val',  # val_flag_to_plot,
+													source_model=source_model,
+													SURFDIR=SURFDIR,
+													randnetw='False',
+													subfolder_name=f'TYPE=subj-median-direct_'
+																   f'PLOTVAL={val_flag_to_plot}_'
+																   f'{target}')
 
-				######## Surface argmax plots #########
-				for val_flag in ['median_r2_test_c', 'median_r2_test']:
-					for plot_val_flag in ['pos', 'rel_pos']:
-
-						## SUBJECT-WISE ARGMAX ANALYSIS ##
-						df_plot, layer_names = surface_argmax(output, source_model=source_model, target=target, randnetw=randnetw,
-															  value_of_interest=val_flag, hist=True, save=PLOTSURFDIR)
-
-						# Dump subject-wise mat files
-						dump_for_surface_writing(vals=df_plot[plot_val_flag],
-												 meta=meta,
-												 source_model=source_model,
-												 SURFDIR=False,  # SURFDIR
-												 randnetw=randnetw,
-												 subfolder_name=f'TYPE=subj-argmax_METRIC={val_flag}_PLOTVAL={plot_val_flag}_'
-																f'{target}')
-
-						## AVERAGE SUBJECT ##
-						if merge_surface_targets:  # load the other target dataset
-							# Load output results
-							output2, _ = concat_dfs_modelwise(RESULTDIR, mapping=mapping, df_str='df_output',
-															  source_model=source_model, target=d_target[target],
-															  truncate=None, randemb=randemb, randnetw=randnetw)
-							# Load meta
-							df_meta_roi2 = pd.read_pickle(join(DATADIR, 'neural', d_target[target], 'df_roi_meta.pkl'))
-							meta2 = df_meta_roi2.copy(deep=True)  # for adding plotting values
-							meta2['target'] = d_target[target]
-
-							if source_model == 'wav2vec':  # rename 'Logits' to Final
-								output2.loc[output2.source_layer == 'Logits', 'source_layer'] = 'Final'
-
-							# Ensure that r2 test corrected does exceed 1
-							output2['median_r2_test_c'] = output2['median_r2_test_c'].clip(upper=1)
-
-							df_plot2, layer_names2 = surface_argmax(output2, source_model=source_model, target=d_target[target],
-																	randnetw=randnetw, value_of_interest=val_flag, hist=True,
-																	save=PLOTSURFDIR)
-
-							# Also save subjwise files for target 2
-							dump_for_surface_writing(df_plot2[plot_val_flag], meta2, source_model, SURFDIR, randnetw=randnetw,
-													 subfolder_name=f'TYPE=subj-argmax_METRIC={val_flag}_PLOTVAL={plot_val_flag}_'
-																	f'{d_target[target]}')
-
-							# Store median subject surface map for secondary dataset
-							median_subj2 = create_avg_subject_surface(df_plot=df_plot2, meta=meta2, source_model=source_model, save=PLOTSURFDIR,
-																	  target=d_target[target], val_of_interest=val_flag,
-																	  plot_val_of_interest=plot_val_flag, randnetw=randnetw, save_full_surface=True)
-							dump_for_surface_writing_avg(median_subj2, source_model, SURFDIR, randnetw=randnetw,
-														 subfolder_name=f'TYPE=subj-median-argmax_METRIC={val_flag}_PLOTVAL={plot_val_flag}_'
-																		f'{d_target[target]}')
-
-							assert (layer_names == layer_names2).all()
-
-							# Median subj, based on both datasets
-							meta['target'] = target
-							median_subj = create_avg_subject_surface_merge_targets(df_plot1=df_plot, meta1=meta,
-																				   df_plot2=df_plot2, meta2=meta2, plot_val_of_interest=plot_val_flag)
-
-							# Plot histogram for layer preference across voxels from both datasets
-							surface_argmax_hist_merge_datasets(df_plot1=df_plot, df_plot2=df_plot2, source_model=source_model,
-															   save=PLOTSURFDIR, randnetw=randnetw, layer_names=layer_names)
-
-							# Dump the average (median across subjects) brain to the surface
-							dump_for_surface_writing_avg(median_subj, source_model, SURFDIR, randnetw=randnetw,
-														 subfolder_name=f'TYPE=subj-median-argmax_METRIC={val_flag}_PLOTVAL={plot_val_flag}'
-																		f'_{target}-{d_target[target]}')
-
-						# Just use the first output to create the surface for primary target (independent of whether I am merging or not)
-						median_subj1 = create_avg_subject_surface(df_plot=df_plot, meta=meta, source_model=source_model, save=PLOTSURFDIR,
-																	  target=target, val_of_interest=val_flag,
-																	  plot_val_of_interest=plot_val_flag, randnetw=randnetw, save_full_surface=True)
-
-						# Dump the average (median across subjects) brain to the surface
-						dump_for_surface_writing_avg(median_subj1, source_model, SURFDIR, randnetw=randnetw,
-													 subfolder_name=f'TYPE=subj-median-argmax_METRIC={val_flag}_PLOTVAL={plot_val_flag}'
-																	f'_{target}')
-
-						sys.stdout.flush()
+				sys.stdout.flush()
 		
 
 	

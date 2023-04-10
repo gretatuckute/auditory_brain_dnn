@@ -10,7 +10,6 @@ from tqdm import tqdm
 from scipy.io import savemat
 import random
 import datetime
-# from plotting_specs import *
 import scipy.io as sio
 from scipy.io import loadmat
 import matplotlib.patches as mpatches
@@ -131,28 +130,6 @@ def concat_ds_B2021(source_model, output_folders_paths, df_roi_meta, df_str='ds.
         # Save the xr dataset object
         pickle.dump(ds, open(join(f, 'ds.pkl'), 'wb'))
         print(f'Saved ds.pkl to {f}')
-        
-def assert_output_ds_match(output_folders_paths, values_to_check=['r2_test', 'r2_test_c', 'r2_train']):
-    """
-    Assert that the ds.pkl files match the value obtained in the df output file.
-    Check the median case.
-    
-    Checked all of B2021 and NH2015 randnetw False and True, on 20221018.
-    
-    :param output_folders_paths:
-    :param df_str:
-    :return:
-    """
-    
-    # Loop into every folder and check that the ds.pkl files match the value obtained in the df output file
-    for i, f in tqdm(enumerate(output_folders_paths)):
-        df_output = pd.read_pickle(join(f, 'df_output.pkl'))
-        ds = pickle.load(open(join(f, 'ds.pkl'), 'rb'))
-        
-        for value in values_to_check:
-            assert np.allclose(df_output[f'median_{value}'].values, np.nanmedian(ds[value].values, 1))
-    
-        print(f'{f.split("/")[-1]} passed assertion check')
 
 
 def concat_dfs_modelwise(RESULTDIR,
@@ -394,94 +371,6 @@ def select_r2_test_based_on_r2_train(output, source_model, roi=None):
     # check how correlated r2 test c and r2 train are:
     np.corrcoef(output.median_r2_test_c_no_nan.values, output.median_r2_train.values)  # obs, across all layers!
 
-def select_r2_test_CV_splits(output_folders_paths, df_meta_roi, source_model, target, roi=None,
-                             value_of_interest='r2_test_c', randnetw='False', save=False, collapse_over_splits='median'):
-    """Select the best layer based on 5 CV splits, and take the r2 test value at that layer.
-    The indices are random (i.e. different!) for each voxel and layer. The indices will be different across different models.
-    As in all other analyses, make sure that we clip r2_test_c values at 1.
-    
-    Obtain the median across voxels per subject.
-    """
-    
-    # Load the full array (across splits)
-    lst_layer_selection = []
-    lst_r_value = []
-    
-    # Load the across-CV splits data for each layer
-    for f in output_folders_paths:
-        layer = f.split('SOURCE-')[1].split('_RAND')[0].split('-')[1:]
-        if len(layer) == 1:
-            layer = layer[0]
-        else:
-            layer = '-'.join(layer)
-        ds = pd.read_pickle(join(f, 'ds.pkl'))
-        
-        ds_val = pd.DataFrame(ds[value_of_interest].values, index=df_meta_roi.voxel_id) # index according to the voxel id
-        
-        # Make sure r2_test_c does not exceed 1
-        if value_of_interest == 'r2_test_c':
-            ds_val = ds_val.clip(upper=1)
-        
-        # Generate random indices for each voxel
-        m = np.zeros((ds_val.shape[0], ds_val.shape[1]))
-
-        for i in range(m.shape[0]):
-            m[i] = np.tile([0,1], reps=5) # 5 zeros, 5 ones
-            np.random.shuffle(m[i])
-        
-        # Use the 0's to obtain a median value for each voxel to select the best layer
-        data_layer_selection = ds_val
-        data_r_value = ds_val.copy(deep=True)
-
-        data_layer_selection[m == 0] = np.nan  # set vals with 1 to nan, i.e get only normal ones (no warning, 0), i.e. no warning occurred
-        data_r_value[m == 1] = np.nan  # set the "good" indices to nan, only look at flagged indices (warning 1)
-        
-        # Get the median/mean value for each voxel
-        if collapse_over_splits == 'median':
-            data_layer_selection_median = np.nanmedian(data_layer_selection, axis=1)
-            data_r_value_median = np.nanmedian(data_r_value, axis=1)
-        elif collapse_over_splits == 'mean':
-            data_layer_selection_median = np.nanmean(data_layer_selection, axis=1)
-            data_r_value_median = np.nanmean(data_r_value, axis=1)
-        else:
-            raise ValueError('collapse_over_splits must be either median or mean')
-        
-        print(f'Correlation between two splits of the data using collapse over splits {collapse_over_splits} are: {np.corrcoef(data_layer_selection_median, data_r_value_median)[0][1]:.4}')
-        
-        # Create a dataframe with the median values for each voxel and column name as layer
-        lst_layer_selection.append(pd.DataFrame(data_layer_selection_median, index=df_meta_roi.voxel_id, columns=[layer]))
-        lst_r_value.append(pd.DataFrame(data_r_value_median, index=df_meta_roi.voxel_id, columns=[layer]))
-        
-    # prefix the value name with either the mean or the median, according to which operation happens over splits
-    value_of_interest = collapse_over_splits + '_' + value_of_interest
-
-    # Merge across layers
-    df_layer_selection = pd.concat(lst_layer_selection, axis=1)[d_layer_reindex[source_model]]
-    df_r_value = pd.concat(lst_r_value, axis=1)[d_layer_reindex[source_model]]
-    
-    # Get best layer for each voxel based on the df_layer_selection part of the data (same function as all the other layer argmax analyses)
-    df_best_layer, _ = layer_position_argmax(df_layer_selection, source_model=source_model, return_associated_val=False)
-    
-    # Now use the best layer per voxel to obtain the r2 test value for each voxel (independently selected)
-    df_best_layer_r_values = pd.DataFrame(df_r_value.lookup(df_best_layer.index, df_best_layer.layer_pos.values), index=df_best_layer.index, columns=[value_of_interest])
-    df_best_layer_r_values['pos'] = df_best_layer.pos
-    df_best_layer_r_values['rel_pos'] = df_best_layer.rel_pos
-    
-    assert(df_best_layer.index == df_best_layer_r_values.index).all()
-    assert(df_best_layer_r_values.index == df_meta_roi.voxel_id).all()
-    
-    # Now obtain the subj_idx from df_roi_meta and merge with the r2 test values
-    df_best_layer_r_values['subj_idx'] = df_meta_roi.subj_idx.values
-    
-    df_best_layer_r_values_grouped = df_best_layer_r_values.groupby('subj_idx').median() # take median over subjects (across voxels)
-    df_best_layer_r_values_grouped['roi'] = roi
-    df_best_layer_r_values_grouped['source_model'] = source_model
-    df_best_layer_r_values_grouped['target'] = target
-    df_best_layer_r_values_grouped['randnetw'] = randnetw
-    
-    if save:
-        df_best_layer_r_values_grouped.to_csv(join(save, f'best-layer_CV-splits_roi-{roi}_{source_model}{d_randnetw[randnetw]}_{target}_{value_of_interest}.csv'))
-
 
 def select_r2_test_CV_splits_nit(output_folders_paths,
                                  df_meta_roi,
@@ -663,7 +552,7 @@ def select_r2_test_based_on_LOSO(output, source_model, roi=None, value_of_intere
     
     """
     layer_reindex = d_layer_reindex[source_model]
-    layer_legend = d_layer_legend[source_model]
+    layer_legend = [d_layer_names[source_model][i] for i in layer_reindex]
     num_layers = len(layer_reindex)
     min_possible_layer = 1  # for MATLAB, and to align with "pos"
     max_possible_layer = num_layers  # for MATLAB and to align with "pos"
@@ -871,7 +760,11 @@ def best_pred_per_vox(output, source_model, method='best_chance', randnetw='Fals
     return agg_pred
 
 
-def get_subject_pivot(output, source_model, roi=None, value_of_interest='median_r2_test_c', yerr_type='sem'):
+def get_subject_pivot(output,
+                      source_model,
+                      roi=None,
+                      value_of_interest='median_r2_test_c',
+                      yerr_type='sem'):
     """
     Given a value of interest (e.g. median_r2_test_c, the median r2 value across CV splits), obtain a pivot table:
     subject by source layer. This pivot table is obtained by taking the median across voxels (i.e. using the median to aggregate within each subject's voxels).
@@ -1378,32 +1271,27 @@ def load_score_across_layers_across_models(source_models,
         
     return d_across_models, d_df_across_models
         
-        
-        
 
 
-def plot_score_across_layers_per_subject(output, output_randnetw=None, source_model='', target='target', roi=None, subj_idx_lst=[1],
-                            ylim=[0, 1], save=False, alpha=1, alpha_randnetw=0.3,
-                             label_rotation=45, value_of_interest='median_r2_test_c',
-                                         decrease_vox_num=987):
+def plot_score_across_layers_per_subject(output,
+                                        output_randnetw=None,
+                                        source_model='',
+                                        target='target',
+                                        roi=None,
+                                        subj_idx_lst=[1],
+                                        ylim=[0, 1],
+                                        save=False,
+                                        alpha=1,
+                                        alpha_randnetw=0.3,
+                                        label_rotation=45,
+                                        value_of_interest='median_r2_test_c',
+                                        decrease_vox_num=987):
     """
-    Plot median variance explained across layers.
-
-    :param output:
-    :param output_randnetw:
-    :param source_model:
-    :param roi:
-    :param ylim:
-    :param save:
-    :param alpha:
-    :param alpha_randnetw:
-    :param label_rotation:
-    :param value_of_interest:
-    :return:
+    Plot median variance explained across layers for each subject.
     """
     
     layer_reindex = d_layer_reindex[source_model]
-    layer_legend = d_layer_legend[source_model]
+    layer_legend = [d_layer_names[source_model][l] for l in layer_reindex]
     
     output = output[output.subj_idx.isin(subj_idx_lst)]
     if decrease_vox_num: # extract a certain number of voxels per subj
@@ -1619,9 +1507,15 @@ def obtain_best_layer_per_comp(source_model, target, randnetw='False', value_of_
             join(RESULTDIR_ROOT, source_model, 'outputs', f'best-layer-argmax_per-comp_{source_model}{d_randnetw[randnetw]}_{target}_{value_of_interest}.csv'))
 
 
-def select_r2_test_CV_splits_train_test(source_model, target, randnetw='False', value_of_interest='median_r2_test',
-                               sem_of_interest='sem_r2_test', save=True,
-                                mapping='Ridge', randemb='False', alphalimit='50',):
+def select_r2_test_CV_splits_train_test(source_model,
+                                        target,
+                                        randnetw='False',
+                                        value_of_interest='median_r2_test',
+                                        sem_of_interest='sem_r2_test',
+                                        save=True,
+                                        mapping='Ridge',
+                                        randemb='False',
+                                        alphalimit='50',):
     """Load the across-layers data for components (csv with rows as layers and columns as components).
     Requires plot_comp_across_layers to be run first.
 
@@ -2498,21 +2392,7 @@ def load_scatter_anat_roi_best_layer(target,
         yerr_type = "within_subject_sem", save_str = "", value_of_interest = "median_r2_test_c", layer_value_of_interest = "rel_pos"
         
         layers_to_exclude was None none in trained, but 'input_after_preproc' for permuted.
-    
-    :param source_models:
-    :param target:
-    :param randnetw:
-    :param condition_col:
-    :param collapse_over_val_layer:
-    :param primary_rois:
-    :param non_primary_rois:
-    :param yerr_type:
-    :param save_str:
-    :param value_of_interest:
-    :param layer_value_of_interest:
-    :param layers_to_exclude:
-    :param RESULTDIR_ROOT:
-    :return:
+
     """
     
     if layers_to_exclude:
@@ -2535,90 +2415,7 @@ def load_scatter_anat_roi_best_layer(target,
     
     return df
     
-    
 
-
-def scatter_roi_across_models(source_models, target, roi1='speech', roi2='tonotopic',
-                              value_of_interest='median_r2_test_c', save=None, annotate=False):
-    """
-    Plot median variance explained across models from roi1 versus roi2.
-    The mean across subjects is loaded (computed from a LOSO approach, stored as csv in each model's respective dir.
-    The mean across the subject-wise scores is taken.
-    
-    If roi2 = 'remaining' then take the mean across the three remaning ROIs (leaving out roi1). It is aggregated in the same median operation
-    as aggregating across subject-wise scores.
-
-    :param source_models:
-    :param roi:
-    :param value_of_interest:
-    :return:
-    """
-    
-    # Obtain LOSO scores for the ROI of interest!
-    df_lst = []
-    for source_model in source_models:
-        df = pd.read_csv(
-            join(RESULTDIR_ROOT, source_model, 'outputs',
-                 f'best-layer_LOSO_roi-all_{source_model}_{target}_{value_of_interest}.csv')).drop(
-            columns='Unnamed: 0') # obs _{value_of_interest} only added 20220108
-        df_lst.append(df)
-    
-    df_all = pd.concat(df_lst)
-    
-    # Add spectemp model
-    piv_spectemp_roi1_full = obtain_spectemp_val(roi=roi1, target=target)
-    piv_spectemp_roi1 = piv_spectemp_roi1_full.mean() # mean over subjects
-    yerr_spectemp_roi1 = piv_spectemp_roi1_full.sem()
-    
-    df_roi1 = df_all.query(f'`roi` == "{roi1}"')
-    if roi2 == 'remaining':
-        df_roi2 = df_all.query(f'`roi` != "{roi1}"')
-    else:
-        df_roi2 = df_all.query(f'`roi` == "{roi2}"')
-        piv_spectemp_roi2_full = obtain_spectemp_val(roi=roi2, target=target)
-        piv_spectemp_roi2 = piv_spectemp_roi2_full.mean()  # mean over subjects
-        yerr_spectemp_roi2 = piv_spectemp_roi2_full.sem()
-    
-    print(f'Unique ROIs for roi1: {df_roi1.roi.unique()}\nUnique ROIs for roi2: {df_roi2.roi.unique()}')
-
-    df_grouped1 = df_roi1.groupby('source_model').agg({value_of_interest: ['mean', 'sem']}).reset_index()
-    df_grouped2 = df_roi2.groupby('source_model').agg({value_of_interest: ['mean', 'sem']}).reset_index()
-
-    # index according to source models
-    df_grouped1 = df_grouped1.set_index('source_model').reindex(source_models)
-    df_grouped2 = df_grouped2.set_index('source_model').reindex(source_models)
-    
-    # append spectemp
-    df_grouped1.loc[len(df_grouped1.index)] = [piv_spectemp_roi1.values[0], yerr_spectemp_roi1.values[0]]
-    df_grouped1.rename({df_grouped1.index[-1]: 'spectemp'}, inplace=True)
-    
-    df_grouped2.loc[len(df_grouped2.index)] = [piv_spectemp_roi2.values[0], yerr_spectemp_roi2.values[0]]
-    df_grouped2.rename({df_grouped2.index[-1]: 'spectemp'}, inplace=True)
-    
-    assert(df_grouped1.index.values == df_grouped2.index.values).all()
-    
-    color_order = [d_model_colors[x] for x in df_grouped1.index.values]
-    
-    x = df_grouped1[(value_of_interest, 'mean')]
-    y = df_grouped2[(value_of_interest, 'mean')]
-    
-    fig, ax = plt.subplots(figsize=(5, 5))
-    ax.scatter(x, y, color=color_order, s=55)
-    add_identity(ax, color='grey', ls='--', alpha=0.4)
-    ax.set_xlim([0, 1])
-    ax.set_ylim([0, 1])
-    ax.tick_params(axis='x', labelsize=12)
-    ax.tick_params(axis='y', labelsize=12)
-    ax.set_xlabel(f'Median noise-corrected $R^2$ {roi1}')
-    ax.set_ylabel(f'Median noise-corrected $R^2$ {roi2}')
-    ax.set_title(f'Median noise-corrected $R^2$:\n{roi2} ROI vs {roi1} ROI, {target}', size='medium')
-    if annotate:
-        for i, txt in enumerate(df_grouped1.index.values):
-            ax.annotate(txt, (x[i], y[i]), size='x-small')
-    fig.tight_layout()
-    if save:
-        plt.savefig(join(save, f'across-models_scatter{d_annotate[annotate]}_roi1-{roi1}_roi2-{roi2}_{value_of_interest}_{target}.svg'), dpi=180)
-    fig.show()
 
 def scatter_components_across_models(source_models, target, df_meta_roi, randnetw='False',
                                      value_of_interest='median_r2_test',
@@ -2752,10 +2549,16 @@ def scatter_components_across_models(source_models, target, df_meta_roi, randnet
                                  save=save, save_str=save_str, ylim=ylim, symbols=symbols)
 
 
-def scatter_comp_best_layer_across_models(source_models, target, randnetw='False',
-                                     load_value_of_interest='median_r2_test', value_of_interest='rel_pos',
-                                     save=None, save_str='', ylim=[0, 1], symbols=True,
-                                     aggregation='argmax'):
+def scatter_comp_best_layer_across_models(source_models,
+                                            target,
+                                            randnetw='False',
+                                            load_value_of_interest='median_r2_test',
+                                            value_of_interest='rel_pos',
+                                            save=None,
+                                            save_str='',
+                                            ylim=[0, 1],
+                                            symbols=True,
+                                            aggregation='argmax'):
     """Load the best layer per compponent csv files and make a plot across all models (argmax)
     Also plots scatter plot, one comp versus the other comp. Relative layer position values.
 
@@ -2913,11 +2716,18 @@ def scatter_2_components(source_models, target,
     fig.show()
 
 
-def barplot_components_across_models(source_models, target, df_meta_roi,
-                                     randnetw='False', value_of_interest='median_r2_test',
-                                     sem_of_interest='sem_r2_test', sort_by='performance', aggregation='CV-splits-nit-10',
-                                     save=None, components=['lowfreq', 'highfreq', 'envsounds', 'pitch', 'speech','music'],
-                                     include_spectemp=True, save_str='',
+def barplot_components_across_models(source_models,
+                                     target,
+                                     df_meta_roi,
+                                     randnetw='False',
+                                     value_of_interest='median_r2_test',
+                                     sem_of_interest='sem_r2_test',
+                                     sort_by='performance',
+                                     aggregation='CV-splits-nit-10',
+                                     save=None,
+                                     components=['lowfreq', 'highfreq', 'envsounds', 'pitch', 'speech','music'],
+                                     include_spectemp=True,
+                                     save_str='',
                                      add_in_spacing_bar=True):
     """Load the best layer per component csv files and make a plot across all models, one for each component.
 
@@ -3387,8 +3197,14 @@ def direct_plot_val_surface(output,
     
     return df_plot_direct
 
-def best_layer_voxelwise(output, source_model, target, df_meta_roi, roi=None,
-                         value_of_interest='median_r2_test_c', randnetw='False', save=True):
+def best_layer_voxelwise(output,
+                         source_model,
+                         target,
+                         df_meta_roi,
+                         roi=None,
+                         value_of_interest='median_r2_test_c',
+                         randnetw='False',
+                         save=True):
     """
     Loads output from a neural dataset, creates a layer x value of interest pivot (no aggregation)
     Obtains the best layer for each voxel, and its associated score. Take median across subjects, and save the
@@ -3409,7 +3225,7 @@ def best_layer_voxelwise(output, source_model, target, df_meta_roi, roi=None,
     p = get_vox_by_layer_pivot(output, source_model, val_of_interest=value_of_interest) # indexed by voxel id
     assert (np.sum(np.isnan(p)).values == 0).all()
     
-    idxmax_layer, num_layers = layer_position_argmax(p, source_model, return_associated_val=True)
+    idxmax_layer, num_layers = layer_position_argmax(p, source_model)
     idxmax_layer.rename(columns={'val':value_of_interest}, inplace=True) # rename the value of interest, as used in the get_vox_by_layer_pivot
     # to the value that was used, to keep logging
     
@@ -3428,7 +3244,9 @@ def best_layer_voxelwise(output, source_model, target, df_meta_roi, roi=None,
     idxmax_layer_aggregate['randnetw'] = randnetw
     
     if save:
-        idxmax_layer_aggregate.to_csv(join(save, f'best-layer_voxelwise_{source_model}{d_randnetw[randnetw]}_{target}_{value_of_interest}.csv'))
+        idxmax_layer_aggregate.to_csv(join(save, f'best-layer_voxelwise_'
+                                                 f'{source_model}{d_randnetw[randnetw]}_'
+                                                 f'{target}_{value_of_interest}.csv'))
         
     
 
@@ -3439,8 +3257,7 @@ def layer_position_argmax(p,
     """
     :param p: pd df, pivot table with number voxels as rows, and number layers as columns
     :param source_model: str, name of the source model
-    :param return_associated_val: bool, if True, returns the associated value (e.g. median R2 test) of the argmax layer
-    
+
     :return: idxmax_layer, pd df with number voxels as rows, and the argmax layer (string) as the value (in column: 'layer_pos').
              and the int position of the argmax layer (int). +1 to make the min layer 1 and not 0 (in column: 'pos')
              and the relative position (in column: 'rel_pos') where 0 is the first layer, and 1 is the last layer.
@@ -3492,8 +3309,8 @@ def layer_position_argmax(p,
     num_vox_with_all_layers_1 = sum_pred_across_layers[sum_pred_across_layers == num_layers].shape[0]
     
     print(f'{num_vox_with_all_layers_0} voxels have all layers = 0, and {num_vox_with_all_layers_1} voxels have all layers = 1')
-    
-    
+    # but we can also have ties if just e.g., 2 layers are 1.
+
     # If ties exist, take a random of the tied (idxmax) values for each voxel (row):
     # First find max val and check how many columns have that value
     max_val_each_vox = p.max(axis=1)
@@ -3552,46 +3369,6 @@ def layer_position_argmax(p,
           f' (std: {np.std(tie_nums_if_exist):.3})')
 
     return df_best_layer, num_layers
-
-
-def find_max_std_argmax_layers(p, source_model):
-    """
-    Find the 'chunk' of layers that provide the best 'spread' across different layer preference (argmax) values
-    
-    Take e.g., the first 4 layers. Compute the idxmax of best layer across those. Normalize by number of layers,
-    i.e., 4. Then I have values from 0 to 1. Then I take the std of those values and divide by number layers chunked.
-    
-    :param p: pd df, pivot table with number voxels as rows, and number layers as columns
-    :param source_model:
-    :return: df with index corresponding to the layer chunk (1 means the FIRST layer).
-    """
-    
-    # iterate over different number of columns in p (say that the minimum is 4)
-    num_layers_full = p.shape[1]
-    min_chunk = 4
-    max_chunk = num_layers_full - min_chunk
-    
-    lst_num_layers_chunked = []
-    d_std = {}
-    for start_i in range(max_chunk + 1):  # range is not inclusive, we also want the last possible chunk
-        for end_i in range(min_chunk, num_layers_full + 1):
-            if (end_i + start_i) > num_layers_full:  # take into account that there is only a limited number of layers
-                continue
-            else:
-                # print(start_i, end_i + start_i)
-                p_chunked = p.iloc[:, start_i:end_i + start_i]
-                
-                idxmax_layer, num_layers_chunked = layer_position_argmax(p_chunked, source_model)
-                # print(idxmax_layer.rel_pos.std() / num_layers_chunked)
-                d_std[f'{start_i + 1}-{end_i + start_i}'] = (idxmax_layer.rel_pos.std() / num_layers_chunked)
-                lst_num_layers_chunked.append(num_layers_chunked)
-                assert (num_layers_chunked >= min_chunk)
-    
-    df = pd.DataFrame([d_std]).T.rename(columns={0: 'layer_chunk_std'})
-    df['num_chunks'] = lst_num_layers_chunked
-    print(f'Best layer chunk: {df.idxmax()}')
-    
-    return df
 
 
 def barplot_best_layer_per_anat_ROI(output,
@@ -3741,156 +3518,17 @@ def barplot_best_layer_per_anat_ROI(output,
     plt.show()
 
 
-def barplot_best_layer_per_anat_ROI_add_dim(output,
-                                    meta,
-                                    source_model,
-                                    target,
-                                    randnetw='False',
-                                    value_of_interest='median_r2_test_c',
-                                    val_layer='dim_demean-True',
-                                    yerr_type='within_subject_sem',
-                                    save=False,
-                                    condition_col='roi_anat_hemi',
-                                    collapse_over_val_layer='median',
-                                    add_savestr=''):
-    """
-    COPY OF barplot_best_layer_per_anat_ROI(). USED FOR SUBSTITUTING IN ED DIMENSIONALITY VALUES IN THE DF FOR EACH
-    ARGMAX VOXEL AND THEN AGGREGATING OVER THAT.
-    
-    takes an output df and find the argmax best layer of interest for a metric (value_of_interest).
-    Separate into ROIs and plot a barplot.
-    Take median across voxels for each subject. Obtain SEM (within-subject).
 
-    Specifically, the process is:
-    1. Obtain vox by layer matrix [7694;11]
-    2. Obtain idxmax layer matrix [7694;1] where the column is the relative position (rel_pos) of that voxel’s best predicting layer
-    3. Obtain p_plot: this takes the median over the rel_pos values per subject for each condition of interest (collapse_over_val_layer)
-        (for instance, 8: ['Anterior_rh', 'Anterior_lh', 'Primary_rh', 'Primary_lh', 'Lateral_rh', 'Lateral_lh', 'Posterior_rh', 'Posterior_lh', ])
-    4. This yields a matrix of size [num subjects; num cond] ([8;8]) where each value in the matrix is the median best performing relative layer for that subject
-    5. Obtain mean value per condition (8 values)
-    6. Obtain between subject error bars (8 values)
-
-    :param output: pd df, output df
-    :param meta: pd df, meta df
-    :param source_model: string, source model
-    :param target: string, target model
-    :param value_of_interest: string, metric to use to obtain the argmax across layers
-    :param val_layer: string, metric to use in plotting the argmax. 'pos' is the actual position (int) of the argmax layer,
-                    while 'rel_pos' is the relative position [0 1]
-                    'pos' is NOT zero indexed, i.e. 1 is the first layer, and if the model has 11 layers, then 11 is the top layer.
-
-    :return: plot
-
-    """
-    label_rotation = 70
-    print(
-        f'\nFUNC: barplot_best_layer_per_anat_ROI\nMODEL: {source_model}, TARGET: {target}, VALUE OF INTEREST: {value_of_interest}, VAL_LAYER: {val_layer}, RANDNETW: {randnetw}')
-    
-    if condition_col == 'roi_anat_hemi':
-        roi_anat_reindex = ['Anterior_rh', 'Anterior_lh', 'Primary_rh', 'Primary_lh', 'Lateral_rh', 'Lateral_lh',
-                            'Posterior_rh', 'Posterior_lh', ]
-        bar_placement = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5]
-    if condition_col == 'roi_label_general':
-        roi_anat_reindex = ['Anterior', 'Primary', 'Lateral', 'Posterior']
-        bar_placement = [0, 0.5, 1, 1.5]
-    
-    # assert that the values of interest exist in the df
-    if not value_of_interest in output.columns:
-        print(f'Column {value_of_interest} does not exist in the output df')
-        return
-    
-    output2 = output.loc[output['randemb'] == 'False']
-    source_model_check = output2['source_model'].unique()
-    assert (len(source_model_check) == 1)
-    
-    p = get_vox_by_layer_pivot(output2, source_model, val_of_interest=value_of_interest)
-    
-    # assert that pivot vals and meta match
-    assert (np.array_equal(p.index, meta.voxel_id.values))
-    
-    idxmax_layer, num_layers = layer_position_argmax(p, source_model)  # p has vox idx as the index
-    meta_indexed = meta.set_index('voxel_id', inplace=False)
-    
-    # ADD IN THE DIMENSIONALITY VALUES IN idxmax_layer
-    # First, load the csv file
-    df_dim = pd.read_csv(join(SAVEDIR_CENTRALIZED,
-                              f'dim_vs_{target}_across_models-n=19_roi-None_{value_of_interest}.csv'))
-    
-    # Get the correct source model
-    df_dim = df_dim[df_dim['source_model'] == source_model]
-    
-    # For the column layer_pos in idxmax_layer (holds string name of the best layer for that voxel), we want to add a column
-    # which takes the value of the dim value for that layer.
-    
-    # If randnetw is False, then we want to check whether we are obtaining the dim value (val_layer) for the trained network,
-    # which does NOT have randnetw in the name
-    if val_layer.startswith('dim_') and randnetw == 'False':
-        assert('randnetw' not in val_layer)
-        print(f'val_layer: {val_layer} and randnetw: {randnetw}')
-    if val_layer.startswith('dim_') and randnetw == 'True':
-        assert('randnetw' in val_layer)
-        print(f'val_layer: {val_layer} and randnetw: {randnetw}')
-    
-    idxmax_layer[f'{val_layer}'] = [df_dim.loc[df_dim.source_layer == x][val_layer].values[0] for x in idxmax_layer['layer_pos']]
-    
-    # Count how many ties exist (tie_bool) in the condition col
-    meta_indexed[condition_col] = meta_indexed[condition_col].fillna(0, inplace=False) # instead of nans in the condition col, fill with 0 (where there is no roi of interest)
-    idxmax_in_cond_col = idxmax_layer.loc[meta_indexed.query(f'{condition_col} != 0').index]
-    print(
-        f'Percent of ties in {condition_col}: {(idxmax_in_cond_col.tie_bool.sum() / idxmax_in_cond_col.shape[0]) * 100:.3}%')
-    
-    # Obtain bars per ROI
-    df_plot = pd.concat([idxmax_layer, meta_indexed], axis=1)
-    
-    # Create a column with the ROI annotation per voxel -- then I can make a subject X ROI cond pivot and compute the error bars
-    p_plot = df_plot.pivot_table(index='subj_idx', columns=condition_col, values=val_layer,
-                                 aggfunc=collapse_over_val_layer)
-    p_plot = p_plot[roi_anat_reindex]  # reindex the conditions
-    
-    # Check p_plot by manually extracting values
-    # df_plot_test = df_plot.query('subj_idx == 0 & roi_label_general == "Primary"')
-    # df_plot_test.median()['rel_pos']
-    
-    demeaned = p_plot.subtract(p_plot.mean(axis=1).values,
-                               axis=0)  # get a mean value for each subject across all conds, and subtract it from individual layers
-    
-    if yerr_type == 'within_subject_sem':
-        yerr = np.std(demeaned.values.T, axis=1) / np.sqrt(p_plot.shape[0] - 1)
-    
-    # Assert that plotted results have no nans
-    assert (p_plot.isna().sum().sum() == 0)
-    
-    color_order = [d_roi_anat_colors[x] for x in p_plot.columns]
-    
-    fig, ax = plt.subplots(figsize=(4, 5))
-    plt.title(f'{source_model}{d_randnetw[randnetw]}\n{target}', size='medium')
-    ax.bar(bar_placement,
-           p_plot.mean(),
-           yerr=yerr,
-           width=0.3, color=color_order, alpha=0.8)
-    plt.xticks(bar_placement, p_plot.columns, rotation=label_rotation)
-    plt.ylabel('Relative layer position')
-    plt.tight_layout()
-    if save:
-        save_str = f'best-layer_barplot_{condition_col}_{source_model}{d_randnetw[randnetw]}_' \
-                   f'{target}_{yerr_type}_' \
-                   f'{val_layer}-{collapse_over_val_layer}_' \
-                   f'{value_of_interest}{add_savestr}'
-        plt.savefig(join(save, f'{save_str}.png'))
-        plt.savefig(join(SAVEDIR_CENTRALIZED, f'{save_str}.png'))
-        plt.savefig(join(SAVEDIR_CENTRALIZED, f'{save_str}.svg'))
-        
-        # compile csv
-        p_plot_save = p_plot.copy()
-        df_yerr = pd.DataFrame([yerr], columns=p_plot_save.columns,
-                               index=['yerr'])  # append yerr to the pivot table that is plotted
-        p_plot_save = p_plot_save.append(df_yerr)
-        p_plot_save.to_csv(join(save, f'{save_str}.csv'))
-    plt.show()
-
-def surface_argmax(output, source_model, target, randnetw='False', value_of_interest='median_r2_test_c', hist=True,
-                   save=True, run_chunking=False, save_full_idxmax_layer=False):
-    """takes an output df and find the argmax best layer of interest for a metric (value_of_interest)
+def surface_argmax(output,
+                   source_model,
+                   target,
+                   randnetw='False',
+                   value_of_interest='median_r2_test_c',
+                   hist=True,
+                   save=True,
+                   save_full_idxmax_layer=False):
+    """Takes an output df and find the argmax best layer of interest for a metric (value_of_interest).
+       Performs this over all voxels and subjects, and then plots the distribution of the argmax layer.
 
     :return: df with index as voxel id and "layer_pos" column as the argmax layer as a str, and
             "rel_pos" column as the argmax relative layer position (given the model)
@@ -3899,21 +3537,24 @@ def surface_argmax(output, source_model, target, randnetw='False', value_of_inte
             then 11 is the top layer.
     """
     label_rotation = 70
-    layer_legend = d_layer_legend[source_model]
     layer_reindex = d_layer_reindex[source_model]
+    layer_legend = [d_layer_names[source_model][layer] for layer in layer_reindex]
     
     # assert that the values of interest exist in the df
     if not value_of_interest in output.columns:
         print(f'Column {value_of_interest} does not exist in the output df')
         return
     
-    output2 = output.loc[output['randemb'] == 'False']
+    output2 = output.copy(deep=True)
     source_model_check = output2['source_model'].unique()
     assert (len(source_model_check) == 1)
     
-    p = get_vox_by_layer_pivot(output2, source_model, val_of_interest=value_of_interest)
+    p = get_vox_by_layer_pivot(output=output2,
+                               source_model=source_model,
+                               val_of_interest=value_of_interest)
     
-    idxmax_layer, num_layers = layer_position_argmax(p, source_model)
+    idxmax_layer, num_layers = layer_position_argmax(p=p, source_model=source_model,)
+
     if save_full_idxmax_layer:
         idxmax_layer_save = idxmax_layer.copy(deep=True)
         idxmax_layer_save['target'] = target
@@ -3921,12 +3562,7 @@ def surface_argmax(output, source_model, target, randnetw='False', value_of_inte
         idxmax_layer_save['randnetw'] = randnetw
         idxmax_layer_save['value_of_interest'] = value_of_interest
         idxmax_layer_save.to_csv(join(save, f'idxmax_layer_full_{source_model}_{target}_{randnetw}_{value_of_interest}.csv'))
-    
-    if run_chunking:
-        df_layer_chunk_std = find_max_std_argmax_layers(p, source_model)
-        if save:
-            # store layer chunk std df
-            df_layer_chunk_std.to_csv(join(save, f'layer-chunk-std_TYPE=subj-argmax_METRIC={value_of_interest}_{source_model}{d_randnetw[randnetw]}_{target}.csv'))
+
 
     if hist:
         fig, ax = plt.subplots(figsize=(7, 5))
@@ -3953,7 +3589,12 @@ def surface_argmax(output, source_model, target, randnetw='False', value_of_inte
             pos_count_save['source_model'] = source_model
             pos_count_save['randnetw'] = randnetw
             pos_count_save['value_of_interest'] = value_of_interest
-            pos_count_save.to_csv(join(save, f'hist-preferred-layer_TYPE=subj-argmax_METRIC={value_of_interest}_{source_model}{d_randnetw[randnetw]}_{target}.csv'))
+            pos_count_save['datetag'] = datetag
+            pos_count_save.to_csv(join(save, f'hist-preferred-layer_'
+                                             f'TYPE=subj-argmax_'
+                                             f'METRIC={value_of_interest}_'
+                                             f'{source_model}{d_randnetw[randnetw]}_'
+                                             f'{target}.csv'))
 
     return idxmax_layer, p.columns.values
 
@@ -3963,8 +3604,8 @@ def surface_argmax_hist_merge_datasets(df_plot1, df_plot2, source_model, save, l
     by taking both datasets into account."""
     label_rotation = 70
     target = 'NH2015-B2021'
-    layer_legend = d_layer_legend[source_model]
     layer_reindex = d_layer_reindex[source_model]
+    layer_legend = [d_layer_names[source_model][layer] for layer in layer_reindex]
     
     assert (layer_names == layer_reindex).all()
     
@@ -4004,92 +3645,22 @@ def surface_argmax_hist_merge_datasets(df_plot1, df_plot2, source_model, save, l
                                    f'hist-preferred-layer_TYPE=subj-argmax_METRIC={value_of_interest}_{source_model}{d_randnetw[randnetw]}_{target}.csv'))
 
 
-def create_avg_subject_surface_merge_targets(df_plot1, meta1,
-                                             df_plot2, meta2,
-                                             plot_val_of_interest='pos'):
+
+def create_avg_subject_surface(df_plot,
+                               meta,
+                               save,
+                               source_model,
+                               target,
+                               val_of_interest, randnetw='False',
+                               plot_val_of_interest='pos',):
     """
-    Averages over an array of values to plot across the same brain coordinate (based on x and y ras) across subjects
+    Takes the median over an array of values to plot across the same brain coordinate (based on x and y ras) across subjects
+
+    NOTE: this function is named _avg, but by default we use the median!
 
     :param df_plot: df with plotting values (in the column "plot_vals"), index is voxel_id.
     :param meta: df with voxel metadata, has a "voxel_id" column.
-    :return: df with rows corresponding to unique voxel coordinates, and the averaged plot value as "median_plot_val"
-    """
-    unique_coords1 = meta1.coord_id.unique()
-    unique_coords2 = meta2.coord_id.unique()
-    unique_coords_all = np.unique(np.array(unique_coords1.tolist()+unique_coords2.tolist()))
-    
-    # assert that vals and meta match
-    assert (np.array_equal(df_plot1.index, meta1.voxel_id.values))
-    assert (np.array_equal(df_plot2.index, meta2.voxel_id.values))
-
-    # append the plot vals to the meta plot df
-    meta1['plot_vals'] = df_plot1[f'{plot_val_of_interest}'].values
-    meta2['plot_vals'] = df_plot2[f'{plot_val_of_interest}'].values
-    
-    # concat into one large meta df, because ultimately we just want to look at all voxels (rows in the df)
-    meta = pd.concat([meta1, meta2], axis=0).reset_index()
-    check_unique_targets = 0
-    
-    # create a new shared by col based on both targets
-    unique_coords, count_coords = np.unique(meta['coord_id'], return_counts=True)
-    counts_coords = dict(zip(unique_coords, count_coords))
-    # print(counts_coords)
-    print(f'Max number of subjects who share a voxel: {np.max(count_coords)}') # some coordinates are repeated across all 28 subjects
-    
-    meta['shared_by_both_targets'] = np.nan
-    for coord_val in unique_coords_all:
-        c = coord_val.split('_')
-        x = int(c[0])
-        y = int(c[1])
-        match_row_idx = meta.loc[np.logical_and(meta['x_ras'] == x, meta['y_ras'] == y)].index.values
-        # look up how many times this coord combo was found across subjects:
-        shared_by_count = counts_coords[coord_val]
-        # append to shared by column
-        meta.loc[match_row_idx, 'shared_by_both_targets'] = int(shared_by_count)
-
-    # iterate through all unique coords and take the median of the plot vals across all shared voxels!
-    meta_unique_coords = pd.DataFrame(columns=['coord_id', 'x_ras', 'y_ras', 'hemi', 'shared_by', 'median_plot_val'])
-    for i, coord_val in enumerate(unique_coords_all):
-        c = coord_val.split('_')
-        x = int(c[0])
-        y = int(c[1])
-        # append to df
-        meta_unique_coords.loc[i, 'coord_id'] = coord_val
-        meta_unique_coords.loc[i, 'x_ras'] = int(x)
-        meta_unique_coords.loc[i, 'y_ras'] = int(y)
-        # look up the matching row based on x and y ras in the other meta df and slice out the rows that match
-        match_row_idx = meta.loc[np.logical_and(meta['x_ras'] == x, meta['y_ras'] == y)].index.values
-        # assert that the coordinate only belongs to one, unique hemi
-        unique_hemi = meta.loc[match_row_idx, 'hemi'].unique()
-        unique_shared_by = meta.loc[match_row_idx, 'shared_by'].unique()
-        unique_shared_by_both_targets = meta.loc[match_row_idx, 'shared_by_both_targets'].unique()
-        unique_plot_vals = meta.loc[match_row_idx, 'plot_vals'].values
-        unique_targets = meta.loc[match_row_idx, 'target'].unique() # there should be 1922 voxels that occur in both datasets
-        assert (len(unique_hemi) == 1)
-        assert (len(unique_shared_by_both_targets) == 1)
-        if len(unique_targets) > 1:
-            check_unique_targets += 1
-        meta_unique_coords.loc[i, 'hemi'] = unique_hemi[0]
-        meta_unique_coords.loc[i, 'shared_by'] = unique_shared_by[0]
-        
-        # average across plot vals and assert that the number of values match the shared_by col
-        assert (len(unique_plot_vals) == unique_shared_by_both_targets)
-        meta_unique_coords.loc[i, 'median_plot_val'] = np.median(unique_plot_vals)
-    
-        if 50 < i < 80:
-            print(f'Unique plotting vals to average over: {unique_plot_vals} and median: {np.median(unique_plot_vals)}')
-        
-    return meta_unique_coords
-
-
-def create_avg_subject_surface(df_plot, meta, save, source_model, target, val_of_interest, randnetw='False',
-                               plot_val_of_interest='pos', save_full_surface=True):
-    """
-    Averages over an array of values to plot across the same brain coordinate (based on x and y ras) across subjects
-
-    :param df_plot: df with plotting values (in the column "plot_vals"), index is voxel_id.
-    :param meta: df with voxel metadata, has a "voxel_id" column.
-    :return: df with rows corresponding to unique voxel coordinates, and the averaged plot value as "median_plot_val"
+    :return: df with rows corresponding to unique voxel coordinates, and the "averaged" plot value as "median_plot_val"
     """
     unique_coords = meta.coord_id.unique()
     
@@ -4099,6 +3670,8 @@ def create_avg_subject_surface(df_plot, meta, save, source_model, target, val_of
     # append the plot vals to the meta plot df
     meta['plot_vals'] = df_plot[f'{plot_val_of_interest}'].values
     meta_unique_coords = pd.DataFrame(columns=['coord_id', 'x_ras', 'y_ras', 'hemi', 'shared_by', 'median_plot_val'])
+
+    # Iterate over the unique brain coordinates we have (to find the median plot value for each coordinate)
     for i, coord_val in enumerate(unique_coords):
         c = coord_val.split('_')
         x = int(c[0])
@@ -4117,40 +3690,58 @@ def create_avg_subject_surface(df_plot, meta, save, source_model, target, val_of
         assert (len(unique_hemi) == 1)
         assert (len(unique_shared_by) == 1)
         meta_unique_coords.loc[i, 'hemi'] = unique_hemi[0]
-        meta_unique_coords.loc[i, 'shared_by'] = unique_shared_by[0]
+        meta_unique_coords.loc[i, 'shared_by'] = unique_shared_by[0] # How many subjects share this coordinate
         
         # average (i.e. median...) across plot vals and assert that the number of values match the shared_by col
         assert (len(unique_plot_vals) == unique_shared_by)
-        meta_unique_coords.loc[i, 'median_plot_val'] = np.median(unique_plot_vals) # todo new it: store this as the actual val of interest with median too..
-    
+        meta_unique_coords.loc[i, 'median_plot_val'] = np.median(unique_plot_vals)
+
     # if 50 < i < 80:
     # 	print(f'Unique plotting vals to average over: {unique_plot_vals} and median: {np.median(unique_plot_vals)}')
     
-    if save_full_surface: # store the median values for all brain coords
+    if save: # store the median values for all brain coords
         meta_unique_coords_save = meta_unique_coords.copy(deep=True)
         meta_unique_coords_save['source_model'] = source_model
         meta_unique_coords_save['target'] = target
         meta_unique_coords_save['randnetw'] = randnetw
         meta_unique_coords_save['val_of_interest'] = val_of_interest
         meta_unique_coords_save['plot_val_of_interest'] = plot_val_of_interest
-        meta_unique_coords_save.to_csv(join(save, f'surf_coords_full_{source_model}_{target}_{randnetw}_{val_of_interest}_{plot_val_of_interest}.csv'))
+        meta_unique_coords_save['datetag'] = datetag
+        meta_unique_coords_save.to_csv(join(save, f'surf_coords_full_{source_model}_'
+                                                  f'{target}_'
+                                                  f'{randnetw}_'
+                                                  f'{val_of_interest}_'
+                                                  f'{plot_val_of_interest}.csv'))
     
     return meta_unique_coords
 
-def create_avg_model_surface(source_models, target, PLOTSURFDIR,
-                             val_of_interest='median_r2_test_c', randnetw='False', plot_val_of_interest='rel_pos',
+def create_avg_model_surface(source_models,
+                             target,
+                             PLOTSURFDIR,
+                             val_of_interest='median_r2_test_c',
+                             randnetw='False',
+                             plot_val_of_interest='rel_pos',
                              quantize=False):
     """
     Takes the surf_coords_full output (unique coordinates) and take the median across the source models.
     The surf_coords_full is already with the median obtained across subjects (e.g. for NH2015, it has 1945 unique coords,
     corresponding to unique brain coordinates which are rows in the df).
     """
+
     df_lst = []
     lst_coord_ids = [] # for checking
+
+    # Iterate over source models and load the surf_coords_full df
     for source_model in source_models:
-        meta_unique_coords = pd.read_csv(join(PLOTSURFDIR, f'surf_coords_full_{source_model}_{target}_{randnetw}_{val_of_interest}_{plot_val_of_interest}.csv'))
+        meta_unique_coords = pd.read_csv(join(PLOTSURFDIR,
+                                              f'surf_coords_full_{source_model}_'
+                                              f'{target}_'
+                                              f'{randnetw}_'
+                                              f'{val_of_interest}_'
+                                              f'{plot_val_of_interest}.csv'))
         df_lst.append( meta_unique_coords)
         assert (len(meta_unique_coords) == len(meta_unique_coords.coord_id.unique()))
+
         # Also assert that coord_id is the same across all meta_unique_coords df loaded!
         lst_coord_ids.append(meta_unique_coords.coord_id.values)
         
@@ -4163,7 +3754,7 @@ def create_avg_model_surface(source_models, target, PLOTSURFDIR,
     # Obtain the median across models for each unique coordinate
     df_across_models = pd.DataFrame(df_all.groupby('coord_id')['median_plot_val'].median() * 10, columns=['median_plot_val'])
     df_across_models['median_plot_val'] = df_across_models['median_plot_val'] + 1 # avoid 0 values in the KNN interpolation
-    # first layer (which before was 0) will now be 1 and the last layer is now 11 (in principle, if the median across models is 11 at some voxel).
+    # first layer (which before was 0) will now be 1 and the last layer is now e.g., 11 (in principle, if the median across models is 11 at some voxel).
     
     print(f'Min and max median across models: {df_across_models.median_plot_val.min()} and {df_across_models.median_plot_val.max()} ({val_of_interest})\n'
           f'Unique coords: {len(df_across_models)} for {target}.\n')
@@ -4173,7 +3764,7 @@ def create_avg_model_surface(source_models, target, PLOTSURFDIR,
         print(
             f'Post quantization: Min and max median across models: {df_across_models.median_plot_val.min()} and {df_across_models.median_plot_val.max()}\n')
 
-        # We want to retain hemi, x_ras, y_ras, shared_by as in the original meta_unique_coords
+    # We want to retain hemi, x_ras, y_ras, shared_by as in the original meta_unique_coords
     # Assert whether the coord_id in df_template matches the grouped df
     assert (np.asarray(
         [lst_coord_ids[i] == lst_coord_ids[i - 1] for i in range(len(lst_coord_ids))]).ravel() == True).all()
@@ -4223,21 +3814,29 @@ def dump_for_surface_writing_direct(df_plot_direct,
         print(f'Saved mat file for median subject: {file}, number of vertices {np.sum(is_hemi)}')
     
 
-def dump_for_surface_writing_avg(median_subj, source_model, SURFDIR, randnetw, subfolder_name='subj-median-argmax', ):
+def dump_for_surface_writing_avg(median_subj,
+                                 source_model,
+                                 SURFDIR,
+                                 randnetw,
+                                 subfolder_name='subj-median-argmax', ):
     """
     Takes a df (median_subj) with x_ras, y_ras columns. The column to be plotted is by default: median_plot_val
-    Writes a matlab structure in SURFDIR for each hemisphere, for all voxels (median where several subject share them)
+    Writes a matlab structure in SURFDIR for each hemisphere, for all voxels (median where several subjects share them)
 
     To actually write the surfaces, use the write_surfs.m matlab function (which takes advantage of freesurfer's matlab library).
-    
+
+    NOTE: this function is named _avg, but by default we use the median!
+
     :param median_subj: df
     :param source_model: str
     :param SURFDIR: str
     :param subfolder_name: str
     :return:
     """
-    SAVEFOLDER = os.path.join(SURFDIR, f'{source_model}{d_randnetw[randnetw]}', f'{subfolder_name}')
-    Path(SAVEFOLDER).mkdir(parents=True, exist_ok=True)
+
+    if SURFDIR:
+        SAVEFOLDER = os.path.join(SURFDIR, f'{source_model}{d_randnetw[randnetw]}', f'{subfolder_name}')
+        Path(SAVEFOLDER).mkdir(parents=True, exist_ok=True)
     
     hemis = list(set(median_subj['hemi']))
     for hemi in hemis:
@@ -4248,11 +3847,18 @@ def dump_for_surface_writing_avg(median_subj, source_model, SURFDIR, randnetw, s
         dict_ = {'vals': median_subj['median_plot_val'][is_hemi].astype('int64').values,
                  'x_ras': median_subj['x_ras'][is_hemi].astype('int64').values,
                  'y_ras': median_subj['y_ras'][is_hemi].astype('int64').values}
-        savemat(os.path.join(SAVEFOLDER, file), dict_)
-        print(f'Saved mat file for median subject: {file}, number of vertices {np.sum(is_hemi)}')
+
+        if SURFDIR:
+            savemat(os.path.join(SAVEFOLDER, file), dict_)
+            print(f'Saved mat file for median subject: {SAVEFOLDER}/{file}, number of vertices {np.sum(is_hemi)}')
 
 
-def dump_for_surface_writing(vals, meta, source_model, SURFDIR, randnetw, subfolder_name='subj-argmax'):
+def dump_for_surface_writing(vals,
+                             meta,
+                             source_model,
+                             SURFDIR,
+                             randnetw,
+                             subfolder_name='subj-argmax'):
     """
     Iterates over subjects specified in meta df, and writes a subject-wise surface file for each.
     
@@ -4273,15 +3879,17 @@ def dump_for_surface_writing(vals, meta, source_model, SURFDIR, randnetw, subfol
     :return: stores .mat files in SURFDIR
     """
     # must be one d
-    # if vals.ndim > 1:
-    #     raise Exception('need to have 1-d input')
+    if vals.ndim > 1:
+        raise Exception('need to have 1-d input')
     
     # assert that vals and meta match
     assert (np.array_equal(vals.index, meta.voxel_id.values))
-    
-    SAVEFOLDER = os.path.join(SURFDIR, f'{source_model}{d_randnetw[randnetw]}', f'{subfolder_name}')
-    Path(SAVEFOLDER).mkdir(parents=True, exist_ok=True)
-    
+
+    if SURFDIR:
+        SAVEFOLDER = os.path.join(SURFDIR, f'{source_model}{d_randnetw[randnetw]}', f'{subfolder_name}')
+        Path(SAVEFOLDER).mkdir(parents=True, exist_ok=True)
+
+    # Get unique subject ids
     subj_ids = list(set(meta['subj_idx']))
     
     for subj_id in subj_ids:
@@ -4295,17 +3903,28 @@ def dump_for_surface_writing(vals, meta, source_model, SURFDIR, randnetw, subfol
                                 f'{subj_id}_{hemi}.mat')
             
             is_subhemi = np.logical_and(is_subj, is_hemi)
+
             # print(f'Number of speech selective voxels for subject {subj_id}, hemi {hemi}: {int(np.sum(vals[is_subhemi]))}')
             dict_ = {'vals': vals.values[is_subhemi],
                      'x_ras': meta['x_ras'][is_subhemi].astype('int64').values,
                      'y_ras': meta['y_ras'][is_subhemi].astype('int64').values}
-            savemat(os.path.join(SAVEFOLDER, file), dict_)
-            print(f'Saved mat file for subject {subj_id} named: {file}, number of vertices {np.sum(is_subhemi)}')
 
-def determine_surf_layer_colorscale(target, source_models, save, randnetw='False', value_of_interest='median_r2_test_c',
-                                    run_chunking=False,):
-    """Iterate through the layer preference (across voxels) histogram csv files and -- across models --
-    determine which layer to plot."""
+            if SURFDIR:
+                savemat(os.path.join(SAVEFOLDER, file), dict_)
+                print(f'Saved mat file for subject {subj_id} named: {file}, number of vertices {np.sum(is_subhemi)}')
+
+def determine_surf_layer_colorscale(target,
+                                    source_models,
+                                    save,
+                                    randnetw='False',
+                                    value_of_interest='median_r2_test_c',):
+
+    """Iterate through the layer preference (across voxels) histogram csv files and -- for each model --
+    determine which layer to plot.
+
+    We plot the layer that is AFTER the argmax layer (i.e. the layer that most voxels prefer).
+
+    """
     
     lst_source_models = []
     lst_argmax_pos = [] # pos is always 1 indexed
@@ -4316,8 +3935,7 @@ def determine_surf_layer_colorscale(target, source_models, save, randnetw='False
     lst_argmax_layer_plus1 = []
     lst_argmax_layer_legend = []
     lst_argmax_layer_plus1_legend = []
-    lst_chunked_std_layer = []
-    
+
     for source_model in source_models:
         df = pd.read_csv(join(save,
                         f'hist-preferred-layer_TYPE=subj-argmax_METRIC={value_of_interest}_{source_model}{d_randnetw[randnetw]}_{target}.csv'))
@@ -4355,34 +3973,6 @@ def determine_surf_layer_colorscale(target, source_models, save, randnetw='False
         rel_pos_plus1 = np.divide((np.subtract(df['pos'].idxmax() + 2, min_possible_layer)), # +2 because +1 is from MATLAB indexing, and other one is +1
                             (max_possible_layer - min_possible_layer))
         lst_argmax_rel_pos_plus1.append(rel_pos_plus1)
-        
-        if run_chunking: # not checked jan 2022
-            # find the chunk with largest variance, sliding window over layer_pos
-            num_layers_full = df.shape[0]
-            min_chunk = 4
-            max_chunk = num_layers_full - min_chunk
-    
-            lst_num_layers_chunked = []
-            d_std = {}
-            for start_i in range(max_chunk + 1):  # range is not inclusive, we also want the last possible chunk
-                for end_i in range(min_chunk, num_layers_full + 1):
-                    if (
-                            end_i + start_i) > num_layers_full:  # take into account that there is only a limited number of layers
-                        continue
-                    else:
-                        print(start_i, end_i + start_i)
-                        layer_pos_chunked = df.layer_pos.values[start_i:end_i + start_i] # df loc layer pos
-                        num_layers_chunked = len(layer_pos_chunked)
-                        lst_num_layers_chunked.append(num_layers_chunked)
-                        
-                        d_std[f'{start_i + 1}-{end_i + start_i}'] = (np.std(layer_pos_chunked) / (num_layers_chunked))
-                        assert (num_layers_chunked >= min_chunk)
-    
-            df_chunk = pd.DataFrame([d_std]).T.rename(columns={0: 'layer_chunk_std'})
-            df_chunk['num_chunks'] = lst_num_layers_chunked
-            
-            # find max chunk size
-            lst_chunked_std_layer.append(df_chunk.idxmax()['layer_chunk_std'])
 
     df_all = pd.DataFrame({'source_model': lst_source_models,
                            'argmax_pos': lst_argmax_pos,
@@ -4394,19 +3984,30 @@ def determine_surf_layer_colorscale(target, source_models, save, randnetw='False
                            'argmax_layer_plus1': lst_argmax_layer_plus1,
                            'argmax_layer_plus1_legend': lst_argmax_layer_plus1_legend,})
     
-    df_all.to_csv(join(save, f'layer_pref_colorscale_TYPE=subj-argmax_METRIC={value_of_interest}_{target}{d_randnetw[randnetw]}.csv'), index=False)
+    df_all.to_csv(join(save, f'layer_pref_colorscale_'
+                             f'TYPE=subj-argmax_METRIC={value_of_interest}_'
+                             f'{target}{d_randnetw[randnetw]}.csv'), index=False)
 
 #### STATISTICS FUNCTIONS #####
-def compare_CV_splits_nit(source_models, target, save, df_meta_roi, save_str='', roi=None,
+def compare_CV_splits_nit(source_models,
+                          target,
+                          save,
+                          df_meta_roi,
+                          save_str='',
+                          roi=None,
                           models1=['Kell2018word', 'Kell2018speaker', 'Kell2018multitask'],
                           models2=['Kell2018audioset', 'Kell2018music'],
-                          aggregation='CV-splits-nit-10', include_spectemp=True,
-                          randnetw='False', value_of_interest='median_r2_test',
+                          aggregation='CV-splits-nit-10',
+                          include_spectemp=True,
+                          randnetw='False',
+                          value_of_interest='median_r2_test',
                           bootstrap=True):
-    """Obtain best layer r2 test scores for the components of each model (these were independelty obtained across CV-splits-nit-10,
+    """Obtain best layer r2 test scores for the components of each model (these were independently obtained across CV-splits-nit-10,
     meaning that there is a value per iteration which is the median of 5 r2 values of the held-out CV splits)
     
     If bootstrap is True, then model1 vs model2 is compared using bootstrap. Else: use parametric tests.
+
+    Intended for use with components (where we don't have individual subjects to bootstrap over).
     """
     if include_spectemp:
         source_models.append('spectemp')
@@ -4463,16 +4064,25 @@ def compare_CV_splits_nit(source_models, target, save, df_meta_roi, save_str='',
     df_stat_all['save_str'] = save_str
     
     if save:
-        df_stat_all.to_csv(join(STATSDIR_CENTRALIZED, f'{save_str}_{aggregation}_{target}_{value_of_interest}{d_randnetw[randnetw]}_stats.csv'), index=False)
+        df_stat_all.to_csv(join(STATSDIR_CENTRALIZED, f'{save_str}_'
+                                                      f'{aggregation}_'
+                                                      f'{target}_'
+                                                      f'{value_of_interest}{d_randnetw[randnetw]}_stats.csv'), index=False)
 
     
     
     
-def pairwise_model_comparison_comp(df_all, model1, model2, comp_of_interest, value_of_interest='median_r2_test'):
+def pairwise_model_comparison_comp(df_all,
+                                   model1,
+                                   model2,
+                                   comp_of_interest,
+                                   value_of_interest='median_r2_test'):
     """Compare the best layer r2 test scores for the components of two models.
     The values are obtained across iterations.
     
     Return mean of the two models' values of interest, as well as statistics
+
+    Intended for use with components.
     """
     
     model1_val = df_all.query(f'comp == "{comp_of_interest}" & source_model == "{model1}"')[value_of_interest].values
@@ -4503,8 +4113,13 @@ def pairwise_model_comparison_comp(df_all, model1, model2, comp_of_interest, val
     
     return df_stats
 
-def pairwise_model_comparison_comp_boostrap(df_all, model1, model2, comp_of_interest, value_of_interest='median_r2_test',
-                                   n_bootstrap=10000, show_distrib=False):
+def pairwise_model_comparison_comp_boostrap(df_all,
+                                            model1,
+                                            model2,
+                                            comp_of_interest,
+                                            value_of_interest='median_r2_test',
+                                            n_bootstrap=10000,
+                                            show_distrib=False):
     """Compare the best layer r2 test scores for the components of two models.
     The values are obtained across iterations.
 
@@ -4556,10 +4171,14 @@ def pairwise_model_comparison_comp_boostrap(df_all, model1, model2, comp_of_inte
     return df_stats
 
 
-def pairwise_model_comparison_boostrap(df_all, model1, model2, roi=None,
-                                            value_of_interest='median_r2_test',
-                                            n_bootstrap=10000, show_distrib=False,
-                                            aggregate_across_subjects=False):
+def pairwise_model_comparison_boostrap(df_all,
+                                        model1,
+                                        model2,
+                                        roi=None,
+                                        value_of_interest='median_r2_test',
+                                        n_bootstrap=10000,
+                                        show_distrib=False,
+                                        aggregate_across_subjects=False):
     """Compare the best layer r2 test scores of two models. The loaded file has a value per subject. To make it as comparable
      as possible to the component approach (comparing 10 vals vs. 10 vals (n_it)), we average across subjects.
      That means that per model, we have 10 values, meaned across subjects, per iteration.
@@ -4614,31 +4233,22 @@ def pairwise_model_comparison_boostrap(df_all, model1, model2, roi=None,
     
     return df_stats
 
-def compare_models_subject_bootstrap(source_models, target, save, df_meta_roi, save_str='', roi=None,
-                          models1=['Kell2018word', 'Kell2018speaker', 'Kell2018multitask'],
-                          models2=['Kell2018audioset', 'Kell2018music'],
-                          aggregation='CV-splits-nit-10',
-                          randnetw='False', value_of_interest='median_r2_test',
-                        include_spectemp=True,
-                          ):
+def compare_models_subject_bootstrap(source_models,
+                                    target,
+                                    save,
+                                    df_meta_roi,
+                                    save_str='',
+                                    roi=None,
+                                    models1=['Kell2018word', 'Kell2018speaker', 'Kell2018multitask'],
+                                    models2=['Kell2018audioset', 'Kell2018music'],
+                                    aggregation='CV-splits-nit-10',
+                                    randnetw='False', value_of_interest='median_r2_test',
+                                    include_spectemp=True,):
     """
     Load the aggregated values that are plotted in the barplot across models. This has number of subjects as rows,
     and the model score in the columns (along with metadata).
     If spectemp is true, include it.
-    
-    :param source_models:
-    :param target:
-    :param save:
-    :param df_meta_roi:
-    :param save_str:
-    :param roi:
-    :param models1:
-    :param models2:
-    :param aggregation:
-    :param randnetw:
-    :param value_of_interest:
-    :param include_spectemp:
-    :return:
+
     """
     df_lst = []
     if include_spectemp:
@@ -4669,8 +4279,11 @@ def compare_models_subject_bootstrap(source_models, target, save, df_meta_roi, s
             if model1 == model2:
                 continue
 
-            df_stat = pairwise_model_comparison_subject_boostrap(df_all, model1, model2, roi=roi,
-                                                         value_of_interest=value_of_interest, n_bootstrap=10000)
+            df_stat = pairwise_model_comparison_subject_boostrap(df_all=df_all,
+                                                                 model1=model1, model2=model2,
+                                                                 roi=roi,
+                                                                 value_of_interest=value_of_interest,
+                                                                 n_bootstrap=10000)
             lst_df_stat.append(df_stat)
             
     # Additional logging
@@ -4683,14 +4296,19 @@ def compare_models_subject_bootstrap(source_models, target, save, df_meta_roi, s
 
     if save:
         df_stat_all.to_csv(join(STATSDIR_CENTRALIZED,
-                                f'{save_str}_{aggregation}_{target}_{value_of_interest}{d_randnetw[randnetw]}_stats.csv'),
-                           index=False)
+                                f'{save_str}_'
+                                f'{aggregation}_'
+                                f'{target}_'
+                                f'{value_of_interest}{d_randnetw[randnetw]}_stats.csv'),
+                                index=False)
 
 
-def pairwise_model_comparison_subject_boostrap(df_all, model1, model2, roi=None,
-                                       value_of_interest='median_r2_test',
-                                       n_bootstrap=10000, show_distrib=False,
-                                       ):
+def pairwise_model_comparison_subject_boostrap(df_all,
+                                               model1,
+                                               model2, roi=None,
+                                               value_of_interest='median_r2_test',
+                                               n_bootstrap=10000,
+                                               show_distrib=False,):
     """Compare the best layer r2 test scores of two models. The loaded file (per model) has a value per subject.
      That means that per model, we have e.g., 8 values (if CVsplits-nit approach, these are meaned across iterations.)
 
@@ -4742,32 +4360,6 @@ def repeat_row_in_df(output_grouped, rowname, reps_layers):
     output_reindex1.index = reps_layers[rowname]
     
     return output_reindex1
-
-
-def populate_random_emb(output_grouped, layer_reindex, reps_dict, reps_layers):
-    """
-
-    :param output_grouped: output grouped, random embedding == True (i.e. the ones the random embedding was run for)
-    :param layer_reindex: correct layer ordering across all layers
-    :param reps_dict: for the random embedding sizes, how many of each layer has that size
-    :param reps_layers: for each layer with a rand emb, how many layers have same size
-    :return: grouped, reindexed df with repeated vals according to reps_layers
-    """
-    
-    assert (np.array_equal(np.sort(output_grouped.index.values), np.sort(list(reps_dict.keys()))))
-    
-    dfs = []
-    for layer in output_grouped.index.values:
-        # get repeated dict:
-        df = repeat_row_in_df(output_grouped, rowname=layer, reps_layers=reps_layers)
-        dfs.append(df)
-    
-    # concat and reindex globally
-    dfs_concat = pd.concat(dfs, axis=0)
-    
-    output_reindex = dfs_concat.reindex(layer_reindex)
-    
-    return output_reindex
 
 
 def add_identity(axes, *line_args, **line_kwargs):
