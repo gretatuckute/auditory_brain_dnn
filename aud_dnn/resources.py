@@ -5,6 +5,7 @@
 d_layer_reindex = {
     'Kell2018music': ['relu0', 'maxpool0', 'relu1', 'maxpool1', 'relu2', 'relu3', 'relu4', 'avgpool', 'relufc', ],
     'Kell2018word': ['relu0', 'maxpool0', 'relu1', 'maxpool1', 'relu2', 'relu3', 'relu4', 'avgpool', 'relufc', ],
+    'Kell2018wordClean': ['relu0', 'maxpool0', 'relu1', 'maxpool1', 'relu2', 'relu3', 'relu4', 'avgpool', 'relufc', ],
     'Kell2018wordSeed2': ['relu0', 'maxpool0', 'relu1', 'maxpool1', 'relu2', 'relu3', 'relu4', 'avgpool', 'relufc', ],
     'Kell2018speaker': ['relu0', 'maxpool0', 'relu1', 'maxpool1', 'relu2', 'relu3', 'relu4', 'avgpool', 'relufc', ],
     'Kell2018speakerSeed2': ['relu0', 'maxpool0', 'relu1', 'maxpool1', 'relu2', 'relu3', 'relu4', 'avgpool', 'relufc', ],
@@ -16,6 +17,7 @@ d_layer_reindex = {
 
     'ResNet50music': ['conv1_relu1', 'maxpool1', 'layer1', 'layer2', 'layer3', 'layer4', 'avgpool', ],
     'ResNet50word': ['conv1_relu1', 'maxpool1', 'layer1', 'layer2', 'layer3', 'layer4', 'avgpool', ],
+    'ResNet50wordClean': ['conv1_relu1', 'maxpool1', 'layer1', 'layer2', 'layer3', 'layer4', 'avgpool', ],
     'ResNet50wordSeed2': ['conv1_relu1', 'maxpool1', 'layer1', 'layer2', 'layer3', 'layer4', 'avgpool', ],
     'ResNet50speaker': ['conv1_relu1', 'maxpool1', 'layer1', 'layer2', 'layer3', 'layer4', 'avgpool', ],
     'ResNet50speakerSeed2': ['conv1_relu1', 'maxpool1', 'layer1', 'layer2', 'layer3', 'layer4', 'avgpool', ],
@@ -80,6 +82,9 @@ d_layer_names = {'Kell2018music': {'input_after_preproc': 'Cochleagram', 'relu0'
                 'Kell2018wordSeed2': {'input_after_preproc': 'Cochleagram', 'relu0': 'ReLU_1', 'maxpool0': 'MaxPool2d_1',
                                         'relu1': 'ReLU_2', 'maxpool1': 'MaxPool2d_2', 'relu2': 'ReLU_3', 'relu3': 'ReLU_4',
                                         'relu4': 'ReLU_5', 'avgpool': 'AvgPool_1', 'relufc': 'ReLU_6', },
+                 'Kell2018wordClean': {'input_after_preproc': 'Cochleagram', 'relu0': 'ReLU_1', 'maxpool0': 'MaxPool2d_1',
+                                       'relu1': 'ReLU_2', 'maxpool1': 'MaxPool2d_2', 'relu2': 'ReLU_3', 'relu3': 'ReLU_4',
+                                       'relu4': 'ReLU_5', 'avgpool': 'AvgPool_1', 'relufc': 'ReLU_6', },
                  'Kell2018speaker': {'input_after_preproc': 'Cochleagram', 'relu0': 'ReLU_1', 'maxpool0': 'MaxPool2d_1',
                                         'relu1': 'ReLU_2', 'maxpool1': 'MaxPool2d_2', 'relu2': 'ReLU_3', 'relu3': 'ReLU_4',
                                         'relu4': 'ReLU_5', 'avgpool': 'AvgPool_1', 'relufc': 'ReLU_6', },
@@ -108,6 +113,9 @@ d_layer_names = {'Kell2018music': {'input_after_preproc': 'Cochleagram', 'relu0'
                  'ResNet50word': {'input_after_preproc': 'Cochleagram', 'conv1_relu1': 'ReLU_1', 'maxpool1': 'MaxPool_1',
                                         'layer1': 'ResNetBlock_1', 'layer2': 'ResNetBlock_2', 'layer3': 'ResNetBlock_3',
                                         'layer4': 'ResNetBlock_4', 'avgpool': 'AvgPool_1', },
+                 'ResNet50wordClean': {'input_after_preproc': 'Cochleagram', 'conv1_relu1': 'ReLU_1', 'maxpool1': 'MaxPool_1',
+                                  'layer1': 'ResNetBlock_1', 'layer2': 'ResNetBlock_2', 'layer3': 'ResNetBlock_3',
+                                  'layer4': 'ResNetBlock_4', 'avgpool': 'AvgPool_1', },
                  'ResNet50wordSeed2': {'input_after_preproc': 'Cochleagram', 'conv1_relu1': 'ReLU_1', 'maxpool1': 'MaxPool_1',
                                         'layer1': 'ResNetBlock_1', 'layer2': 'ResNetBlock_2', 'layer3': 'ResNetBlock_3',
                                         'layer4': 'ResNetBlock_4', 'avgpool': 'AvgPool_1', },
@@ -625,6 +633,7 @@ d_roi_colors = {'all': [sns.color_palette("pastel")[0], sns.color_palette("paste
 
 d_model_colors = {
     'Kell2018word': '#AD233B',
+    'Kell2018wordClean': 'red', # change
     'Kell2018wordSeed2': '#AD233B',
     'Kell2018speaker': '#F13336',
     'Kell2018speakerSeed2': '#F13336',
@@ -634,6 +643,7 @@ d_model_colors = {
     'Kell2018multitask': '#FFBAA5',
     'Kell2018multitaskSeed2': '#FFBAA5',
     'ResNet50word': 'darkgreen',
+    'ResNet50wordClean': 'green', # change
     'ResNet50wordSeed2': 'darkgreen',
     'ResNet50speaker': '#55D409',
     'ResNet50speakerSeed2': '#55D409',
@@ -666,7 +676,8 @@ d_model_colors = {
 
 d_model_names = {
 				'Kell2018word': 'CochCNN9-Word',
-				'Kell2018wordSeed2': 'CochCNN9-WordSeed2',
+                 'Kell2018wordClean': 'CochCNN9-WordClean',
+                'Kell2018wordSeed2': 'CochCNN9-WordSeed2',
 				'Kell2018speaker': 'CochCNN9-Speaker',
 				'Kell2018speakerSeed2': 'CochCNN9-SpeakerSeed2',
 				'Kell2018music': 'CochCNN9-Genre',
@@ -675,6 +686,7 @@ d_model_names = {
 				'Kell2018multitask': 'CochCNN9-MultiTask',
 				'Kell2018multitaskSeed2': 'CochCNN9-MultiTaskSeed2',
 				'ResNet50word': 'CochResNet50-Word',
+                'ResNet50wordClean': 'CochResNet50-WordClean',
 				'ResNet50wordSeed2': 'CochResNet50-WordSeed2',
 				'ResNet50speaker': 'CochResNet50-Speaker',
 				'ResNet50speakerSeed2': 'CochResNet50-SpeakerSeed2',

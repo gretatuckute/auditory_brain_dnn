@@ -1,9 +1,10 @@
 #!/bin/bash
-#SBATCH --job-name=inhouse-20230206
-#SBATCH --time=16:00:00
+#SBATCH --job-name=inhouse-20230418
+#SBATCH --time=14:30:00
 #SBACTH --ntasks=1
-#SBATCH --output="out/inhouse-20230206-%j.out"
-#SBATCH --mem=12G
+#SBATCH --output="out/inhouse-20230418-%j.out"
+#SBATCH --mem=3G
+#SBATCH -p evlab
 
 source /mindhive/mcdermott/u/gretatu/anaconda/etc/profile.d/conda.sh
 conda activate auditory_brain_dnn
