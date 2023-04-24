@@ -3,8 +3,8 @@ model="$1"
 target="$2"
 echo $model
 echo $target
-randnetw="False"
-overwrite=0
+randnetw="True"
+overwrite=1
 resultdir='/mindhive/mcdermott/u/gretatu/auditory_brain_dnn/results/'
 if [ "$model" = "Kell2018" ]; then
   models="Kell2018word Kell2018speaker Kell2018music Kell2018audioset"
@@ -146,7 +146,7 @@ for model in $models ; do
 
         # If overwrite is set to 1, then we don't care if the file exists or not
         if [ "$overwrite" = "1" ]; then
-          echo "FILE EXISTS: $file_to_look_for"
+#          echo "FILE EXISTS: $file_to_look_for"
           echo "OVERWRITING ......."
           sbatch AUD_cpu.sh $model $layer $flag $target
         else

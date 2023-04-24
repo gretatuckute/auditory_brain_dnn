@@ -163,8 +163,8 @@ class PytorchWrapper:
                 actv_dict = pickle.load(f)
             
             # print min values
-            for k, v in actv_dict.items():
-                print(f'{k}: min: {v.min()}')
+            # for k, v in actv_dict.items():
+            #     print(f'{k}: min: {v.min()}')
 
             # for k, v in actv_dict.items():
             #     print(f'{k}: shape: {v.shape}')
