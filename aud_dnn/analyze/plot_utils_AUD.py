@@ -3365,8 +3365,9 @@ def layer_position_argmax(p,
     unique, count = np.unique(unique_tie_values, return_counts=True)
     counts = dict(zip(unique, count))
     print(f'\nTIE COUNTER: {tie_counter} with unique tie values: {counts}')
-    print(f'\nMean/median number of values that were tied (IF any): {np.mean(tie_nums_if_exist):.3}, {np.median(tie_nums_if_exist)}'
-          f' (std: {np.std(tie_nums_if_exist):.3})')
+    if not len(tie_nums_if_exist) == 0:
+        print(f'\nMean/median number of values that were tied (IF any): {np.mean(tie_nums_if_exist):.3}, {np.median(tie_nums_if_exist)}'
+              f' (std: {np.std(tie_nums_if_exist):.3})')
 
     return df_best_layer, num_layers
 

@@ -15,28 +15,31 @@ concat_over_models = False
 
 # If concat_over_models = False, we load each individual model and perform the analysis on that
 if not concat_over_models:
+	# Shared for neural and components
+	best_layer_cv_nit = True # Basis for Figure 2 for neural, basis for Figure 5 for components; obtain best layer for each voxel based on independent CV splits across 10 iterations
+
+	# Neural specific
 	pred_across_layers = False # SI 2; predictivity for each model across all layers
-	best_layer_cv_nit = False # Basis for Figure 2 for neural, basis for Figure 5 for components; obtain best layer for each voxel based on independent CV splits across 10 iterations
 	best_layer_anat_ROI = False # Basis for Figure 7 for neural; best layer for each anatomical ROI
-	run_surf_argmax = True # Basis for Figure 6 for neural, dump argmax surface position to .mat file
+	run_surf_argmax = False # Basis for Figure 6 for neural, dump argmax surface position to .mat file
 	run_surf_direct_val = False # plotting arbitrary values on the surface (not used in paper)
 
 
 if concat_over_models:
 	# Shared for neural and components
-	plot_barplot_across_models = False # Figure 2 for neural, Figure 5 for components; barplot of performance across models
+	plot_barplot_across_models = True # Figure 2 for neural, Figure 5 for components; barplot of performance across models
 	stats_barplot_across_models = False # Figure 2 neural; stats for barplot of performance across models
 
 	# Neural specific
-	plot_anat_roi_scatter = True # Figure 7 neural; scatter of performance across models for anatomical ROIs
+	plot_anat_roi_scatter = False # Figure 7 neural; scatter of performance across models for anatomical ROIs
 
 	# Component specific
 	plot_barplot_across_inhouse_models = False # Figure 8A) for components (in-house models)
 	plot_scatter_comp_vs_comp = False # Figure 8B) for components (in-house models)
-	plot_scatter_pred_vs_actual = True # Figure 4, scatter for components
+	plot_scatter_pred_vs_actual = False # Figure 4, scatter for components
 
 
-target = 'NH2015'
+target = 'NH2015comp'
 
 # Logging
 date = datetime.datetime.now().strftime("%m%d%Y-%T")
@@ -69,8 +72,8 @@ source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell201
 # # 	'Kell2018wordSeed2', 'Kell2018speakerSeed2', 'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
 # # 	'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2', 'ResNet50multitaskSeed2',
 # 			]
-source_models = ['AST']
-
+# source_models = ['Kell2018word','Kell2018wordClean',
+# 				 'ResNet50word', 'ResNet50wordClean']
 
 print(f'---------- Target: {target} ----------')
 
@@ -246,7 +249,7 @@ if concat_over_models:  # assemble plots across models
 				save_str = f'_{len(source_models)}-models'
 
 			for val_flag in ['median_r2_test_c']:
-				for non_primary_flag in ['Anterior', 'Lateral', 'Posterior']:
+				for non_primary_flag in ['Anterior', 'Lateral', 'Posterior']: # ['Anterior', 'Lateral', 'Posterior']
 					for cond_flag in ['roi_label_general']:
 						for collapse_flag in ['median']: # How we collapsed over the relative position value for each subject (median is the default)
 							for randnetw_flag in ['False']: # 'True', 'False'
@@ -261,7 +264,7 @@ if concat_over_models:  # assemble plots across models
 															   annotate=False,
 															   save_str=save_str,
 															   value_of_interest=val_flag,
-															   stats=False) # !!!!!!!!
+															   stats=True) # !!!!!!!!
 
 		
 		## LOAD SCORE ACROSS LAYERS (FOR DIMENSIONALITY ANALYSIS -- migrated to DIM_plot_main)
@@ -330,7 +333,7 @@ if not concat_over_models:
 		output['mean_r2_test_c'] = output['mean_r2_test_c'].clip(upper=1)
 
 		# Permuted network (does not exist for spectemp or init models)
-		if source_model.endswith('init') or source_model == 'spectemp' or source_model in source_models: # FOR NOW, LETS NOT PLOT RANDNETW
+		if source_model.endswith('init') or source_model == 'spectemp': #or source_model in source_models: # FOR NOW, LETS NOT PLOT RANDNETW
 			output_randnetw = None
 			output_folders_paths_randnetw = []
 		else:
@@ -430,7 +433,7 @@ if not concat_over_models:
 							for val_flag in ['median_r2_test_c', ]:  # ['median_r2_test', 'median_r2_test_c',]
 								for randnetw_flag in ['False', 'True']:  # ['False', 'True',]
 
-									if randnetw_flag == 'True':
+									if randnetw_flag == 'True' and output_randnetw is not None:
 
 										barplot_best_layer_per_anat_ROI(output=output_randnetw,
 																		meta=meta,
@@ -440,6 +443,8 @@ if not concat_over_models:
 																		save=PLOTDIR, condition_col=cond_flag,
 																		value_of_interest=val_flag,
 																		val_layer='rel_pos')
+									elif randnetw_flag == 'True' and output_randnetw is None:
+										print('No permuted network data found')
 									elif randnetw_flag == 'False':
 										barplot_best_layer_per_anat_ROI(output=output, meta=meta,
 																		source_model=source_model, target=target,
