@@ -11,7 +11,7 @@ SURFDIR = f'{DATADIR}/fsavg_surf/'
 
 ### Settings for which plots to make ###
 save = True # Whether to save any plots/csvs
-concat_over_models = False
+concat_over_models = True
 
 # If concat_over_models = False, we load each individual model and perform the analysis on that
 if not concat_over_models:
@@ -27,7 +27,7 @@ if not concat_over_models:
 
 if concat_over_models:
 	# Shared for neural and components
-	plot_barplot_across_models = True # Figure 2 for neural, Figure 5 for components; barplot of performance across models
+	plot_barplot_across_models = False # Figure 2 for neural, Figure 5 for components; barplot of performance across models
 	stats_barplot_across_models = False # Figure 2 neural; stats for barplot of performance across models
 
 	# Neural specific
@@ -50,11 +50,11 @@ if user != 'gt':
 source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
 				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
 				'AST',  'wav2vec', 'DCASE2020', 'DS2',  'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer',]
-source_models = ['spectemp']
+# source_models = ['spectemp']
 # Models above spectemp baseline (n=15)
-# source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-# 				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-# 				'AST',  'wav2vec', 'VGGish', 'S2T',  'sepformer']
+source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
+				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
+				'AST',  'wav2vec', 'VGGish', 'S2T',  'sepformer']
 
 # # Models below spectemp baseline (n=4)
 # source_models = [  'DCASE2020', 'DS2',  'ZeroSpeech2020', 'metricGAN']
@@ -65,6 +65,8 @@ source_models = ['spectemp']
 # source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
 # 				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
 # 				 'Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
+# 				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
+# source_models = ['Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
 # 				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
 # source_models = ['Kell2018word','Kell2018wordClean',
 # 				 'ResNet50word', 'ResNet50wordClean']
@@ -147,8 +149,11 @@ if concat_over_models:  # assemble plots across models
 
 				# ## Associated statistics - comp1 vs comp2 comparions for models of interest ##
 				################### UPDATE THIS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-				compare_CV_splits_nit(source_models=source_models, target=target, df_meta_roi=df_meta_roi,
-									  save=True, save_str='all-models-bootstrap',
+				compare_CV_splits_nit(source_models=source_models,
+									  target=target,
+									  df_meta_roi=df_meta_roi,
+									  save=save,
+									  save_str='all-models-bootstrap',
 									  models1 = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
 					 			'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
 								'AST', 'wav2vec', 'DCASE2020', 'DS2', 'VGGish',  'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer'],
@@ -157,7 +162,11 @@ if concat_over_models:  # assemble plots across models
 								'AST', 'wav2vec', 'DCASE2020', 'DS2', 'VGGish',  'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer'],
 									  aggregation='CV-splits-nit-10',
 									  randnetw=randnetw_flag,)
-				compare_CV_splits_nit(source_models=source_models, target=target, save=True, save_str='inhouse-models_CochResNet50-bootstrap',
+
+				compare_CV_splits_nit(source_models=source_models,
+									  target=target,
+									  save=save,
+									  save_str='inhouse-models_CochResNet50-bootstrap',
 									  models1=['ResNet50word', 'ResNet50speaker', 'ResNet50multitask','ResNet50audioset', 'ResNet50music'],
 									  models2=['ResNet50word', 'ResNet50speaker', 'ResNet50multitask','ResNet50audioset', 'ResNet50music'],
 									  aggregation='CV-splits-nit-10',
@@ -205,10 +214,10 @@ if concat_over_models:  # assemble plots across models
 
 		# BARPLOTS ACROSS MODELS #
 		if plot_barplot_across_models:
-			for sort_flag in ['performance']:
+			for sort_flag in [NH2015_all_models_performance_order]: # 'performance'
 				for val_flag in ['median_r2_test_c', ]:
 					for agg_flag in ['CV-splits-nit-10']:
-						for randnetw_flag in ['False',]: # 'False', 'True'
+						for randnetw_flag in ['True']: # 'False', 'True'
 							barplot_across_models(source_models=source_models,
 												  target=target,
 												  roi=None,
@@ -223,14 +232,17 @@ if concat_over_models:  # assemble plots across models
 		if stats_barplot_across_models:
 			for val_flag in ['median_r2_test_c',]:
 				for randnetw_flag in ['False','True']:
-					compare_models_subject_bootstrap(source_models=source_models, target=target, df_meta_roi=df_meta_roi,
-													 save=True, value_of_interest=val_flag,
-										  save_str='all-models_subject-bootstrap',
-										  models1=[ 'ResNet50multitask',],
-										  models2=['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-												'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',],
-										  aggregation='CV-splits-nit-10',
-										  randnetw=randnetw_flag, )
+					compare_models_subject_bootstrap(source_models=source_models,
+													 target=target,
+													 df_meta_roi=df_meta_roi,
+													 save=save,
+													 value_of_interest=val_flag,
+													  save_str='all-models_subject-bootstrap',
+													  models1=[ 'ResNet50multitask',],
+													  models2=['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
+															'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',],
+													  aggregation='CV-splits-nit-10',
+													  randnetw=randnetw_flag, )
 
 		# ANATOMICAL SCATTER PLOTS
 		if plot_anat_roi_scatter:

@@ -270,17 +270,18 @@ d_model_tasks = {'AST':'sound_classification',
 # d_layer_layer_legend_mapping = {'input_after_preproc': 'Cochleagram'} # todo, when cleaning code base, create one big dictionary for all layers
 
 
-NH2015_all_models_performance_order = ['ResNet50multitask','AST','VGGish','ResNet50audioset',   'Kell2018multitask',
-								 'ResNet50word','ResNet50speaker','Kell2018speaker','Kell2018word', 'Kell2018audioset',
-								 'Kell2018music', 'ResNet50music', 'S2T', 'wav2vec','sepformer','DS2','ZeroSpeech2020',
-								 'DCASE2020', 'metricGAN'
-								 ]
+# NH2015_all_models_performance_order = ['ResNet50multitask','AST','VGGish','ResNet50audioset',   'Kell2018multitask',
+# 								 'ResNet50word','ResNet50speaker','Kell2018speaker','Kell2018word', 'Kell2018audioset',
+# 								 'Kell2018music', 'ResNet50music', 'S2T', 'wav2vec','sepformer','DS2','ZeroSpeech2020',
+# 								 'DCASE2020', 'metricGAN'
+# 								 ]
 
-B2021_all_models_performance_order = ['ResNet50multitask', 'AST', 'ResNet50audioset', 'Kell2018multitask',
-									  'ResNet50word', 'VGGish', 'ResNet50speaker','Kell2018word',
-									  'Kell2018speaker','Kell2018audioset', 'Kell2018music','wav2vec',
-									  'ResNet50music', 'S2T', 'sepformer', 'DS2', 'DCASE2020', 'ZeroSpeech2020',
-									  'metricGAN']
+
+# B2021_all_models_performance_order = ['ResNet50multitask', 'AST', 'ResNet50audioset', 'Kell2018multitask',
+# 									  'ResNet50word', 'VGGish', 'ResNet50speaker','Kell2018word',
+# 									  'Kell2018speaker','Kell2018audioset', 'Kell2018music','wav2vec',
+# 									  'ResNet50music', 'S2T', 'sepformer', 'DS2', 'DCASE2020', 'ZeroSpeech2020',
+# 									  'metricGAN']
 
 # # For plots that order the 165 sounds into categories
 # sound_category_order = ['Music', 'Song', 'EngSpeech', 'ForSpeech', 'HumVoc', 'AniVoc', 'HumNonVoc',

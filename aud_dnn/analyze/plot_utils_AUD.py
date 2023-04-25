@@ -1162,7 +1162,7 @@ def plot_score_across_layers(output,
                 df_yerr = pd.DataFrame([yerr], columns=piv_save.columns, index=['yerr'])  # append yerr to the pivot table that is plotted
                 piv_save = piv_save.append(df_yerr)
 
-                piv_save.to_csv(join(SAVEDIR_CENTRALIZED, f'across-layers_roi-{roi_label}_{source_model}_{target}_{value_of_interest}.csv'))
+                piv_save.to_csv(join(save, f'across-layers_roi-{roi_label}_{source_model}_{target}_{value_of_interest}.csv'))
 
         plt.show()
     
@@ -2221,7 +2221,7 @@ def barplot_across_models(source_models,
             df_grouped_w_spectemp['aggregation'] = aggregation
             df_grouped_w_spectemp['yerr_type'] = yerr_type
             df_grouped_w_spectemp['value_of_interest'] = value_of_interest
-            df_grouped_w_spectemp['sort_by'] = sort_by
+            df_grouped_w_spectemp['sort_by'] = [sort_by] * len(df_grouped_w_spectemp)
             df_grouped_w_spectemp['add_savestr'] = add_savestr
             df_grouped_w_spectemp['n_models'] = len(df_grouped_w_spectemp)
             df_grouped_w_spectemp.to_csv(join(save, f'{save_str}.csv'))
@@ -2394,6 +2394,7 @@ def scatter_anat_roi_across_models(source_models,
             df_save['condition_col'] = condition_col * len(df_save)
             df_save['save_str'] = save_str * len(df_save)
             df_save['collapse_over_val_layer'] = collapse_over_val_layer * len(df_save)
+            df_save['datetag'] = datetag * len(df_save)
             df_save.to_csv(join(RESULTDIR_ROOT,'STATS_across-models', f'{save_str}.csv'))
 
 
@@ -4328,6 +4329,7 @@ def compare_models_subject_bootstrap(source_models,
     df_stat_all['aggregation'] = aggregation
     df_stat_all['randnetw'] = randnetw
     df_stat_all['save_str'] = save_str
+    df_stat_all['datetag'] = datetag
 
     if save:
         df_stat_all.to_csv(join(STATSDIR_CENTRALIZED,

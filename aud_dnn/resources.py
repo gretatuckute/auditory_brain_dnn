@@ -840,3 +840,8 @@ d_annotate = {True: '_annotated',
 d_sorted = {'sort_by_performance': '_performance_sorted',
 			'sort_by_manual_list': '_manually_sorted',}
 
+NH2015_all_models_performance_order = ['ResNet50multitask', 'AST', 'VGGish', 'ResNet50audioset', 'Kell2018multitask',
+									 'ResNet50word', 'ResNet50speaker', 'Kell2018speaker', 'Kell2018word',
+									 'Kell2018audioset', 'Kell2018music', 'ResNet50music', 'S2T', 'wav2vec',
+									 'sepformer', 'DS2', 'ZeroSpeech2020', 'DCASE2020', 'metricGAN'] # From 20230425
+
