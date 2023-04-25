@@ -11,7 +11,7 @@ SURFDIR = f'{DATADIR}/fsavg_surf/'
 
 ### Settings for which plots to make ###
 save = True # Whether to save any plots/csvs
-concat_over_models = False
+concat_over_models = True
 
 # If concat_over_models = False, we load each individual model and perform the analysis on that
 if not concat_over_models:
@@ -27,15 +27,15 @@ if not concat_over_models:
 
 if concat_over_models:
 	# Shared for neural and components
-	plot_barplot_across_models = False # Figure 2 for neural, Figure 5 for components; barplot of performance across models
-	stats_barplot_across_models = False # Figure 2 neural; stats for barplot of performance across models
+	plot_barplot_across_models = True # Figure 2 for neural, Figure 5 for components; barplot of performance across models
 
 	# Neural specific
-	plot_anat_roi_scatter = True # Figure 7 neural; scatter of performance across models for anatomical ROIs
+	plot_anat_roi_scatter = False # Figure 7 neural; scatter of performance across models for anatomical ROIs
+	stats_barplot_across_models = False # Figure 2 neural; stats for barplot of performance across models
 
 	# Component specific
 	plot_barplot_across_inhouse_models = False # Figure 8A) for components (in-house models)
-	plot_scatter_comp_vs_comp = True # Figure 8B) for components (in-house models)
+	plot_scatter_comp_vs_comp = False # Figure 8B) for components (in-house models)
 	plot_scatter_pred_vs_actual = False # Figure 4, scatter for components
 
 
@@ -49,7 +49,7 @@ if user != 'gt':
 # All models (n=19)
 source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
 				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-				'AST',  'wav2vec', 'DCASE2020', 'DS2',  'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer', 'spectemp']
+				'AST',  'wav2vec', 'DCASE2020', 'DS2',  'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer',]# 'spectemp']
 # Models above spectemp baseline (n=15)
 # source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
 # 				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
@@ -86,16 +86,16 @@ if concat_over_models:  # assemble plots across models
 		if plot_barplot_across_models:
 
 			##### Best layer component predictions across models (independently selected layer) ####
-			save_str = f''
-			for sort_flag in ['performance']: #'performance', NH2015_all_models_performance_order
-				for randnetw_flag in ['False']: # 'False', 'True'
+			add_savestr = f''
+			for sort_flag in ['performance', NH2015_all_models_performance_order]: #'performance', NH2015_all_models_performance_order
+				for randnetw_flag in ['False', 'True']: # 'False', 'True'
 					barplot_components_across_models(source_models=source_models,
 													 target=target,
 													 randnetw=randnetw_flag,
 													 value_of_interest='median_r2_test',
-													 sem_of_interest='median_r2_test_sem_over_it',
+													 yerr_type='median_r2_test_sem_over_it',
 													 save=SAVEDIR_CENTRALIZED,
-													 save_str=save_str,
+													 add_savestr=add_savestr,
 													 include_spectemp=True,
 													 sort_by=sort_flag,
 													 add_in_spacing_bar=False,
@@ -103,7 +103,7 @@ if concat_over_models:  # assemble plots across models
 
 		### For plotting in-house models barplot (Figure 8A) ###
 		if plot_barplot_across_inhouse_models:
-			save_str = f'_task-grouped-ymin-0.2-empty-bar-inhouse-models'
+			add_savestr = f'_task-grouped-ymin-0.2-empty-bar-inhouse-models'
 
 			#### Best layer component predictions across models (independently selected layer) ####
 			for sort_flag in [['Kell2018word', 'ResNet50word', 'Kell2018speaker', 'ResNet50speaker', 'Kell2018music',  'ResNet50music',
@@ -114,9 +114,9 @@ if concat_over_models:  # assemble plots across models
 													 target=target,
 													 randnetw=randnetw_flag,
 													 value_of_interest='median_r2_test',
-													 sem_of_interest='median_r2_test_sem_over_it',
+													 yerr_type='median_r2_test_sem_over_it',
 													 save=SAVEDIR_CENTRALIZED,
-													 save_str=save_str,
+													 add_savestr=add_savestr,
 													 include_spectemp=True,
 													 sort_by=sort_flag,
 													 add_in_spacing_bar=True,
@@ -146,13 +146,11 @@ if concat_over_models:  # assemble plots across models
 												 value_of_interest='median_r2_test',
 												 sem_of_interest='median_r2_test_sem_over_it')
 
-				# ## Associated statistics - comp1 vs comp2 comparions for models of interest ##
-				################### UPDATE THIS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+				## Associated statistics - comp1 vs comp2 comparions for models of interest ##
 				compare_CV_splits_nit(source_models=source_models,
 									  target=target,
-									  df_meta_roi=df_meta_roi,
 									  save=save,
-									  save_str='all-models-bootstrap',
+									  save_str='all-models-bootstrap', # Here we just run all models such that all numbers are in the same place
 									  models1 = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
 					 			'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
 								'AST', 'wav2vec', 'DCASE2020', 'DS2', 'VGGish',  'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer'],
@@ -162,14 +160,15 @@ if concat_over_models:  # assemble plots across models
 									  aggregation='CV-splits-nit-10',
 									  randnetw=randnetw_flag,)
 
-				compare_CV_splits_nit(source_models=source_models,
-									  target=target,
-									  save=save,
-									  save_str='inhouse-models_CochResNet50-bootstrap',
-									  models1=['ResNet50word', 'ResNet50speaker', 'ResNet50multitask','ResNet50audioset', 'ResNet50music'],
-									  models2=['ResNet50word', 'ResNet50speaker', 'ResNet50multitask','ResNet50audioset', 'ResNet50music'],
-									  aggregation='CV-splits-nit-10',
-									  randnetw=randnetw_flag,)
+				# Delete?
+				# compare_CV_splits_nit(source_models=source_models,
+				# 					  target=target,
+				# 					  save=save,
+				# 					  save_str='inhouse-models_CochResNet50-bootstrap',
+				# 					  models1=['ResNet50word', 'ResNet50speaker', 'ResNet50multitask','ResNet50audioset', 'ResNet50music'],
+				# 					  models2=['ResNet50word', 'ResNet50speaker', 'ResNet50multitask','ResNet50audioset', 'ResNet50music'],
+				# 					  aggregation='CV-splits-nit-10',
+				# 					  randnetw=randnetw_flag,)
 
 
 		#### Predicted versus actual components (independently selected layer - most frequent one) ####

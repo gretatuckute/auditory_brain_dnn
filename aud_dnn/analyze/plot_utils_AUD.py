@@ -2210,7 +2210,9 @@ def barplot_across_models(source_models,
         plt.title(title_str)
         plt.tight_layout(pad=2.5)
         if save:
-            save_str = f'across-models_roi-{roi}_{target}{d_randnetw[randnetw]}_{aggregation}_{yerr_type}_{value_of_interest}{sort_str}{add_savestr}'
+            save_str = f'across-models_roi-{roi}_{target}{d_randnetw[randnetw]}_' \
+                       f'{aggregation}_{yerr_type}_' \
+                       f'{value_of_interest}{sort_str}{add_savestr}'
             plt.savefig(join(save, f'{save_str}.png'), dpi=180)
             plt.savefig(join(save, f'{save_str}.svg'), dpi=180)
 
@@ -2753,13 +2755,13 @@ def barplot_components_across_models(source_models,
                                      target,
                                      randnetw='False',
                                      value_of_interest='median_r2_test',
-                                     sem_of_interest='sem_r2_test',
+                                     yerr_type='median_r2_test_sem_over_it',
                                      sort_by='performance',
                                      aggregation='CV-splits-nit-10',
                                      save=None,
                                      components=['lowfreq', 'highfreq', 'envsounds', 'pitch', 'speech','music'],
                                      include_spectemp=True,
-                                     save_str='',
+                                     add_savestr='',
                                      alpha=1,
                                      ylim=[0,1],
                                      add_in_spacing_bar=True):
@@ -2768,7 +2770,7 @@ def barplot_components_across_models(source_models,
     :param source_models:
     :param target:
     :param value_of_interest:
-    :param sem_of_interest: If 'sem_r2_test', uses SEM over CV splits.
+    :param yerr_type: If ''median_r2_test_sem_over_it', uses SEM over the layer selection procedure.
     :param ylim: for 2D scatter plots.
     """
     
@@ -2777,7 +2779,9 @@ def barplot_components_across_models(source_models,
     for source_model in source_models:
         df = pd.read_csv(
             join(RESULTDIR_ROOT, source_model, 'outputs',
-                 f'best-layer-{aggregation}_per-comp_{source_model}{d_randnetw[randnetw]}_{target}_{value_of_interest}.csv')).rename(
+                 f'best-layer-{aggregation}_'
+                 f'per-comp_{source_model}{d_randnetw[randnetw]}_'
+                 f'{target}_{value_of_interest}.csv')).rename(
             columns={'Unnamed: 0': 'comp'})
         df_lst.append(df)
     df_all = pd.concat(df_lst)
@@ -2828,14 +2832,14 @@ def barplot_components_across_models(source_models,
             df_spectemp_comp = df_spectemp[df_spectemp.comp == comp]
         color_order = [d_model_colors[x] for x in df_comp.source_model]
         r2 = df_comp[value_of_interest].values
-        sem = df_comp[sem_of_interest].values
+        sem = df_comp[yerr_type].values
         ax[i].set_box_aspect(0.9)
         if include_spectemp:
             ax[i].hlines(xmin=xmin, xmax=xmax, y=df_spectemp_comp[f'{value_of_interest}'].values, color='darkgrey',zorder=2)
             ax[i].fill_between(
                 [(bar_placement[0] - np.diff(bar_placement) / 2)[0], (bar_placement[-1] + np.diff(bar_placement) / 2)[0]],
-                df_spectemp_comp[f'{value_of_interest}'].values - df_spectemp_comp[f'{sem_of_interest}'].values,
-                df_spectemp_comp[f'{value_of_interest}'].values + df_spectemp_comp[f'{sem_of_interest}'].values,
+                df_spectemp_comp[f'{value_of_interest}'].values - df_spectemp_comp[f'{yerr_type}'].values,
+                df_spectemp_comp[f'{value_of_interest}'].values + df_spectemp_comp[f'{yerr_type}'].values,
                 color='gainsboro')
         ax[i].bar(bar_placement,
                   r2,
@@ -2851,14 +2855,27 @@ def barplot_components_across_models(source_models,
         # Make yticks larger
         ax[i].tick_params(axis='y', labelsize=15)
     plt.suptitle(f'{d_value_of_interest[value_of_interest]} across models {sort_str[1:]}\n{target} {d_randnetw[randnetw][1:]}')
-    plt.tight_layout(pad=1.6)
+    plt.tight_layout(pad=1.8)
     if save:
-        plt.savefig(
-            join(save, f'across-models_barplot_components{save_str}_{target}{d_randnetw[randnetw]}_{value_of_interest}{sort_str}.svg'),
-            dpi=180)
-        plt.savefig(
-            join(save, f'across_models_barplot_components{save_str}_{target}{d_randnetw[randnetw]}_{value_of_interest}{sort_str}.png'),
-            dpi=180)
+        save_str = f'across-models_barplot_components_{target}{d_randnetw[randnetw]}_' \
+                   f'{aggregation}_{yerr_type}_' \
+                   f'{value_of_interest}{sort_str}{add_savestr}'
+        plt.savefig(join(save, f'{save_str}.svg'), dpi=180)
+        plt.savefig(join(save, f'{save_str}.png'), dpi=180)
+
+        # save csv and log more info
+        # Append df_spectemp to df_all
+        df_all_w_spectemp = pd.concat([df_all,df_spectemp])
+        df_all_w_spectemp['target'] = target
+        df_all_w_spectemp['randnetw'] = randnetw
+        df_all_w_spectemp['aggregation'] = aggregation
+        df_all_w_spectemp['yerr_type'] = yerr_type
+        df_all_w_spectemp['value_of_interest'] = value_of_interest
+        df_all_w_spectemp['sort_by'] = [sort_by] * len(df_all_w_spectemp)
+        df_all_w_spectemp['add_savestr'] = add_savestr
+        df_all_w_spectemp['n_models'] = len(df_all_w_spectemp)
+        df_all_w_spectemp.to_csv(join(save, f'{save_str}.csv'))
+
     plt.show()
 
 
@@ -4026,7 +4043,6 @@ def determine_surf_layer_colorscale(target,
 def compare_CV_splits_nit(source_models,
                           target,
                           save,
-                          df_meta_roi,
                           save_str='',
                           roi=None,
                           models1=['Kell2018word', 'Kell2018speaker', 'Kell2018multitask'],
@@ -4096,6 +4112,8 @@ def compare_CV_splits_nit(source_models,
     df_stat_all['aggregation'] = aggregation
     df_stat_all['randnetw'] = randnetw
     df_stat_all['save_str'] = save_str
+    df_stat_all['bootstrap'] = bootstrap
+    df_stat_all['datetag'] = datetag
     
     if save:
         df_stat_all.to_csv(join(STATSDIR_CENTRALIZED, f'{save_str}_'
