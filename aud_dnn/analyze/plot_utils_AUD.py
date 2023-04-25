@@ -21,7 +21,13 @@ import pickle
 import scipy.stats as stats
 import statsmodels.stats.descriptivestats as ds
 import sys
-from aud_dnn.resources import *
+user = getpass.getuser()
+if user == 'gretatu':
+    # Go one directory up to import resources
+    sys.path.append(str(Path(os.getcwd()).parent))
+    from resources import *
+else:
+    from aud_dnn.resources import *
 now = datetime.datetime.now()
 datetag = now.strftime("%Y%m%d-%H%M")
 
@@ -30,12 +36,11 @@ random.seed(0)
 
 #### Paths ####
 DATADIR = (Path(os.getcwd()) / '..' / '..' / 'data').resolve()
-user = getpass.getuser()
 if user == 'gt':
     ROOT = f'/Users/{user}/bur/'
 else:
     print(f' ------------- Running on openmind as {user} -----------')
-    ROOT = f'/mindhive/mcdermott/{user}/'
+    ROOT = f'/mindhive/mcdermott/u/{user}/auditory_brain_dnn/'
 
 SAVEDIR_CENTRALIZED = f'{ROOT}/results/PLOTS_across-models/'
 STATSDIR_CENTRALIZED = f'{ROOT}/results/STATS_across-models/'
@@ -173,20 +178,34 @@ def concat_dfs_modelwise(RESULTDIR,
     
     # Only use files in layer reindex (not all layers)
     files_after_reindex = []
+    intended_positions = {}
     for f in files_after_rand:  # find layer name, take care of dashes in the name..
         layer = f.split('SOURCE-')[1].split('_RAND')[0].split('-')[1:]
         if len(layer) == 1:
             layer = layer[0]
         else:
             layer = '-'.join(layer)
-        if layer in layer_reindex:
+        if layer in layer_reindex: # This ensures that we get all the layers we want, but not necessarily in the right order
             files_after_reindex.append(f)
-    
+            # Get the intended position of the layer, i.e. the position it should have in the final dataframe which matches layer_reindex
+            # Get the index of the layer in layer_reindex, 0 for first layer, 1 for second layer etc.
+            numerical_index = layer_reindex.index(layer)
+            intended_positions[numerical_index] = f
+
     print(f'Loading {df_str} results from {len(files_after_reindex)} folders')
+    # Assert that intended positions and layer_reindex are the same
+    assert len(intended_positions) == len(layer_reindex)
+    assert set(intended_positions.values()) == set(files_after_reindex)
+
+    # Now sort files_after_reindex according to intended_positions (does not matter for downstream code in which way the
+    # original df_output is sorted, this is just a bit nicer.
+    files_after_reindex_sorted = []
+    for i in range(len(layer_reindex)):
+        files_after_reindex_sorted.append(intended_positions[i])
     
     # get pkl files
     dfs_lst = []
-    for i, f in tqdm(enumerate(files_after_reindex)):
+    for i, f in tqdm(enumerate(files_after_reindex_sorted)):
         # try:
         #     if target == 'B2021':  # and not (RESULTDIR / f / df_str).exists():  # compile the outputs
         #         df_chunks = [i for i in os.listdir(RESULTDIR / f) if i.startswith(df_str[:-4] + '_')]
@@ -212,7 +231,7 @@ def concat_dfs_modelwise(RESULTDIR,
     dfs_merge = pd.concat(dfs_lst)
     print(f'Len of final df: {len(dfs_merge)}')
     
-    return dfs_merge, files_after_reindex
+    return dfs_merge, files_after_reindex_sorted
 
 
 #### AGGREGATING AND PLOTTING SCORES FOR VOXELS FUNCTIONS ####
@@ -385,12 +404,14 @@ def select_r2_test_CV_splits_nit(output_folders_paths,
                                  verbose=False,
                                  store_for_stats=True):
     """Select the best layer based on 5 CV splits, and take the r2 test value at that layer.
-    The indices are random (i.e. different!) for each voxel and layer. The indices will be different across different models.
     As in all other analyses, make sure that we clip r2_test_c values at 1.
-    
-    Run the same procedure across n_it samples.
+    Run the same procedure across n_it iterations (to not make the layer selection procedure dependent on a single split).
+    Obtain the median across voxels per subject.
 
-    Obtain the median across voxels per subject
+    We set the random seed to be the iteration split index. That means that if we run the different split iterations,
+    we get different random splits (which of course is the intention).
+    Within the split iteration loop, we load all the given layers of a model. Because we load the layers in the same order,
+    we ensure that the random indices match across models with same architecture (or permuted networks).
     """
     print(f'\nFUNC: select_r2_test_CV_splits_nit\nMODEL: {source_model}, value_of_interest: {value_of_interest}, collapse_over_splits: {collapse_over_splits}, randnetw: {randnetw}\n')
     ## FOR LOGGING ##
@@ -403,6 +424,8 @@ def select_r2_test_CV_splits_nit(output_folders_paths,
     
     # Loop over nit samples
     for i in tqdm(range(nit)):
+        np.random.seed(i) # Use different random seed for each iteration, but still make it reproducible.
+
         lst_layer_selection = []
         lst_r_value = []
 
@@ -417,7 +440,7 @@ def select_r2_test_CV_splits_nit(output_folders_paths,
             ds_val = pd.DataFrame(ds[value_of_interest].values,
                                       index=index_val)  # index according to the comp/voxel id
             
-            # Generate random indices for each voxel
+            # Generate random indices for each voxel and layer
             m = np.zeros((ds_val.shape[0], ds_val.shape[1]))
             
             for n_vox in range(m.shape[0]):
@@ -435,7 +458,7 @@ def select_r2_test_CV_splits_nit(output_folders_paths,
             assert np.all(np.sum(~np.isnan(data_layer_selection), axis=1) == 5)
             
             # Get the median/mean value for each voxel/component (across the five values that are held out)
-            if collapse_over_splits == 'median':
+            if collapse_over_splits == 'median': # Default, and used in paper
                 data_layer_selection_median = np.nanmedian(data_layer_selection, axis=1)
                 data_r_value_median = np.nanmedian(data_r_value, axis=1)
             elif collapse_over_splits == 'mean':
@@ -920,6 +943,7 @@ def obtain_spectemp_val_CV_splits_nit(roi,
 
     # Loop over nit samples
     for i in range(nit):
+        np.random.seed(i) # To match the select_r2_test_CV_splits_nit() function and for reproducibility
         # Generate random indices for each voxel
         m = np.zeros((ds_val.shape[0], ds_val.shape[1]))
 
@@ -1599,6 +1623,9 @@ def scatter_NH2015comp_resp_vs_pred(source_model,
     of the layer selection procedure): return most frequent layer for each component. If ties, return a random one.
     
     """
+    # Set random seed to 0 for reproducibility
+    np.random.seed(0)
+
     # Load the actual component data
     comp_data = load_comp_responses()
     
@@ -1940,7 +1967,6 @@ def obtain_output_folders_for_any_comp_model(target,
 #### ACROSS MODELS FUNCTIONS ####
 def barplot_across_models(source_models,
                           target,
-                          df_meta_roi,
                           roi=None,
                           value_of_interest='median_r2_test_c',
                           randnetw='False',
@@ -2417,10 +2443,16 @@ def load_scatter_anat_roi_best_layer(target,
     
 
 
-def scatter_components_across_models(source_models, target, df_meta_roi, randnetw='False',
+def scatter_components_across_models(source_models,
+                                     target,
+                                     randnetw='False',
                                      value_of_interest='median_r2_test',
-                                     sem_of_interest='sem_r2_test',
-                                     save=None, include_spectemp=True, save_str='',ylim=[0,1], symbols=True, aggregation='CV-splits-train-test'):
+                                     sem_of_interest='median_r2_test_sem_over_it',
+                                     save=None,
+                                     include_spectemp=True,
+                                     save_str='',ylim=[0,1],
+                                     symbols=True,
+                                     aggregation='CV-splits-nit-10'):
     """Load the best layer per compponent csv files and make a plot across all models
     Also plots scatter plot, one comp versus the other comp.
     
@@ -2718,7 +2750,6 @@ def scatter_2_components(source_models, target,
 
 def barplot_components_across_models(source_models,
                                      target,
-                                     df_meta_roi,
                                      randnetw='False',
                                      value_of_interest='median_r2_test',
                                      sem_of_interest='sem_r2_test',
@@ -2728,6 +2759,8 @@ def barplot_components_across_models(source_models,
                                      components=['lowfreq', 'highfreq', 'envsounds', 'pitch', 'speech','music'],
                                      include_spectemp=True,
                                      save_str='',
+                                     alpha=1,
+                                     ylim=[0,1],
                                      add_in_spacing_bar=True):
     """Load the best layer per component csv files and make a plot across all models, one for each component.
 
@@ -2759,13 +2792,6 @@ def barplot_components_across_models(source_models,
 
 
     # plot specs
-    if randnetw == 'False':
-        alpha = 1
-        ylim = [0,1] # remember to change this according to whether it's Fig 3 or Fig 6!
-    else:
-        alpha = 1
-        ylim = [0, 1]
-    
     if add_in_spacing_bar: # create an empty bar before multitask
         bar_placement = np.arange(0, (len(df_all.source_model.unique())+1) / 2, 0.5)
         # Group bars closer together two and two. Add +.1 to odd numbers to make them closer together but retain even number positions
@@ -2817,10 +2843,14 @@ def barplot_components_across_models(source_models,
         ax[i].set_title(f'Component number {i + 1}, "{comp}"', size='medium')
         ax[i].set_ylim(ylim)
         ax[i].set_xticks(bar_placement)
-        ax[i].set_xticklabels([d_model_names[x] for x in df_comp.source_model], rotation=75)
-        ax[i].set_ylabel(d_value_of_interest[value_of_interest])
+        ax[i].set_xticklabels([d_model_names[x] for x in df_comp.source_model], rotation=80,
+                              fontsize=13,
+                              ha='right', rotation_mode='anchor')
+        ax[i].set_ylabel(d_value_of_interest[value_of_interest], fontsize=15)
+        # Make yticks larger
+        ax[i].tick_params(axis='y', labelsize=15)
     plt.suptitle(f'{d_value_of_interest[value_of_interest]} across models {sort_str[1:]}\n{target} {d_randnetw[randnetw][1:]}')
-    plt.tight_layout(pad=1)
+    plt.tight_layout(pad=1.6)
     if save:
         plt.savefig(
             join(save, f'across-models_barplot_components{save_str}_{target}{d_randnetw[randnetw]}_{value_of_interest}{sort_str}.svg'),
@@ -3262,6 +3292,8 @@ def layer_position_argmax(p,
              and the int position of the argmax layer (int). +1 to make the min layer 1 and not 0 (in column: 'pos')
              and the relative position (in column: 'rel_pos') where 0 is the first layer, and 1 is the last layer.
     """
+    np.random.seed(0) # set seed for reproducibility
+
     ## Get num, min, max layers to start with ##
     num_layers = p.shape[1]
     layer_reindex = d_layer_reindex[source_model]
@@ -4142,6 +4174,7 @@ def pairwise_model_comparison_comp_boostrap(df_all,
     for i in range(n_bootstrap):
         # shuffle the model1 and model2 values and assign randomly to two lists
         model1_model2_val = np.concatenate([model1_val, model2_val])
+        print(f'SET SEED')
         np.random.shuffle(model1_model2_val)
         model1_val_shuffled = model1_model2_val[:len(model1_val)]
         model2_val_shuffled = model1_model2_val[len(model1_val):]
@@ -4205,6 +4238,7 @@ def pairwise_model_comparison_boostrap(df_all,
     for i in range(n_bootstrap):
         # shuffle the model1 and model2 values and assign randomly to two lists
         model1_model2_val = np.concatenate([model1_val, model2_val])
+        print(f'SET SEED')
         np.random.shuffle(model1_model2_val)
         model1_val_shuffled = model1_model2_val[:len(model1_val)]
         model2_val_shuffled = model1_model2_val[len(model1_val):]
@@ -4326,6 +4360,7 @@ def pairwise_model_comparison_subject_boostrap(df_all,
     # take mean over sampled values for each iteration --> get distribution and compare to true value from model1
     model2_boostrapped_distrib = []
     for i in range(n_bootstrap):
+        print('SET SEED')
         model2_val_sample = np.random.choice(model2_val, size=len(model2_val)) # sample with replacement
         model2_boostrapped_distrib.append(np.mean(model2_val_sample))
         
