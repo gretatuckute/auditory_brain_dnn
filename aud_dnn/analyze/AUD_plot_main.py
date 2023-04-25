@@ -27,7 +27,7 @@ if not concat_over_models:
 
 if concat_over_models:
 	# Shared for neural and components
-	plot_barplot_across_models = True # Figure 2 for neural, Figure 5 for components; barplot of performance across models
+	plot_barplot_across_models = False # Figure 2 for neural, Figure 5 for components; barplot of performance across models
 
 	# Neural specific
 	plot_anat_roi_scatter = False # Figure 7 neural; scatter of performance across models for anatomical ROIs
@@ -35,7 +35,7 @@ if concat_over_models:
 
 	# Component specific
 	plot_barplot_across_inhouse_models = False # Figure 8A) for components (in-house models)
-	plot_scatter_comp_vs_comp = False # Figure 8B) for components (in-house models)
+	plot_scatter_comp_vs_comp = True # Figure 8B) for components (in-house models)
 	plot_scatter_pred_vs_actual = False # Figure 4, scatter for components
 
 
@@ -47,9 +47,9 @@ if user != 'gt':
 	sys.stdout = open(join(RESULTDIR_ROOT, 'logs', f'out-{date}.log'), 'a+')
 
 # All models (n=19)
-source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-				'AST',  'wav2vec', 'DCASE2020', 'DS2',  'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer',]# 'spectemp']
+# source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
+# 				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
+# 				'AST',  'wav2vec', 'DCASE2020', 'DS2',  'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer',]# 'spectemp']
 # Models above spectemp baseline (n=15)
 # source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
 # 				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
@@ -59,8 +59,8 @@ source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell201
 # source_models = [  'DCASE2020', 'DS2',  'ZeroSpeech2020', 'metricGAN']
 
 # In-house models (n=10)
-# source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-# 				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',]
+source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
+				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',]
 # source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
 # 				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
 # 				 'Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
@@ -129,7 +129,7 @@ if concat_over_models:  # assemble plots across models
 
 			#### Best layer component predictions across models (independently selected layer) as scatters ####
 
-			for randnetw_flag in [ 'False', 'True',]:
+			for randnetw_flag in ['False', 'True',]: # 'False', 'True',
 				if randnetw_flag == 'False':
 					ylim = [0.5, 1]
 				else:
@@ -159,16 +159,6 @@ if concat_over_models:  # assemble plots across models
 								'AST', 'wav2vec', 'DCASE2020', 'DS2', 'VGGish',  'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer'],
 									  aggregation='CV-splits-nit-10',
 									  randnetw=randnetw_flag,)
-
-				# Delete?
-				# compare_CV_splits_nit(source_models=source_models,
-				# 					  target=target,
-				# 					  save=save,
-				# 					  save_str='inhouse-models_CochResNet50-bootstrap',
-				# 					  models1=['ResNet50word', 'ResNet50speaker', 'ResNet50multitask','ResNet50audioset', 'ResNet50music'],
-				# 					  models2=['ResNet50word', 'ResNet50speaker', 'ResNet50multitask','ResNet50audioset', 'ResNet50music'],
-				# 					  aggregation='CV-splits-nit-10',
-				# 					  randnetw=randnetw_flag,)
 
 
 		#### Predicted versus actual components (independently selected layer - most frequent one) ####

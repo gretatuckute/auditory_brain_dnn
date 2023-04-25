@@ -4180,6 +4180,7 @@ def pairwise_model_comparison_comp_boostrap(df_all,
     
     Intended for use for components.
     """
+    np.random.seed(0) # set seed for reproducibility
 
     model1_val = df_all.query(f'comp == "{comp_of_interest}" & source_model == "{model1}"')[
         value_of_interest].values
@@ -4193,7 +4194,6 @@ def pairwise_model_comparison_comp_boostrap(df_all,
     for i in range(n_bootstrap):
         # shuffle the model1 and model2 values and assign randomly to two lists
         model1_model2_val = np.concatenate([model1_val, model2_val])
-        print(f'SET SEED')
         np.random.shuffle(model1_model2_val)
         model1_val_shuffled = model1_model2_val[:len(model1_val)]
         model2_val_shuffled = model1_model2_val[len(model1_val):]
