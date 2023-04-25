@@ -254,7 +254,7 @@ if concat_over_models:  # assemble plots across models
 				save_str = f'_{len(source_models)}-models'
 
 			for val_flag in ['median_r2_test_c']:
-				for non_primary_flag in ['Anterior', 'Lateral', 'Posterior']: # ['Anterior', 'Lateral', 'Posterior']
+				for non_primary_flag in [ 'Posterior']: # ['Anterior', 'Lateral', 'Posterior']
 					for cond_flag in ['roi_label_general']:
 						for collapse_flag in ['median']: # How we collapsed over the relative position value for each subject (median is the default)
 							for randnetw_flag in ['False']: # 'True', 'False'
@@ -264,12 +264,12 @@ if concat_over_models:  # assemble plots across models
 															   randnetw=randnetw_flag,
 															   condition_col=cond_flag,
 															   collapse_over_val_layer=collapse_flag,
-															   primary_rois=['Primary', ], # 'Primary',
+															   primary_rois=['Lateral', ], # 'Primary',
 															   non_primary_rois=[non_primary_flag],
 															   annotate=False,
 															   save_str=save_str,
 															   value_of_interest=val_flag,
-															   stats=True) # !!!!!!!!
+															   stats=True)
 
 		
 		## LOAD SCORE ACROSS LAYERS (FOR DIMENSIONALITY ANALYSIS -- migrated to DIM_plot_main)
