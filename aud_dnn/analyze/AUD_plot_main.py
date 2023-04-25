@@ -11,7 +11,7 @@ SURFDIR = f'{DATADIR}/fsavg_surf/'
 
 ### Settings for which plots to make ###
 save = True # Whether to save any plots/csvs
-concat_over_models = True
+concat_over_models = False
 
 # If concat_over_models = False, we load each individual model and perform the analysis on that
 if not concat_over_models:
@@ -19,8 +19,8 @@ if not concat_over_models:
 	best_layer_cv_nit = True # Basis for Figure 2 for neural, basis for Figure 5 for components; obtain best layer for each voxel based on independent CV splits across 10 iterations
 
 	# Neural specific
-	pred_across_layers = True # SI 2; predictivity for each model across all layers
-	best_layer_anat_ROI = True # Basis for Figure 7 for neural; best layer for each anatomical ROI
+	pred_across_layers = False # SI 2; predictivity for each model across all layers
+	best_layer_anat_ROI = False # Basis for Figure 7 for neural; best layer for each anatomical ROI
 	run_surf_argmax = False # Basis for Figure 6 for neural, dump argmax surface position to .mat file
 	run_surf_direct_val = False # plotting arbitrary values on the surface (not used in paper)
 
@@ -39,7 +39,7 @@ if concat_over_models:
 	plot_scatter_pred_vs_actual = False # Figure 4, scatter for components
 
 
-target = 'NH2015'
+target = 'NH2015comp'
 
 # Logging
 date = datetime.datetime.now().strftime("%m%d%Y-%T")
@@ -49,12 +49,11 @@ if user != 'gt':
 # All models (n=19)
 source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
 				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-				'AST',  'wav2vec', 'DCASE2020', 'DS2',  'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer',]
-# source_models = ['spectemp']
+				'AST',  'wav2vec', 'DCASE2020', 'DS2',  'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer', 'spectemp']
 # Models above spectemp baseline (n=15)
-source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-				'AST',  'wav2vec', 'VGGish', 'S2T',  'sepformer']
+# source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
+# 				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
+# 				'AST',  'wav2vec', 'VGGish', 'S2T',  'sepformer']
 
 # # Models below spectemp baseline (n=4)
 # source_models = [  'DCASE2020', 'DS2',  'ZeroSpeech2020', 'metricGAN']
@@ -254,17 +253,17 @@ if concat_over_models:  # assemble plots across models
 				save_str = f'_{len(source_models)}-models'
 
 			for val_flag in ['median_r2_test_c']:
-				for non_primary_flag in [ 'Posterior']: # ['Anterior', 'Lateral', 'Posterior']
+				for non_primary_flag in ['Anterior', 'Lateral', 'Posterior']: # ['Anterior', 'Lateral', 'Posterior']
 					for cond_flag in ['roi_label_general']:
 						for collapse_flag in ['median']: # How we collapsed over the relative position value for each subject (median is the default)
-							for randnetw_flag in ['False']: # 'True', 'False'
+							for randnetw_flag in ['True', 'False']: # 'True', 'False'
 								scatter_anat_roi_across_models(source_models=source_models,
 															   target=target,
 															   save=SAVEDIR_CENTRALIZED,
 															   randnetw=randnetw_flag,
 															   condition_col=cond_flag,
 															   collapse_over_val_layer=collapse_flag,
-															   primary_rois=['Lateral', ], # 'Primary',
+															   primary_rois=['Primary', ], # 'Primary',
 															   non_primary_rois=[non_primary_flag],
 															   annotate=False,
 															   save_str=save_str,

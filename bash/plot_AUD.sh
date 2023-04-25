@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=plot20230425
-#SBATCH --time=00:15:00
+#SBATCH --time=00:45:00
 #SBACTH --ntasks=1
 #SBATCH --output="out/plot20230425-%j.out"
 #SBATCH --mem=2G
