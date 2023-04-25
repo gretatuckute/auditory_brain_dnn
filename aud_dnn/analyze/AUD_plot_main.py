@@ -35,8 +35,8 @@ if concat_over_models:
 
 	# Component specific
 	plot_barplot_across_inhouse_models = False # Figure 8A) for components (in-house models)
-	plot_scatter_comp_vs_comp = True # Figure 8B) for components (in-house models)
-	plot_scatter_pred_vs_actual = False # Figure 4, scatter for components
+	plot_scatter_comp_vs_comp = False # Figure 8B) for components (in-house models)
+	plot_scatter_pred_vs_actual = True # Figure 4, scatter for components
 
 
 target = 'NH2015comp'
@@ -60,7 +60,8 @@ if user != 'gt':
 
 # In-house models (n=10)
 source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',]
+				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask', 'spectemp']
+source_models = ['ResNet50multitask', 'spectemp', 'Kell2018multitask']
 # source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
 # 				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
 # 				 'Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
@@ -176,7 +177,7 @@ if concat_over_models:  # assemble plots across models
 													save=SAVEDIR_CENTRALIZED,
 													add_savestr=savestr,
 													generate_scatter_plot=True,
-													obtain_partial_corr=False,)
+													obtain_partial_corr=True,)
 
 
 		#### Analyze best layer (not independently selected, just the argmax layer) ####
