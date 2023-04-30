@@ -27,7 +27,7 @@ if not concat_over_models:
 
 if concat_over_models:
 	# Shared for neural and components
-	plot_barplot_across_models = True # Figure 2 for neural, Figure 5 for components; barplot of performance across models
+	plot_barplot_across_models = False # Figure 2 for neural, Figure 5 for components; barplot of performance across models
 
 	# Neural specific
 	plot_anat_roi_scatter = True # Figure 7 neural; scatter of performance across models for anatomical ROIs
@@ -47,15 +47,15 @@ if user != 'gt':
 	sys.stdout = open(join(RESULTDIR_ROOT, 'logs', f'out-{date}.log'), 'a+')
 
 # All models (n=19)
-source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-				'AST',  'wav2vec', 'DCASE2020', 'DS2',  'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer']# 'spectemp']
-# source_models = [ 'ResNet50audioset',   'ResNet50multitask',
-# 				'AST',  'wav2vec', 'DCASE2020', 'DS2',  'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer', 'spectemp']
-# Models above spectemp baseline (n=15)
 # source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
 # 				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-# 				'AST',  'wav2vec', 'VGGish', 'S2T',  'sepformer']
+# 				'AST',  'wav2vec', 'DCASE2020', 'DS2',  'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer']# 'spectemp']
+# # source_models = [ 'ResNet50audioset',   'ResNet50multitask',
+# 				'AST',  'wav2vec', 'DCASE2020', 'DS2',  'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer', 'spectemp']
+# Models above spectemp baseline (n=15)
+source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
+				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
+				'AST',  'wav2vec', 'VGGish', 'S2T',  'sepformer']
 
 # # Models below spectemp baseline (n=4)
 # source_models = [  'DCASE2020', 'DS2',  'ZeroSpeech2020', 'metricGAN']
