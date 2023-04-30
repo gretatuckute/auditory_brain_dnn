@@ -845,3 +845,10 @@ NH2015_all_models_performance_order = ['ResNet50multitask', 'AST', 'VGGish', 'Re
 									 'Kell2018audioset', 'Kell2018music', 'ResNet50music', 'S2T', 'wav2vec',
 									 'sepformer', 'DS2', 'ZeroSpeech2020', 'DCASE2020', 'metricGAN'] # From 20230425
 
+B2021_all_models_performance_order = ['ResNet50multitask', 'AST', 'ResNet50audioset', 'Kell2018multitask',
+                                     'ResNet50word', 'VGGish', 'ResNet50speaker', 'Kell2018word',
+                                     'Kell2018speaker', 'Kell2018audioset', 'Kell2018music', 'wav2vec',
+                                     'ResNet50music', 'S2T', 'sepformer', 'DS2', 'DCASE2020', 'ZeroSpeech2020',
+                                     'metricGAN'] # From 20230427
+
+

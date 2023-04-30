@@ -11,7 +11,7 @@ SURFDIR = f'{DATADIR}/fsavg_surf/'
 
 ### Settings for which plots to make ###
 save = True # Whether to save any plots/csvs
-concat_over_models = False
+concat_over_models = True
 
 # If concat_over_models = False, we load each individual model and perform the analysis on that
 if not concat_over_models:
@@ -27,7 +27,7 @@ if not concat_over_models:
 
 if concat_over_models:
 	# Shared for neural and components
-	plot_barplot_across_models = False # Figure 2 for neural, Figure 5 for components; barplot of performance across models
+	plot_barplot_across_models = True # Figure 2 for neural, Figure 5 for components; barplot of performance across models
 
 	# Neural specific
 	plot_anat_roi_scatter = True # Figure 7 neural; scatter of performance across models for anatomical ROIs
@@ -49,7 +49,7 @@ if user != 'gt':
 # All models (n=19)
 source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
 				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-				'AST',  'wav2vec', 'DCASE2020', 'DS2',  'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer', 'spectemp']
+				'AST',  'wav2vec', 'DCASE2020', 'DS2',  'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer']# 'spectemp']
 # source_models = [ 'ResNet50audioset',   'ResNet50multitask',
 # 				'AST',  'wav2vec', 'DCASE2020', 'DS2',  'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer', 'spectemp']
 # Models above spectemp baseline (n=15)
@@ -205,10 +205,10 @@ if concat_over_models:  # assemble plots across models
 
 		# BARPLOTS ACROSS MODELS #
 		if plot_barplot_across_models:
-			for sort_flag in [NH2015_all_models_performance_order]: # 'performance'
+			for sort_flag in ['performance', B2021_all_models_performance_order]: # 'performance' NH2015_all_models_performance_order B2021_all_models_performance_order
 				for val_flag in ['median_r2_test_c', ]:
 					for agg_flag in ['CV-splits-nit-10']:
-						for randnetw_flag in ['False']: # 'False', 'True'
+						for randnetw_flag in ['False', 'True']: # 'False', 'True'
 							barplot_across_models(source_models=source_models,
 												  target=target,
 												  roi=None,
