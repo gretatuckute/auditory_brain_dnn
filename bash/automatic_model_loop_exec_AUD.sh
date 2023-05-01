@@ -3,8 +3,8 @@ model="$1"
 target="$2"
 echo $model
 echo $target
-randnetw="True"
-overwrite=1
+randnetw="False"
+overwrite=0
 resultdir='/mindhive/mcdermott/u/gretatu/auditory_brain_dnn/results/'
 if [ "$model" = "Kell2018" ]; then
   models="Kell2018word Kell2018speaker Kell2018music Kell2018audioset"
