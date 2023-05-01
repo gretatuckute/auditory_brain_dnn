@@ -2545,7 +2545,7 @@ def scatter_components_across_models(source_models,
     
     ## 2D scatter plot ##
     for comp1 in ['lowfreq', 'highfreq', 'envsounds', 'pitch', 'speech', 'music']:
-        for comp2 in ['speech', 'music']:
+        for comp2 in ['pitch', 'speech', 'music']:
             if comp1 == comp2:
                 continue
             

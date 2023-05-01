@@ -11,7 +11,7 @@ SURFDIR = f'{DATADIR}/fsavg_surf/'
 
 ### Settings for which plots to make ###
 save = True # Whether to save any plots/csvs
-concat_over_models = True
+concat_over_models = False
 
 # If concat_over_models = False, we load each individual model and perform the analysis on that
 if not concat_over_models:
@@ -35,8 +35,8 @@ if concat_over_models:
 
 	# Component specific
 	plot_barplot_across_inhouse_models = False # Figure 8A) for components (in-house models)
-	plot_scatter_comp_vs_comp = False # Figure 8B) for components (in-house models)
-	plot_scatter_pred_vs_actual = True # Figure 4, scatter for components
+	plot_scatter_comp_vs_comp = True # Figure 8B) for components (in-house models)
+	plot_scatter_pred_vs_actual = False # Figure 4, scatter for components
 
 
 target = 'B2021'
@@ -53,23 +53,23 @@ if user != 'gt':
 # # source_models = [ 'ResNet50audioset',   'ResNet50multitask',
 # 				'AST',  'wav2vec', 'DCASE2020', 'DS2',  'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer', 'spectemp']
 # Models above spectemp baseline (n=15)
-source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-				'AST',  'wav2vec', 'VGGish', 'S2T',  'sepformer']
+# source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
+# 				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
+# 				'AST',  'wav2vec', 'VGGish', 'S2T',  'sepformer']
 
 # # Models below spectemp baseline (n=4)
 # source_models = [  'DCASE2020', 'DS2',  'ZeroSpeech2020', 'metricGAN']
 
 # In-house models (n=10)
 # source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-# 				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask', 'spectemp']
+# 				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask', ]
 # source_models = ['ResNet50multitask', 'spectemp', 'Kell2018multitask']
 # source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
 # 				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
 # 				 'Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
 # 				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
-# source_models = ['Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
-# 				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
+source_models = ['Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
+				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
 # source_models = ['Kell2018word','Kell2018wordClean',
 # 				 'ResNet50word', 'ResNet50wordClean']
 
@@ -329,7 +329,7 @@ if not concat_over_models:
 		output['mean_r2_test_c'] = output['mean_r2_test_c'].clip(upper=1)
 
 		# Permuted network (does not exist for spectemp or init models)
-		if source_model.endswith('init') or source_model == 'spectemp': #or source_model in source_models: # FOR NOW, LETS NOT PLOT RANDNETW
+		if source_model.endswith('init') or source_model == 'spectemp' or source_model.endswith('Seed2'): #or source_model in source_models: # FOR NOW, LETS NOT PLOT RANDNETW
 			output_randnetw = None
 			output_folders_paths_randnetw = []
 		else:

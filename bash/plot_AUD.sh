@@ -1,9 +1,9 @@
 #!/bin/bash
-#SBATCH --job-name=plot20230427
-#SBATCH --time=02:30:00
+#SBATCH --job-name=plot20230501
+#SBATCH --time=01:00:00
 #SBACTH --ntasks=1
-#SBATCH --output="out/plot20230427-%j.out"
-#SBATCH --mem=5G
+#SBATCH --output="out/plot20230501-%j.out"
+#SBATCH --mem=4G
 #SBATCH -p evlab
 
 source /mindhive/mcdermott/u/gretatu/anaconda/etc/profile.d/conda.sh
