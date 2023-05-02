@@ -28,9 +28,10 @@ if not concat_over_models:
 if concat_over_models:
 	# Shared for neural and components
 	plot_barplot_across_models = False # Figure 2 for neural, Figure 5 for components; barplot of performance across models
+	plot_scatter_across_models = False # Figure 2, Seed1 vs Seed2 scatter for neural;
 
 	# Neural specific
-	plot_anat_roi_scatter = True # Figure 7 neural; scatter of performance across models for anatomical ROIs
+	plot_anat_roi_scatter = False # Figure 7 neural; scatter of performance across models for anatomical ROIs
 	stats_barplot_across_models = False # Figure 2 neural; stats for barplot of performance across models
 
 	# Component specific
@@ -39,7 +40,7 @@ if concat_over_models:
 	plot_scatter_pred_vs_actual = False # Figure 4, scatter for components
 
 
-target = 'B2021'
+target = 'NH2015'
 
 # Logging
 date = datetime.datetime.now().strftime("%m%d%Y-%T")
@@ -64,14 +65,18 @@ if user != 'gt':
 # source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
 # 				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask', ]
 # source_models = ['ResNet50multitask', 'spectemp', 'Kell2018multitask']
-# source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-# 				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
+# source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018audioset', 'Kell2018multitask',
+# 				'ResNet50word', 'ResNet50speaker', 'ResNet50audioset',   'ResNet50multitask',
 # 				 'Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
 # 				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
-source_models = ['Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
-				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
+source_models = ['Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018music', 'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
+				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50music', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
 # source_models = ['Kell2018word','Kell2018wordClean',
 # 				 'ResNet50word', 'ResNet50wordClean']
+# All clean word models
+source_models = ['Kell2018wordClean', 'Kell2018wordCleanSeed2',
+				 'ResNet50wordClean', 'ResNet50wordCleanSeed2']
+
 
 print(f'---------- Target: {target} ----------')
 
@@ -104,6 +109,26 @@ if concat_over_models:  # assemble plots across models
 													 add_in_spacing_bar=False,
 													 ylim=[0,1])
 
+		### Scatterplot of Seed1 vs Seed2 ###
+		if plot_scatter_across_models:
+			add_savestr = f'_seed1-vs-seed2'
+
+			scatter_components_across_models_seed(source_models=source_models,
+											 target=target,
+											 randnetw='False',
+											 models1=['Kell2018word', 'Kell2018speaker',  'Kell2018audioset', 'Kell2018multitask',
+													  'ResNet50word', 'ResNet50speaker', 'ResNet50audioset', 'ResNet50multitask',],
+											 models2=['Kell2018wordSeed2', 'Kell2018speakerSeed2', 'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
+											 		'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',],
+											 value_of_interest='median_r2_test',
+											 yerr_type='median_r2_test_sem_over_it',
+											 save=SAVEDIR_CENTRALIZED,
+											 add_savestr=add_savestr,
+											 ylim=[0.4,0.9],
+											 xlim=[0.4,0.9])
+
+
+
 		### For plotting in-house models barplot (Figure 8A) ###
 		if plot_barplot_across_inhouse_models:
 			add_savestr = f'_task-grouped-ymin-0.2-empty-bar-inhouse-models'
@@ -128,7 +153,7 @@ if concat_over_models:  # assemble plots across models
 		
 		#### Scatter: comp1 vs comp2 predictivity across models (Figure 8B) ####
 		if plot_scatter_comp_vs_comp:
-			save_str = '_inhouse-models_symbols-no-err'
+			save_str = '_inhouse-models_symbols-no-err-Seed2' # !!!!!!!!
 
 			#### Best layer component predictions across models (independently selected layer) as scatters ####
 
@@ -150,18 +175,31 @@ if concat_over_models:  # assemble plots across models
 												 sem_of_interest='median_r2_test_sem_over_it')
 
 				## Associated statistics - comp1 vs comp2 comparions for models of interest ##
+				# compare_CV_splits_nit(source_models=source_models,
+				# 					  target=target,
+				# 					  save=save,
+				# 					  save_str='all-models-bootstrap', # Here we just run all models such that all numbers are in the same place
+				# 					  models1 = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
+				# 	 			'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
+				# 				'AST', 'wav2vec', 'DCASE2020', 'DS2', 'VGGish',  'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer'],
+				# 					  models2 = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
+				# 	 			'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
+				# 				'AST', 'wav2vec', 'DCASE2020', 'DS2', 'VGGish',  'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer'],
+				# 					  aggregation='CV-splits-nit-10',
+				# 					  randnetw=randnetw_flag,)
+
+				# For in-house Seed2
 				compare_CV_splits_nit(source_models=source_models,
 									  target=target,
 									  save=save,
-									  save_str='all-models-bootstrap', # Here we just run all models such that all numbers are in the same place
-									  models1 = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-					 			'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-								'AST', 'wav2vec', 'DCASE2020', 'DS2', 'VGGish',  'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer'],
-									  models2 = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-					 			'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-								'AST', 'wav2vec', 'DCASE2020', 'DS2', 'VGGish',  'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer'],
+									  save_str='all-models-seed1-vs-seed2-bootstrap', # Here we just run all models such that all numbers are in the same place
+									  models1 = ['Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018music', 'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
+					 			'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50music', 'ResNet50audiosetSeed2',   'ResNet50multitaskSeed2'],
+									  models2 = ['Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018music', 'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
+					 			'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50music', 'ResNet50audiosetSeed2',   'ResNet50multitaskSeed2'],
 									  aggregation='CV-splits-nit-10',
-									  randnetw=randnetw_flag,)
+									  randnetw=randnetw_flag,
+									  )
 
 
 		#### Predicted versus actual components (independently selected layer - most frequent one) ####
@@ -205,10 +243,10 @@ if concat_over_models:  # assemble plots across models
 
 		# BARPLOTS ACROSS MODELS #
 		if plot_barplot_across_models:
-			for sort_flag in ['performance', B2021_all_models_performance_order]: # 'performance' NH2015_all_models_performance_order B2021_all_models_performance_order
+			for sort_flag in ['performance']: # 'performance' NH2015_all_models_performance_order B2021_all_models_performance_order
 				for val_flag in ['median_r2_test_c', ]:
 					for agg_flag in ['CV-splits-nit-10']:
-						for randnetw_flag in ['False', 'True']: # 'False', 'True'
+						for randnetw_flag in ['False', ]: # 'False', 'True'
 							barplot_across_models(source_models=source_models,
 												  target=target,
 												  roi=None,
@@ -218,6 +256,22 @@ if concat_over_models:  # assemble plots across models
 												  value_of_interest=val_flag,
 												  sort_by=sort_flag,
 												  add_savestr=f'')
+
+		# SCATTER ACROSS MODELS (SEED1 VS SEED2) #
+		if plot_scatter_across_models:
+
+			for randnetw_flag in ['False', 'True']:
+				scatter_across_models(source_models=source_models,
+									  models1=['Kell2018word', 'Kell2018speaker', 'Kell2018audioset', 'Kell2018multitask',
+											   'ResNet50word', 'ResNet50speaker', 'ResNet50audioset',   'ResNet50multitask',],
+									  models2=['Kell2018wordSeed2', 'Kell2018speakerSeed2', 'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
+											   'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',   'ResNet50multitaskSeed2',],
+									  target=target,
+									  save=SAVEDIR_CENTRALIZED,
+									  randnetw=randnetw_flag,
+									  aggregation='CV-splits-nit-10',
+									  value_of_interest='median_r2_test_c',
+									  add_savestr=f'',)
 
 		# STATS FOR BARPLOTS ACROSS MODELS (bootstrap across subjects)
 		if stats_barplot_across_models:
@@ -248,7 +302,7 @@ if concat_over_models:  # assemble plots across models
 				for non_primary_flag in ['Anterior', 'Lateral', 'Posterior']: # ['Anterior', 'Lateral', 'Posterior']
 					for cond_flag in ['roi_label_general']:
 						for collapse_flag in ['median']: # How we collapsed over the relative position value for each subject (median is the default)
-							for randnetw_flag in ['True', 'False']: # 'True', 'False'
+							for randnetw_flag in ['False',]: # 'True', 'False'
 								scatter_anat_roi_across_models(source_models=source_models,
 															   target=target,
 															   save=SAVEDIR_CENTRALIZED,
@@ -329,7 +383,7 @@ if not concat_over_models:
 		output['mean_r2_test_c'] = output['mean_r2_test_c'].clip(upper=1)
 
 		# Permuted network (does not exist for spectemp or init models)
-		if source_model.endswith('init') or source_model == 'spectemp' or source_model.endswith('Seed2'): #or source_model in source_models: # FOR NOW, LETS NOT PLOT RANDNETW
+		if source_model.endswith('init') or source_model == 'spectemp': #or source_model in source_models: # FOR NOW, LETS NOT PLOT RANDNETW
 			output_randnetw = None
 			output_folders_paths_randnetw = []
 		else:

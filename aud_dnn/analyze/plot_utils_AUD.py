@@ -14,6 +14,7 @@ import scipy.io as sio
 from scipy.io import loadmat
 import matplotlib.patches as mpatches
 import matplotlib.colors as mcolors
+from matplotlib.lines import Line2D
 from scipy.stats import wilcoxon
 import getpass
 import xarray as xr
@@ -426,8 +427,8 @@ def select_r2_test_CV_splits_nit(output_folders_paths,
     for i in tqdm(range(nit)):
         np.random.seed(i) # Use different random seed for each iteration, but still make it reproducible.
 
-        lst_layer_selection = []
-        lst_r_value = []
+        lst_layer_selection = [] # For each iteration, store the values that are used for layer selection
+        lst_r_value = [] # For each iteration, store the values that are for readout
 
         # Load the across-CV splits data for each layer
         for f in output_folders_paths:
@@ -1978,7 +1979,8 @@ def barplot_across_models(source_models,
                           alpha=1):
     """
     Plot median variance explained across models for voxels in a given ROI or all ROIs.
-    The score can be loaded using various select best layer approaches such as CV-splits-nit-10 (default)
+    The score is loaded using CV-splits-nit-10 (default) layer selection procedure (can be changed if the user
+    stored csv files with other layer selection procedures).
     
     :param source_models:
     :param roi:
@@ -2228,6 +2230,166 @@ def barplot_across_models(source_models,
             df_grouped_w_spectemp['n_models'] = len(df_grouped_w_spectemp)
             df_grouped_w_spectemp.to_csv(join(save, f'{save_str}.csv'))
         fig.show()
+
+
+def scatter_across_models(source_models,
+                          models1,
+                          models2,
+                          target,
+                          roi=None,
+                          value_of_interest='median_r2_test_c',
+                          randnetw='False',
+                          save=None,
+                          aggregation='CV-splits-nit-10',
+                          ylim=[0.6,0.8],
+                          xlim=[0.6,0.8],
+                          yerr_type='within_subject_sem',
+                          add_savestr=''):
+    """
+    Plot median variance explained across models for all voxels.
+    The score is loaded using CV-splits-nit-10 (default) layer selection procedure.
+
+    Intended for checking whether Seed1 vs Seed2 models show similar variance explained.
+
+    Models1 should contain the models to go on the x-axis, models2 on the y-axis.
+
+    :param source_models:
+    :param roi:
+    :param value_of_interest:
+    :return:
+    """
+    # Obtain LOSO/voxelwise scores for the ROI of interest!
+    df_lst = []
+    for source_model in source_models:
+        if aggregation == 'best_voxelwise':
+            load_str = f'best-layer_voxelwise_{source_model}{d_randnetw[randnetw]}_{target}_{value_of_interest}.csv'
+        elif aggregation == 'LOSO':
+            load_str = f'best-layer_LOSO_roi-{roi}_{source_model}{d_randnetw[randnetw]}_{target}_{value_of_interest}.csv'  # obs _{value_of_interest} only appended 20220108
+        elif aggregation.startswith('CV'):
+            load_str = f'best-layer_{aggregation}_roi-{roi}_{source_model}{d_randnetw[randnetw]}_{target}_{value_of_interest}.csv'
+        else:
+            raise ValueError(f'aggregation {aggregation} not recognized')
+
+        df = pd.read_csv(join(RESULTDIR_ROOT,
+                              source_model,
+                              'outputs',
+                              load_str))
+        df.rename(columns={'Unnamed: 0': 'subj_idx'}, inplace=True)
+        # Sometimes subj_idx already exists, so if it is repeated, drop it
+        df = df.loc[:, ~df.columns.duplicated()]
+
+        df_lst.append(df)
+
+    df_all = pd.concat(df_lst)
+
+    # For all voxels and voxels in any ROI
+
+    ## Obtain mean and within-subject error bar (i.e. within-subject error bar)
+    # for each cond (model), subtract the mean across cond. then, each subject will have a demeaned array
+    if yerr_type.startswith('within_subject'):
+        # 1. Get subject x model pivot (no aggregation going on here)
+        piv = df_all.pivot_table(index='subj_idx', columns='source_model', values=value_of_interest)
+
+        # 2. Obtain error bar (within-subject error bar) by subtracting the mean across cond (models) for each subject
+        demeaned = piv.subtract(piv.mean(axis=1).values,
+                                axis=0)  # get a mean value for each subject across all conds (piv.mean(axis=1), and subtract it from individual models
+
+        if yerr_type == 'within_subject_sem':
+            yerr = np.std(demeaned.values.T, axis=1) / np.sqrt(piv.shape[0] - 1)
+
+        # piv.shape[0] is the number of subjects (rows)
+        if yerr_type == 'within_subject_std':
+            yerr = np.std(demeaned.values.T, axis=1)
+
+        # 3. Now obtain the mean across models
+        mean_per_model = piv.mean(
+            axis=0)  # the same as taking mean and getting across-subject SEM as below (only the error bar differs)
+
+        # 4. Zip into one dataframe and sort by performance
+        df_grouped = pd.DataFrame({f'{value_of_interest}_mean': mean_per_model.values,
+                                   f'{value_of_interest}_yerr': yerr, 'source_model': mean_per_model.index},
+                                  index=mean_per_model.index)
+
+    if yerr_type == 'across_subject_sem':
+        ## Obtain mean and SEM across subjects (i.e. across-subject error bar)
+        df_grouped = df_all.groupby('source_model').agg({value_of_interest: ['mean', 'sem']}).reset_index()
+
+        # index according to source models
+        df_grouped = df_grouped.set_index('source_model').reindex(source_models)
+
+        # flatten multiindex
+        df_grouped.columns = ['_'.join(col).strip() for col in df_grouped.columns.values]
+        df_grouped.rename(
+            columns={'source_model_': 'source_model', f'{value_of_interest}_sem': f'{value_of_interest}_yerr'},
+            inplace=True)
+
+    # Take the models in models1 and models2 and put them on the x and y axis, respectively. Retain the order of models1 and models2.
+    assert len(models1) == len(models2), 'models1 and models2 should have the same length'
+    assert all([x in df_grouped['source_model'].values for x in models1]), 'models1 should be a subset of source_models'
+    assert all([x in df_grouped['source_model'].values for x in models2]), 'models2 should be a subset of source_models'
+
+    df_models1 = df_grouped[df_grouped['source_model'].isin(models1)]
+    df_models2 = df_grouped[df_grouped['source_model'].isin(models2)]
+
+    # plot specs
+    color_order_models1 = [d_model_colors[x] for x in df_models1.index.values]
+    color_order_models2 = [d_model_colors[x] for x in df_models2.index.values]
+    assert color_order_models1 == color_order_models2, 'color order should be the same for models1 and models2'
+
+    title_str = f'{d_value_of_interest[value_of_interest]} across models\nAll voxels, {target} {d_randnetw[randnetw][1:]} ({aggregation})'
+
+    # Plot scatter
+    fig, ax = plt.subplots(figsize=(7, 7))
+    ax.set_box_aspect(1)
+    # Plot scatter with error bars. Iterate over each point because otherwise we can't have different colors for each point
+    for i in range(len(df_models1)):
+        # Transform color to RGBA
+        color = mcolors.to_rgba(color_order_models1[i])
+        ax.errorbar(df_models1[f'{value_of_interest}_mean'].values[i],
+                    df_models2[f'{value_of_interest}_mean'].values[i],
+                    xerr=df_models1[f'{value_of_interest}_yerr'].values[i],
+                    yerr=df_models2[f'{value_of_interest}_yerr'].values[i],
+                    fmt='o', markersize=10, color=color,
+                    capsize=0, elinewidth=2, markeredgewidth=2)
+    if ylim is not None:
+        plt.ylim(ylim)
+    if xlim is not None:
+        plt.xlim(xlim)
+    plt.xlabel(f'{d_value_of_interest[value_of_interest]} Seed 1', fontsize=15)
+    plt.ylabel(f'{d_value_of_interest[value_of_interest]} Seed 2', fontsize=15)
+    # Add legend
+    legend_elements = [Line2D([0], [0], marker='o', color='w', label=x, markerfacecolor=mcolors.to_rgba(d_model_colors[x]),
+                              markersize=10) for x in df_models1.index.values]
+    # Plot legend outside of plot
+    ax.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc='upper left')
+    # Make ticks bigger
+    plt.xticks(fontsize=15)
+    plt.yticks(fontsize=15)
+    plt.title(title_str)
+    add_identity(ax, color='black', ls='--')
+    plt.tight_layout(pad=2.5)
+    if save:
+        save_str = f'across-models_roi-{roi}_{target}{d_randnetw[randnetw]}_' \
+                   f'{aggregation}_{yerr_type}_' \
+                   f'n-models={len(df_grouped)}' \
+                   f'{value_of_interest}{add_savestr}'
+        plt.savefig(join(save, f'{save_str}.png'), dpi=180)
+        plt.savefig(join(save, f'{save_str}.svg'), dpi=180)
+
+        # save csv and log more info
+        df_grouped['roi'] = roi
+        df_grouped['target'] = target
+        df_grouped['randnetw'] = randnetw
+        df_grouped['aggregation'] = aggregation
+        df_grouped['yerr_type'] = yerr_type
+        df_grouped['value_of_interest'] = value_of_interest
+        df_grouped['add_savestr'] = add_savestr
+        df_grouped['n_models'] = len(df_grouped)
+        df_grouped['models1'] = [models1] * len(df_grouped)
+        df_grouped['models2'] = [models2] * len(df_grouped)
+        df_grouped.to_csv(join(save, f'{save_str}.csv'))
+    fig.show()
+
 
 def scatter_anat_roi_across_models(source_models,
                                    target,
@@ -2716,7 +2878,7 @@ def scatter_2_components(source_models, target,
                 ecolor=color_order, zorder=0, alpha=alpha_dot)
     if symbols:
         for x, y, c, m, sm in zip(lst_val_1, lst_val_2, color_order, marker_order, source_models):
-            if sm.endswith('multitask'):  # make open circle
+            if sm.endswith('multitask') or sm.endswith('multitaskSeed2'):  # make open circle
                 ax.scatter([x], [y], color=c, s=s, alpha=alpha_dot, marker=m, facecolors='none', label=sm)
             else:
                 ax.scatter([x], [y], color=c, s=s, alpha=alpha_dot, marker=m, label=sm)
@@ -2877,6 +3039,125 @@ def barplot_components_across_models(source_models,
         df_all_w_spectemp.to_csv(join(save, f'{save_str}.csv'))
 
     plt.show()
+
+
+def scatter_components_across_models_seed(source_models,
+                            models1,
+                            models2,
+                            target,
+                            roi=None,
+                            value_of_interest='median_r2_test',
+                            yerr_type='median_r2_test_sem_over_it',
+                            randnetw='False',
+                            components=['lowfreq', 'highfreq', 'envsounds', 'pitch', 'speech', 'music'],
+                            save=None,
+                            aggregation='CV-splits-nit-10',
+                            ylim=[0.6,0.8],
+                            xlim=[0.6,0.8],
+                          add_savestr=''):
+    """
+    Plot median variance explained across models for all voxels.
+    The score is loaded using CV-splits-nit-10 (default) layer selection procedure.
+
+    Intended for checking whether Seed1 vs Seed2 models show similar variance explained.
+
+    Models1 should contain the models to go on the x-axis, models2 on the y-axis.
+
+    :param source_models:
+    :param roi:
+    :param value_of_interest:
+    :return:
+    """
+    # Obtain best layer r2 test scores for the components!
+    df_lst = []
+    for source_model in source_models:
+        df = pd.read_csv(
+            join(RESULTDIR_ROOT, source_model, 'outputs',
+                 f'best-layer-{aggregation}_'
+                 f'per-comp_{source_model}{d_randnetw[randnetw]}_'
+                 f'{target}_{value_of_interest}.csv')).rename(
+            columns={'Unnamed: 0': 'comp'})
+        df_lst.append(df)
+    df_all = pd.concat(df_lst)
+    df_grouped = df_all.copy(deep=True) # Make name consistent with corresponding function for neural data
+
+    # Take the models in models1 and models2 and put them on the x and y axis, respectively. Retain the order of models1 and models2.
+    assert len(models1) == len(models2), 'models1 and models2 should have the same length'
+    assert all([x in np.unique(df_grouped['source_model'].values) for x in models1]), 'models1 should be a subset of source_models'
+    assert all([x in df_grouped['source_model'].values for x in models2]), 'models2 should be a subset of source_models'
+
+    title_str = f'{d_value_of_interest[value_of_interest]} across models\nAll voxels, {target} {d_randnetw[randnetw][1:]} ({aggregation})'
+
+    fig, ax = plt.subplots(nrows=1, ncols=6, figsize=(28, 8))
+    # Plot for each component
+    for i, comp in enumerate(components):
+
+        df_comp = df_grouped[df_grouped['comp'] == comp]
+
+        df_models1 = df_comp[df_comp['source_model'].isin(models1)]
+        df_models2 = df_comp[df_comp['source_model'].isin(models2)]
+
+        # plot specs
+        color_order_models1 = [d_model_colors[x] for x in df_models1.source_model.values]
+        color_order_models2 = [d_model_colors[x] for x in df_models2.source_model.values]
+        assert color_order_models1 == color_order_models2, 'color order should be the same for models1 and models2'
+
+        # Plot scatter
+        ax[i].set_box_aspect(1)
+
+        # Add component name to plot
+        ax[i].set_title(comp)
+
+        # Plot scatter with error bars. Iterate over each point because otherwise we can't have different colors for each point
+        for model_i in range(len(df_models1)):
+            # Transform color to RGBA
+            color = mcolors.to_rgba(color_order_models1[model_i])
+            ax[i].errorbar(df_models1[f'{value_of_interest}'].values[model_i],
+                        df_models2[f'{value_of_interest}'].values[model_i],
+                        xerr=df_models1[f'{yerr_type}'].values[model_i],
+                        yerr=df_models2[f'{yerr_type}'].values[model_i],
+                        fmt='o', markersize=10, color=color,
+                        capsize=0, elinewidth=2, markeredgewidth=2)
+            add_identity(ax[i], color='black', ls='--')
+            if ylim is not None:
+                ax[i].set_ylim(ylim)
+            if xlim is not None:
+                ax[i].set_xlim(xlim)
+            plt.xlabel(f'{d_value_of_interest[value_of_interest]} Seed 1', fontsize=15)
+            plt.ylabel(f'{d_value_of_interest[value_of_interest]} Seed 2', fontsize=15)
+
+            # Make ticks bigger
+            ax[i].tick_params(axis='both', which='major', labelsize=15)
+
+    # Add legend
+    legend_elements = [Line2D([0], [0], marker='o', color='w', label=x, markerfacecolor=mcolors.to_rgba(d_model_colors[x]),
+                              markersize=10) for x in df_models1.source_model.values]
+    # Plot legend outside of plot
+    fig.legend(handles=legend_elements, loc='upper right', bbox_to_anchor=(0.95, 0.9), fontsize=15)
+    plt.suptitle(title_str, fontsize=20)
+    plt.tight_layout(pad=2.5)
+
+    if save:
+        save_str = f'across-models_roi-{roi}_{target}{d_randnetw[randnetw]}_' \
+                   f'{aggregation}_{yerr_type}_' \
+                   f'n-models={len(df_grouped)}' \
+                   f'{value_of_interest}{add_savestr}'
+        plt.savefig(join(save, f'{save_str}.png'), dpi=180)
+        plt.savefig(join(save, f'{save_str}.svg'), dpi=180)
+
+        # save csv and log more info
+        df_grouped['roi'] = roi
+        df_grouped['target'] = target
+        df_grouped['randnetw'] = randnetw
+        df_grouped['aggregation'] = aggregation
+        df_grouped['yerr_type'] = yerr_type
+        df_grouped['value_of_interest'] = value_of_interest
+        df_grouped['add_savestr'] = add_savestr
+        df_grouped['n_models'] = len(df_grouped)
+        df_grouped['models1'] = [models1] * len(df_grouped)
+        df_grouped['models2'] = [models2] * len(df_grouped)
+        df_grouped.to_csv(join(save, f'{save_str}.csv'))
+    fig.show()
 
 
 
