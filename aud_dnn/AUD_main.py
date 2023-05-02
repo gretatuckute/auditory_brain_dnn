@@ -20,7 +20,7 @@ Fits a ridge regression model from source (DNN unit activations) to target (brai
 
 def main(raw_args=None):
     parser = argparse.ArgumentParser(description='Fit voxel-wise models in the auditory domain')
-    parser.add_argument('--source_model', default='ResNet50wordClean',
+    parser.add_argument('--source_model', default='ResNet50wordCleanSeed2',
                         type=str, help='Name of source DNN model.'
                                        'Name of the DNN model from which activations will be used as regressors.'
                                        'Should match the folder name in the CACHEDIR which contains the DNN model activations.')

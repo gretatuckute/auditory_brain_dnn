@@ -3,7 +3,7 @@ model="$1"
 target="$2"
 echo $model
 echo $target
-randnetw="False"
+randnetw="True"
 overwrite=0
 resultdir='/mindhive/mcdermott/u/gretatu/auditory_brain_dnn/results/'
 if [ "$model" = "Kell2018" ]; then
@@ -18,12 +18,20 @@ if [ "$model" = "Kell2018wordClean" ]; then
   models="Kell2018wordClean"
   layers="input_after_preproc relu0 maxpool0 relu1 maxpool1 relu2 relu3 relu4 avgpool relufc final"
 fi
+if [ "$model" = "Kell2018wordCleanSeed2" ]; then
+  models="Kell2018wordCleanSeed2"
+  layers="input_after_preproc relu0 maxpool0 relu1 maxpool1 relu2 relu3 relu4 avgpool relufc final"
+fi
 if [ "$model" = "ResNet50" ]; then
   models="ResNet50word ResNet50speaker ResNet50audioset ResNet50music"
   layers="input_after_preproc conv1_relu1 maxpool1 layer1 layer2 layer3 layer4 avgpool final"
 fi
 if [ "$model" = "ResNet50wordClean" ]; then
   models="ResNet50wordClean"
+  layers="input_after_preproc conv1_relu1 maxpool1 layer1 layer2 layer3 layer4 avgpool final"
+fi
+if [ "$model" = "ResNet50wordCleanSeed2" ]; then
+  models="ResNet50wordCleanSeed2"
   layers="input_after_preproc conv1_relu1 maxpool1 layer1 layer2 layer3 layer4 avgpool final"
 fi
 if [ "$model" = "ResNet50Seed2" ]; then
