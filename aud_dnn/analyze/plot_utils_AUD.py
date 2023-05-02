@@ -3893,6 +3893,8 @@ def surface_argmax(output,
         idxmax_layer_save['source_model'] = source_model
         idxmax_layer_save['randnetw'] = randnetw
         idxmax_layer_save['value_of_interest'] = value_of_interest
+        idxmax_layer_save['datetag'] = datetag
+        idxmax_layer_save['num_layers'] = num_layers
         idxmax_layer_save.to_csv(join(save, f'idxmax_layer_full_{source_model}_{target}_{randnetw}_{value_of_interest}.csv'))
 
 
@@ -3907,7 +3909,9 @@ def surface_argmax(output,
                   size='small')
         plt.tight_layout(pad=2)
         if save:
-            plt.savefig(join(save, f'TYPE=subj-argmax_METRIC={value_of_interest}_{source_model}{d_randnetw[randnetw]}_{target}.png'))
+            plt.savefig(join(save, f'TYPE=subj-argmax_METRIC={value_of_interest}_'
+                                   f'{source_model}{d_randnetw[randnetw]}_'
+                                   f'{target}.png'))
         plt.show()
         
         if save:
@@ -3922,6 +3926,7 @@ def surface_argmax(output,
             pos_count_save['randnetw'] = randnetw
             pos_count_save['value_of_interest'] = value_of_interest
             pos_count_save['datetag'] = datetag
+            pos_count_save['num_layers'] = num_layers
             pos_count_save.to_csv(join(save, f'hist-preferred-layer_'
                                              f'TYPE=subj-argmax_'
                                              f'METRIC={value_of_interest}_'
@@ -3930,12 +3935,24 @@ def surface_argmax(output,
 
     return idxmax_layer, p.columns.values
 
-def surface_argmax_hist_merge_datasets(df_plot1, df_plot2, source_model, save, layer_names, randnetw='False',
-                                       value_of_interest='median_r2_test_c', save_full_idxmax_layer=False,):
+def surface_argmax_hist_merge_datasets(df_plot1,
+                                       df_plot2,
+                                       source_model,
+                                       save,
+                                       layer_names,
+                                       target='NH2015-B2021',
+                                       randnetw='False',
+                                       value_of_interest='median_r2_test_c',
+                                       save_full_idxmax_layer=True,):
     """Obtain a layer preference histogram to determine which layers to use for colorscale
-    by taking both datasets into account."""
+    by taking both datasets into account.
+
+    df_plot1 and df_plot2 should come from each dataset, and are the outputs of surface_argmax().
+
+    """
     label_rotation = 70
-    target = 'NH2015-B2021'
+    target_check = 'NH2015-B2021'
+    assert (target == target_check)
     layer_reindex = d_layer_reindex[source_model]
     layer_legend = [d_layer_names[source_model][layer] for layer in layer_reindex]
     
@@ -3949,18 +3966,24 @@ def surface_argmax_hist_merge_datasets(df_plot1, df_plot2, source_model, save, l
         idxmax_layer_save['source_model'] = source_model
         idxmax_layer_save['randnetw'] = randnetw
         idxmax_layer_save['value_of_interest'] = value_of_interest
+        idxmax_layer_save['datetag'] = datetag
+        idxmax_layer_save['num_layers'] = len(layer_names)
         idxmax_layer_save.to_csv(join(save, f'idxmax_layer_full_{source_model}_{target}_{randnetw}_{value_of_interest}.csv'))
 
     plt.figure(figsize=(7, 5))
-    plt.hist(df.pos.values, bins=11)
+    plt.hist(df.pos.values, bins=len(layer_names))
     plt.xlabel('Layer')
     plt.ylabel('Voxel count')
     plt.xticks(np.arange(1, len(layer_names) + 1), layer_legend, rotation=label_rotation)
-    plt.title(f'{d_model_names[source_model]}{d_randnetw[randnetw]}: Relative layer preference histogram\nAll subjects, {target} (n={df.shape[0]} voxels)',
+    plt.title(f'{d_model_names[source_model]}{d_randnetw[randnetw]}: '
+              f'Relative layer preference histogram\nAll subjects, {target} (n={df.shape[0]} voxels)',
               size='small')
     plt.tight_layout()
     if save:
-        plt.savefig(join(save, f'TYPE=subj-argmax_METRIC={value_of_interest}_{source_model}{d_randnetw[randnetw]}_{target}.png'))
+        plt.savefig(join(save, f'TYPE=subj-argmax_'
+                               f'METRIC={value_of_interest}_'
+                               f'{source_model}{d_randnetw[randnetw]}_'
+                               f'{target}.png'))
     plt.show()
 
     # Save the layer number of the argmax layer, i.e. the most preferred layer across all voxels
@@ -3972,9 +3995,15 @@ def surface_argmax_hist_merge_datasets(df_plot1, df_plot2, source_model, save, l
     pos_count_save['source_model'] = source_model
     pos_count_save['randnetw'] = randnetw
     pos_count_save['value_of_interest'] = value_of_interest
+    pos_count_save['datetag'] = datetag
+    pos_count_save['num_layers'] = len(layer_names)
     if save:
         pos_count_save.to_csv(join(save,
-                                   f'hist-preferred-layer_TYPE=subj-argmax_METRIC={value_of_interest}_{source_model}{d_randnetw[randnetw]}_{target}.csv'))
+                                   f'hist-preferred-layer_'
+                                   f'TYPE=subj-argmax_'
+                                   f'METRIC={value_of_interest}_'
+                                   f'{source_model}{d_randnetw[randnetw]}_'
+                                   f'{target}.csv'))
 
 
 
@@ -3983,7 +4012,8 @@ def create_avg_subject_surface(df_plot,
                                save,
                                source_model,
                                target,
-                               val_of_interest, randnetw='False',
+                               val_of_interest,
+                               randnetw='False',
                                plot_val_of_interest='pos',):
     """
     Takes the median over an array of values to plot across the same brain coordinate (based on x and y ras) across subjects
@@ -4024,7 +4054,7 @@ def create_avg_subject_surface(df_plot,
         meta_unique_coords.loc[i, 'hemi'] = unique_hemi[0]
         meta_unique_coords.loc[i, 'shared_by'] = unique_shared_by[0] # How many subjects share this coordinate
         
-        # average (i.e. median...) across plot vals and assert that the number of values match the shared_by col
+        # average (i.e. median...!!) across plot vals and assert that the number of values match the shared_by col
         assert (len(unique_plot_vals) == unique_shared_by)
         meta_unique_coords.loc[i, 'median_plot_val'] = np.median(unique_plot_vals)
 
@@ -4256,6 +4286,9 @@ def determine_surf_layer_colorscale(target,
 
     We plot the layer that is AFTER the argmax layer (i.e. the layer that most voxels prefer).
 
+    This function requires surface_argmax() to have been run first for each model (it stores the layer preference values
+    for each voxel, which we need to determine the most preferred layer).
+
     """
     
     lst_source_models = []
@@ -4268,15 +4301,26 @@ def determine_surf_layer_colorscale(target,
     lst_argmax_layer_legend = []
     lst_argmax_layer_plus1_legend = []
 
-    for source_model in source_models:
+
+    for source_model in source_models: # Load the file that is not averaged across subjects
         df = pd.read_csv(join(save,
-                        f'hist-preferred-layer_TYPE=subj-argmax_METRIC={value_of_interest}_{source_model}{d_randnetw[randnetw]}_{target}.csv'))
+                        f'hist-preferred-layer_'
+                        f'TYPE=subj-argmax_'
+                        f'METRIC={value_of_interest}_'
+                        f'{source_model}{d_randnetw[randnetw]}_'
+                        f'{target}.csv'))
+
+        # Num layers
+        layer_reindex = d_layer_reindex[source_model]
+        min_possible_layer = 1  # for MATLAB, and to align with "pos"
+        max_possible_layer = len(layer_reindex)  # for MATLAB and to align with "pos"
+
         # Find argmax layer based on column 'pos' (has the pos counts, i.e. counts of position)
         argmax_layer = df.iloc[df['pos'].idxmax()]['layer_pos']
         try:
             argmax_layer_plus1 = df.iloc[df['pos'].idxmax()+1]['layer_pos']
         except:
-            argmax_layer_plus1 = np.nan
+            argmax_layer_plus1 = np.nan # If the argmax layer is the last one
         # Get layer legend too
         argmax_layer_legend = df.iloc[df['pos'].idxmax()]['layer_legend']
         try:
@@ -4286,8 +4330,9 @@ def determine_surf_layer_colorscale(target,
         
         # Append variables to lists
         lst_source_models.append(source_model)
-        lst_argmax_pos.append(df['pos'].idxmax()+1)
-        lst_argmax_pos_plus1.append(df['pos'].idxmax()+2)
+        lst_argmax_pos.append(df['pos'].idxmax() + 1) # idxmax is 0 indexed, so if we have 7 layers total, and the best one is
+        # the 5th one (1-indexed), Python will return 4, so we add 1 to get 5. Pos is always 1-indexed to align with MATLAB.
+        lst_argmax_pos_plus1.append(df['pos'].idxmax() + 2)
         lst_argmax_layer.append(argmax_layer)
         lst_argmax_layer_plus1.append(argmax_layer_plus1)
         lst_argmax_layer_legend.append(argmax_layer_legend)
@@ -4296,11 +4341,10 @@ def determine_surf_layer_colorscale(target,
         # It would also be handy to have the rel pos of the argmax layer + 1 (which is to be plotted).
         # normalize by the number of layers for each model
         # Count number of layers for each model in d_layer_reindex (the value list)
-        min_possible_layer = 1  # for MATLAB, and to align with "pos"
-        max_possible_layer = len(d_layer_reindex[source_model])  # for MATLAB and to align with "pos"
-        rel_pos = np.divide((np.subtract(df['pos'].idxmax()+1, min_possible_layer)),
+        rel_pos = np.divide((np.subtract(df['pos'].idxmax() + 1, min_possible_layer)),
 					 (max_possible_layer - min_possible_layer))
         lst_argmax_rel_pos.append(rel_pos)
+
         # Get the rel pos of the argmax layer + 1 (which is to be plotted).
         rel_pos_plus1 = np.divide((np.subtract(df['pos'].idxmax() + 2, min_possible_layer)), # +2 because +1 is from MATLAB indexing, and other one is +1
                             (max_possible_layer - min_possible_layer))
@@ -4315,10 +4359,11 @@ def determine_surf_layer_colorscale(target,
                            'argmax_rel_pos_plus1': lst_argmax_rel_pos_plus1,
                            'argmax_layer_plus1': lst_argmax_layer_plus1,
                            'argmax_layer_plus1_legend': lst_argmax_layer_plus1_legend,})
-    
-    df_all.to_csv(join(save, f'layer_pref_colorscale_'
-                             f'TYPE=subj-argmax_METRIC={value_of_interest}_'
-                             f'{target}{d_randnetw[randnetw]}.csv'), index=False)
+
+    if save:
+        df_all.to_csv(join(save, f'layer_pref_colorscale_'
+                                 f'TYPE=subj-argmax_METRIC={value_of_interest}_'
+                                 f'{target}{d_randnetw[randnetw]}.csv'), index=False)
 
 #### STATISTICS FUNCTIONS #####
 def compare_CV_splits_nit(source_models,
@@ -4571,13 +4616,13 @@ def pairwise_model_comparison_boostrap(df_all,
 def compare_models_subject_bootstrap(source_models,
                                     target,
                                     save,
-                                    df_meta_roi,
                                     save_str='',
                                     roi=None,
                                     models1=['Kell2018word', 'Kell2018speaker', 'Kell2018multitask'],
                                     models2=['Kell2018audioset', 'Kell2018music'],
                                     aggregation='CV-splits-nit-10',
-                                    randnetw='False', value_of_interest='median_r2_test',
+                                    randnetw='False',
+                                    value_of_interest='median_r2_test',
                                     include_spectemp=True,):
     """
     Load the aggregated values that are plotted in the barplot across models. This has number of subjects as rows,
@@ -4593,7 +4638,10 @@ def compare_models_subject_bootstrap(source_models,
     
     for source_model in source_models:
         if aggregation.startswith('CV'):
-            load_str = f'best-layer_{aggregation}_roi-{roi}_{source_model}{d_randnetw[randnetw]}_{target}_{value_of_interest}.csv'
+            load_str = f'best-layer_{aggregation}_' \
+                       f'roi-{roi}_' \
+                       f'{source_model}{d_randnetw[randnetw]}_' \
+                       f'{target}_{value_of_interest}.csv'
         else:
             raise ValueError(f'aggregation {aggregation} not recognized')
         
@@ -4653,6 +4701,7 @@ def pairwise_model_comparison_subject_boostrap(df_all,
 
     Intended for use for neural data.
     """
+    np.random.seed(0) # Set seed for reproducibility
 
     model1_val = df_all.query(f'source_model == "{model1}"')[value_of_interest].values
     model2_val = df_all.query(f'source_model == "{model2}"')[value_of_interest].values
@@ -4661,7 +4710,6 @@ def pairwise_model_comparison_subject_boostrap(df_all,
     # take mean over sampled values for each iteration --> get distribution and compare to true value from model1
     model2_boostrapped_distrib = []
     for i in range(n_bootstrap):
-        print('SET SEED')
         model2_val_sample = np.random.choice(model2_val, size=len(model2_val)) # sample with replacement
         model2_boostrapped_distrib.append(np.mean(model2_val_sample))
         

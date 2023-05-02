@@ -642,6 +642,7 @@ d_roi_colors = {'all': [sns.color_palette("pastel")[0], sns.color_palette("paste
 d_model_colors = {
     'Kell2018word': '#AD233B',
     'Kell2018wordClean': 'red', # change
+    'Kell2018wordCleanSeed2': 'red',
     'Kell2018wordSeed2': '#AD233B',
     'Kell2018speaker': '#F13336',
     'Kell2018speakerSeed2': '#F13336',
@@ -651,7 +652,8 @@ d_model_colors = {
     'Kell2018multitask': '#FFBAA5',
     'Kell2018multitaskSeed2': '#FFBAA5',
     'ResNet50word': 'darkgreen',
-    'ResNet50wordClean': 'green', # change
+    'ResNet50wordClean': 'tab:green', # change
+    'ResNet50wordCleanSeed2': 'tab:green',
     'ResNet50wordSeed2': 'darkgreen',
     'ResNet50speaker': '#55D409',
     'ResNet50speakerSeed2': '#55D409',
