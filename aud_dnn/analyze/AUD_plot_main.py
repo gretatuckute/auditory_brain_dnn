@@ -11,7 +11,7 @@ SURFDIR = f'{DATADIR}/fsavg_surf/'
 
 ### Settings for which plots to make ###
 save = True # Whether to save any plots/csvs
-concat_over_models = True
+concat_over_models = False
 
 # If concat_over_models = False, we load each individual model and perform the analysis on that
 if not concat_over_models:
@@ -22,7 +22,7 @@ if not concat_over_models:
 	pred_across_layers = False # SI 2; predictivity for each model across all layers
 	best_layer_anat_ROI = False # Basis for Figure 7 for neural; best layer for each anatomical ROI
 	run_surf_argmax = True # Basis for Figure 6 for neural, dump argmax surface position to .mat file
-	run_surf_argmax_merge_datsets = True # Basis for Figure 6 for neural, merge NH2015 and B2021 datasets to find argmax surface position across both datasets
+	run_surf_argmax_merge_datsets = False # Basis for Figure 6 for neural, merge NH2015 and B2021 datasets to find argmax surface position across both datasets
 	run_surf_direct_val = False # plotting arbitrary values on the surface (not used in paper)
 
 
@@ -372,7 +372,8 @@ if concat_over_models:  # assemble plots across models
 						df_median_model_surf_quantized = create_avg_model_surface(source_models=source_models,
 																		target=target,
 																		PLOTSURFDIR=PLOTSURFDIR,
-																		val_of_interest=val_flag, randnetw=randnetw_flag,
+																		val_of_interest=val_flag,
+																		randnetw=randnetw_flag,
 																		plot_val_of_interest='rel_pos',
 																		quantize=True)
 
@@ -579,54 +580,59 @@ if not concat_over_models:
 					######## Surface argmax plots #########
 					for randnetw_flag in ['False', 'True']:
 
-						if randnetw_flag == 'True' and output_randnetw is None:
+						if randnetw_flag == 'True' and output_randnetw is not None:
+							output_to_use = output_randnetw
+						elif randnetw_flag == 'True' and output_randnetw is None:
 							print(f'No permuted network data found for {target}, source model {source_model}')
 							continue
-
+						elif randnetw_flag == 'False':
+							output_to_use = output
 						else:
-							for val_flag in ['median_r2_test_c', ]:
-								for plot_val_flag in ['pos', 'rel_pos']:  # pos is used for plotting in MATLAB.
+							raise ValueError()
 
-									## SUBJECT-WISE ARGMAX ANALYSIS ##
-									# First, obtain the argmax layer for each voxel
-									df_plot, layer_names = surface_argmax(output=output,
-																		  source_model=source_model,
-																		  target=target,
-																		  randnetw=randnetw_flag,
-																		  value_of_interest=val_flag,
-																		  hist=True,
-																		  save=PLOTSURFDIR)
+						for val_flag in ['median_r2_test_c', ]:
+							for plot_val_flag in ['pos', 'rel_pos']:  # pos is used for plotting in MATLAB.
 
-									# Second, dump subject-wise mat files
-									dump_for_surface_writing(vals=df_plot[plot_val_flag],
-															 meta=meta,
+								## SUBJECT-WISE ARGMAX ANALYSIS ##
+								# First, obtain the argmax layer for each voxel
+								df_plot, layer_names = surface_argmax(output=output,
+																	  source_model=source_model,
+																	  target=target,
+																	  randnetw=randnetw_flag,
+																	  value_of_interest=val_flag,
+																	  hist=True,
+																	  save=PLOTSURFDIR)
+
+								# Second, dump subject-wise mat files
+								dump_for_surface_writing(vals=df_plot[plot_val_flag],
+														 meta=meta,
+														 source_model=source_model,
+														 SURFDIR=SURFDIR,
+														 randnetw=randnetw_flag,
+														 subfolder_name=f'TYPE=subj-argmax_'
+																		f'METRIC={val_flag}_'
+																		f'PLOTVAL={plot_val_flag}_'
+																		f'{target}')
+
+								# Third, obtain a median subject surface (the function is called avg, but default is median to retain discrete layer position values)
+								median_subj = create_avg_subject_surface(df_plot=df_plot,
+																		 meta=meta,
+																		 source_model=source_model,
+																		 save=PLOTSURFDIR,
+																		 target=target,
+																		 val_of_interest=val_flag,
+																		 plot_val_of_interest=plot_val_flag,
+																		 randnetw=randnetw_flag)
+
+								# Dump the average (median across subjects) brain to the surface
+								dump_for_surface_writing_avg(median_subj=median_subj,
 															 source_model=source_model,
 															 SURFDIR=SURFDIR,
 															 randnetw=randnetw_flag,
-															 subfolder_name=f'TYPE=subj-argmax_'
+															 subfolder_name=f'TYPE=subj-median-argmax_'
 																			f'METRIC={val_flag}_'
 																			f'PLOTVAL={plot_val_flag}_'
 																			f'{target}')
-
-									# Third, obtain a median subject surface (the function is called avg, but default is median to retain discrete layer position values)
-									median_subj = create_avg_subject_surface(df_plot=df_plot,
-																			 meta=meta,
-																			 source_model=source_model,
-																			 save=PLOTSURFDIR,
-																			 target=target,
-																			 val_of_interest=val_flag,
-																			 plot_val_of_interest=plot_val_flag,
-																			 randnetw=randnetw_flag)
-
-									# Dump the average (median across subjects) brain to the surface
-									dump_for_surface_writing_avg(median_subj=median_subj,
-																 source_model=source_model,
-																 SURFDIR=SURFDIR,
-																 randnetw=randnetw_flag,
-																 subfolder_name=f'TYPE=subj-median-argmax_'
-																				f'METRIC={val_flag}_'
-																				f'PLOTVAL={plot_val_flag}_'
-																				f'{target}')
 
 
 
