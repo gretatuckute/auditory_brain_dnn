@@ -35,7 +35,7 @@ if concat_over_models:
 	plot_anat_roi_scatter = False # Figure 7 neural; scatter of performance across models for anatomical ROIs
 	stats_barplot_across_models = False # Figure 2 neural; stats for barplot of performance across models
 	plot_word_clean_models = False
-	determine_surf_colorscale = True # For figuring out which colorscale to use for Figure 6
+	determine_surf_colorscale = False # For figuring out which colorscale to use for Figure 6
 	median_surface_across_models = True # Figure 6 neural; median surface across models for each dataset
 
 	# Component specific
@@ -44,7 +44,7 @@ if concat_over_models:
 	plot_scatter_pred_vs_actual = False # Figure 4, scatter for components
 
 
-target = 'NH2015-B2021'
+target = 'NH2015'
 
 # Logging
 date = datetime.datetime.now().strftime("%m%d%Y-%T")
@@ -52,15 +52,15 @@ if user != 'gt':
 	sys.stdout = open(join(RESULTDIR_ROOT, 'logs', f'out-{date}.log'), 'a+')
 
 # All models (n=19)
-source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-				'AST',  'wav2vec', 'DCASE2020', 'DS2',  'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer']# 'spectemp']
+# source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
+# 				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
+# 				'AST',  'wav2vec', 'DCASE2020', 'DS2',  'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer']# 'spectemp']
 # # source_models = [ 'ResNet50audioset',   'ResNet50multitask',
 # 				'AST',  'wav2vec', 'DCASE2020', 'DS2',  'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer', 'spectemp']
 # Models above spectemp baseline (n=15)
-# source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-# 				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-# 				'AST',  'wav2vec', 'VGGish', 'S2T',  'sepformer']
+source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
+				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
+				'AST',  'wav2vec', 'VGGish', 'S2T',  'sepformer']
 
 # # Models below spectemp baseline (n=4)
 # source_models = [  'DCASE2020', 'DS2',  'ZeroSpeech2020', 'metricGAN']
@@ -354,6 +354,9 @@ if concat_over_models:  # assemble plots across models
 		# GENERATE A MEDIAN SURFACE OF ARGMAX LAYER POSITION ACROSS MODELS
 		if median_surface_across_models:
 
+			if not save:
+				SURFDIR = False
+
 			# Create median surface across models
 			if len(source_models) == 15: # good models!
 				for val_flag in ['median_r2_test_c']:
@@ -394,7 +397,7 @@ if concat_over_models:  # assemble plots across models
 
 		# DETERMINE COLOR SCALE FOR SURFACE MAPS
 		if determine_surf_colorscale:
-			for randnetw_flag in ['False', 'True']:
+			for randnetw_flag in ['False']:
 				determine_surf_layer_colorscale(target='NH2015-B2021',
 												source_models=source_models,
 												randnetw=randnetw_flag,
