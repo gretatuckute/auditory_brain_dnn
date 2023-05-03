@@ -11,7 +11,7 @@ SURFDIR = f'{DATADIR}/fsavg_surf/'
 
 ### Settings for which plots to make ###
 save = True # Whether to save any plots/csvs
-concat_over_models = False
+concat_over_models = True
 
 # If concat_over_models = False, we load each individual model and perform the analysis on that
 if not concat_over_models:
@@ -35,7 +35,7 @@ if concat_over_models:
 	plot_anat_roi_scatter = False # Figure 7 neural; scatter of performance across models for anatomical ROIs
 	stats_barplot_across_models = False # Figure 2 neural; stats for barplot of performance across models
 	plot_word_clean_models = False
-	determine_surf_colorscale = False # For figuring out which colorscale to use for Figure 6
+	determine_surf_colorscale = True # For figuring out which colorscale to use for Figure 6
 	median_surface_across_models = True # Figure 6 neural; median surface across models for each dataset
 
 	# Component specific
@@ -44,7 +44,7 @@ if concat_over_models:
 	plot_scatter_pred_vs_actual = False # Figure 4, scatter for components
 
 
-target = 'NH2015'
+target = 'NH2015-B2021'
 
 # Logging
 date = datetime.datetime.now().strftime("%m%d%Y-%T")
