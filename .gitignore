@@ -9,7 +9,7 @@ data/stimuli/165_natural_sounds_16kHz_SL10/*
 data/stimuli/165_natural_sounds_16kHz_SL100/*
 data/stimuli/multiply_waveform_SL.py
 data/stimuli/165_natural_sounds/*
-data/fsavg_surf/**
+data/fsavg_surf/**/*[.mat, .png, .csv, .label]
 data/neural/B2021/voxel**
 data/neural/B2021/voxel**
 data/source_networks/**
