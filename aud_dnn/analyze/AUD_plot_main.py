@@ -34,9 +34,9 @@ if concat_over_models:
 	# Neural specific
 	plot_anat_roi_scatter = False # Figure 7 neural; scatter of performance across models for anatomical ROIs
 	stats_barplot_across_models = False # Figure 2 neural; stats for barplot of performance across models
-	plot_word_clean_models = False
+	plot_word_clean_models = True
 	determine_surf_colorscale = False # For figuring out which colorscale to use for Figure 6
-	median_surface_across_models = True # Figure 6 neural; median surface across models for each dataset
+	median_surface_across_models = False # Figure 6 neural; median surface across models for each dataset
 
 	# Component specific
 	plot_barplot_across_inhouse_models = False # Figure 8A) for components (in-house models)
@@ -44,7 +44,7 @@ if concat_over_models:
 	plot_scatter_pred_vs_actual = False # Figure 4, scatter for components
 
 
-target = 'B2021'
+target = 'NH2015'
 
 # Logging
 date = datetime.datetime.now().strftime("%m%d%Y-%T")
@@ -73,13 +73,15 @@ if user != 'gt':
 # 				'ResNet50word', 'ResNet50speaker', 'ResNet50audioset',   'ResNet50multitask',
 # 				 'Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
 # 				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
+source_models = ['Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
+				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
 # source_models = ['Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018music', 'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
 # 				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50music', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
 # source_models = ['Kell2018word','Kell2018wordClean',
 # 				 'ResNet50word', 'ResNet50wordClean']
 # All clean word models
-source_models = ['Kell2018wordClean', 'Kell2018wordCleanSeed2',
-				 'ResNet50wordClean', 'ResNet50wordCleanSeed2']
+# source_models = ['Kell2018wordClean', 'Kell2018wordCleanSeed2',
+# 				 'ResNet50wordClean', 'ResNet50wordCleanSeed2']
 # source_models = ['Kell2018word', 'Kell2018wordClean', 'Kell2018wordSeed2', 'Kell2018wordCleanSeed2',
 # 				 'ResNet50word', 'ResNet50wordClean', 'ResNet50wordSeed2', 'ResNet50wordCleanSeed2']
 
@@ -293,7 +295,7 @@ if concat_over_models:  # assemble plots across models
 			for sort_flag in [source_models]: # 'performance' NH2015_all_models_performance_order B2021_all_models_performance_order
 				for val_flag in ['median_r2_test_c', ]:
 					for agg_flag in ['CV-splits-nit-10']:
-						for randnetw_flag in ['False', ]: # 'False', 'True'
+						for randnetw_flag in ['False', 'True' ]: # 'False', 'True'
 							barplot_across_models(source_models=source_models,
 												  target=target,
 												  roi=None,
