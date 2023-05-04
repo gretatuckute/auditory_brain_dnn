@@ -11,17 +11,17 @@ SURFDIR = f'{DATADIR}/fsavg_surf/'
 
 ### Settings for which plots to make ###
 save = True # Whether to save any plots/csvs
-concat_over_models = True
+concat_over_models = False
 
 # If concat_over_models = False, we load each individual model and perform the analysis on that
 if not concat_over_models:
 	# Shared for neural and components
-	best_layer_cv_nit = False # Basis for Figure 2 for neural, basis for Figure 5 for components; obtain best layer for each voxel based on independent CV splits across 10 iterations
+	best_layer_cv_nit = True # Basis for Figure 2 for neural, basis for Figure 5 for components; obtain best layer for each voxel based on independent CV splits across 10 iterations
 
 	# Neural specific
-	pred_across_layers = False # SI 2; predictivity for each model across all layers
-	best_layer_anat_ROI = False # Basis for Figure 7 for neural; best layer for each anatomical ROI
-	run_surf_argmax = True # Basis for Figure 6 for neural, dump argmax surface position to .mat file
+	pred_across_layers = True # SI 2; predictivity for each model across all layers
+	best_layer_anat_ROI = True # Basis for Figure 7 for neural; best layer for each anatomical ROI
+	run_surf_argmax = False # Basis for Figure 6 for neural, dump argmax surface position to .mat file
 	run_surf_argmax_merge_datsets = False # Basis for Figure 6 for neural, merge NH2015 and B2021 datasets to find argmax surface position across both datasets
 	run_surf_direct_val = False # plotting arbitrary values on the surface (not used in paper)
 
@@ -58,9 +58,9 @@ if user != 'gt':
 # # source_models = [ 'ResNet50audioset',   'ResNet50multitask',
 # 				'AST',  'wav2vec', 'DCASE2020', 'DS2',  'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer', 'spectemp']
 # Models above spectemp baseline (n=15)
-source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-				'AST',  'wav2vec', 'VGGish', 'S2T',  'sepformer']
+# source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
+# 				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
+# 				'AST',  'wav2vec', 'VGGish', 'S2T',  'sepformer']
 
 # # Models below spectemp baseline (n=4)
 # source_models = [  'DCASE2020', 'DS2',  'ZeroSpeech2020', 'metricGAN']
@@ -78,8 +78,8 @@ source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell201
 # source_models = ['Kell2018word','Kell2018wordClean',
 # 				 'ResNet50word', 'ResNet50wordClean']
 # All clean word models
-# source_models = ['Kell2018wordClean', 'Kell2018wordCleanSeed2',
-# 				 'ResNet50wordClean', 'ResNet50wordCleanSeed2']
+source_models = ['Kell2018wordClean', 'Kell2018wordCleanSeed2',
+				 'ResNet50wordClean', 'ResNet50wordCleanSeed2']
 # source_models = ['Kell2018word', 'Kell2018wordClean', 'Kell2018wordSeed2', 'Kell2018wordCleanSeed2',
 # 				 'ResNet50word', 'ResNet50wordClean', 'ResNet50wordSeed2', 'ResNet50wordCleanSeed2']
 
@@ -448,7 +448,7 @@ if not concat_over_models:
 		output['mean_r2_test_c'] = output['mean_r2_test_c'].clip(upper=1)
 
 		# Permuted network (does not exist for spectemp or init models)
-		if source_model.endswith('init') or source_model == 'spectemp' or source_model.endswith('Clean') or source_model.endswith('CleanSeed2'): #or source_model in source_models: # FOR NOW, LETS NOT PLOT RANDNETW
+		if source_model.endswith('init') or source_model == 'spectemp': #or source_model in source_models: # FOR NOW, LETS NOT PLOT RANDNETW
 			output_randnetw = None
 			output_folders_paths_randnetw = []
 		else:

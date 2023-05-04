@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH --job-name=plot20230503
-#SBATCH --time=01:30:00
+#SBATCH --job-name=plot20230504
+#SBATCH --time=00:40:00
 #SBACTH --ntasks=1
-#SBATCH --output="out/plot20230503-%j.out"
+#SBATCH --output="out/plot20230504-%j.out"
 #SBATCH --mem=4G
 #SBATCH -p evlab
 
