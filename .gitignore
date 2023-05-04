@@ -17,6 +17,7 @@ data/source_models_dim/**
 data/RSA/**
 data/fsavg_surf/voxel_matrix_for_alex.mat
 figure_compilation/**
+manuscript_revised/**
 
 results/*
 
