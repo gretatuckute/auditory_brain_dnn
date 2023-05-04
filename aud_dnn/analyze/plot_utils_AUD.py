@@ -4179,6 +4179,7 @@ def dump_for_surface_writing_direct(df_plot_direct,
 def dump_for_surface_writing_avg(median_subj,
                                  source_model,
                                  SURFDIR,
+                                 PLOTSURFDIR,
                                  randnetw,
                                  subfolder_name='subj-median-argmax', ):
     """
@@ -4188,6 +4189,8 @@ def dump_for_surface_writing_avg(median_subj,
     To actually write the surfaces, use the write_surfs.m matlab function (which takes advantage of freesurfer's matlab library).
 
     NOTE: this function is named _avg, but by default we use the median!
+
+    In PLOTSURDIR, we store the csv file that was used to generate the matlab structure.
 
     :param median_subj: df
     :param source_model: str
@@ -4199,6 +4202,10 @@ def dump_for_surface_writing_avg(median_subj,
     if SURFDIR:
         SAVEFOLDER = os.path.join(SURFDIR, f'{source_model}{d_randnetw[randnetw]}', f'{subfolder_name}')
         Path(SAVEFOLDER).mkdir(parents=True, exist_ok=True)
+
+    if PLOTSURFDIR:
+        fname = f'{subfolder_name}_{source_model}{d_randnetw[randnetw]}_subj-avg.csv'
+        median_subj.to_csv(os.path.join(PLOTSURFDIR, fname), index=False)
     
     hemis = list(set(median_subj['hemi']))
     for hemi in hemis:
