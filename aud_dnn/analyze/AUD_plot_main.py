@@ -44,7 +44,7 @@ if concat_over_models:
 	plot_scatter_pred_vs_actual = False # Figure 4, scatter for components
 
 
-target = 'NH2015'
+target = 'B2021'
 
 # Logging
 date = datetime.datetime.now().strftime("%m%d%Y-%T")
@@ -84,7 +84,7 @@ source_models = ['Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audioset
 # 				 'ResNet50wordClean', 'ResNet50wordCleanSeed2']
 # source_models = ['Kell2018word', 'Kell2018wordClean', 'Kell2018wordSeed2', 'Kell2018wordCleanSeed2',
 # 				 'ResNet50word', 'ResNet50wordClean', 'ResNet50wordSeed2', 'ResNet50wordCleanSeed2']
-
+# source_models = ['Kell2018wordSeed2','ResNet50wordSeed2',]
 
 
 print(f'---------- Target: {target} ----------')
@@ -122,19 +122,20 @@ if concat_over_models:  # assemble plots across models
 		if plot_scatter_across_models:
 			add_savestr = f'_seed1-vs-seed2'
 
-			scatter_components_across_models_seed(source_models=source_models,
-											 target=target,
-											 randnetw='False',
-											 models1=['Kell2018word', 'Kell2018speaker',  'Kell2018audioset', 'Kell2018multitask',
-													  'ResNet50word', 'ResNet50speaker', 'ResNet50audioset', 'ResNet50multitask',],
-											 models2=['Kell2018wordSeed2', 'Kell2018speakerSeed2', 'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
-											 		'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',],
-											 value_of_interest='median_r2_test',
-											 yerr_type='median_r2_test_sem_over_it',
-											 save=SAVEDIR_CENTRALIZED,
-											 add_savestr=add_savestr,
-											 ylim=[0.4,0.9],
-											 xlim=[0.4,0.9])
+			for randnetw_flag in ['False', 'True']: # 'False', 'True'
+				scatter_components_across_models_seed(source_models=source_models,
+												 target=target,
+												 randnetw=randnetw_flag,
+												 models1=['Kell2018word', 'Kell2018speaker',  'Kell2018audioset', 'Kell2018multitask',
+														  'ResNet50word', 'ResNet50speaker', 'ResNet50audioset', 'ResNet50multitask',],
+												 models2=['Kell2018wordSeed2', 'Kell2018speakerSeed2', 'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
+														'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',],
+												 value_of_interest='median_r2_test',
+												 yerr_type='median_r2_test_sem_over_it',
+												 save=SAVEDIR_CENTRALIZED,
+												 add_savestr=add_savestr,
+												 ylim=[0.4,0.9],
+												 xlim=[0.4,0.9])
 
 
 
@@ -260,6 +261,12 @@ if concat_over_models:  # assemble plots across models
 		if plot_scatter_across_models:
 
 			for randnetw_flag in ['False', 'True']:
+				if randnetw_flag == 'False':
+					ylim = [0.6,0.8]
+					xlim = [0.6,0.8]
+				else:
+					ylim = [0.0,0.8]
+					xlim = [0.0,0.8]
 				scatter_across_models(source_models=source_models,
 									  models1=['Kell2018word', 'Kell2018speaker', 'Kell2018audioset', 'Kell2018multitask',
 											   'ResNet50word', 'ResNet50speaker', 'ResNet50audioset',   'ResNet50multitask',],
@@ -270,7 +277,10 @@ if concat_over_models:  # assemble plots across models
 									  randnetw=randnetw_flag,
 									  aggregation='CV-splits-nit-10',
 									  value_of_interest='median_r2_test_c',
-									  add_savestr=f'',)
+									  add_savestr=f'',
+									  ylim=ylim,
+									  xlim=xlim,
+									  )
 
 		# STATS FOR BARPLOTS ACROSS MODELS (bootstrap across subjects)
 		if stats_barplot_across_models:
@@ -308,7 +318,7 @@ if concat_over_models:  # assemble plots across models
 
 			# Run according stats
 			for val_flag in ['median_r2_test_c', ]:
-				for randnetw_flag in ['False']:
+				for randnetw_flag in ['False', 'True' ]: # 'False', 'True'
 					compare_models_subject_bootstrap(source_models=source_models,
 													 target=target,
 													 save=save,
