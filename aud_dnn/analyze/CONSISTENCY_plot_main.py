@@ -29,9 +29,12 @@ roi = None
 regr = True
 rsa = True
 modelwise_scatter = False # Compare modelwise between datasets and methods
-layerwise_scatter = False # Compare layerwise between datasets and methods
+layerwise_scatter = True # Compare layerwise between datasets and methods
 best_layer_scatter = True # Compare best layer Fig 5 values between methods
 
+save = False
+if not save:
+	SAVEDIR_CENTRALIZED = False
 
 if modelwise_scatter:
 	if regr:
@@ -45,8 +48,8 @@ if modelwise_scatter:
 			df_across_models_regr = modelwise_scores_across_targets(source_models=source_models,
 																	value_of_interest=val_of_interest,
 																	target1='NH2015', target2='B2021',
-																	target1_loadstr_suffix='__performance_sorted_20220311',
-																	target2_loadstr_suffix='_performance_sorted_20220311',
+																	target1_loadstr_suffix='_performance_sorted',
+																	target2_loadstr_suffix='_performance_sorted',
 																	roi=roi,
 																	aggregation='CV-splits-nit-10',
 																	add_savestr='_all-models',
@@ -57,8 +60,8 @@ if modelwise_scatter:
 			df_across_models_regr_randnetw = modelwise_scores_across_targets(source_models=[source_model for source_model in source_models if source_model != 'spectemp'],
 																			value_of_interest=val_of_interest,
 																			target1='NH2015', target2='B2021',
-																			target1_loadstr_suffix='__performance_sorted_20220311',
-																			target2_loadstr_suffix='_performance_sorted_20220311',
+																			target1_loadstr_suffix='_performance_sorted',
+																			target2_loadstr_suffix='_performance_sorted',
 																			roi=roi,
 																			aggregation='CV-splits-nit-10',
 																			add_savestr='_all-models',
@@ -157,7 +160,7 @@ if layerwise_scatter:
 			randnetw='False',
 			value_of_interest=val_of_interest,
 			agg_method=agg_method,
-			save=True, # True or False, savedir is every model's output dir
+			save=False, # True or False, savedir is every model's output dir
 			RESULTDIR_ROOT=RESULTDIR_ROOT)
 		
 		d_across_models_regr_NH2015_randnetw, d_across_layers_regr_NH2015_randnetw = load_score_across_layers_across_models(
@@ -167,7 +170,7 @@ if layerwise_scatter:
 			randnetw='True',
 			value_of_interest=val_of_interest,
 			agg_method=agg_method,
-			save=True,
+			save=False,
 			RESULTDIR_ROOT=RESULTDIR_ROOT)
 		
 		## B2021 ##
@@ -178,7 +181,7 @@ if layerwise_scatter:
 			randnetw='False',
 			value_of_interest=val_of_interest,
 			agg_method=agg_method,
-			save=True, # True or False, savedir is every model's output dir
+			save=False, # True or False, savedir is every model's output dir
 			RESULTDIR_ROOT=RESULTDIR_ROOT)
 		
 		d_across_models_regr_B2021_randnetw, d_across_layers_regr_B2021_randnetw = load_score_across_layers_across_models(
@@ -188,7 +191,7 @@ if layerwise_scatter:
 			randnetw='True',
 			value_of_interest=val_of_interest,
 			agg_method=agg_method,
-			save=True,
+			save=False,
 			RESULTDIR_ROOT=RESULTDIR_ROOT)
 		
 		# REGRESSION: SCATTER OF THE LAYERWISE SCORES (SI 1) ACROSS MODELS, NH2015 VS B2021

@@ -1,4 +1,4 @@
-from plotting_specs import d_layer_reindex, d_randnetw
+from aud_dnn.resources import d_layer_reindex, d_randnetw
 import numpy as np
 import pickle
 import pandas as pd

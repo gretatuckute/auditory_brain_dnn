@@ -1219,7 +1219,7 @@ def load_score_across_layers_across_models(source_models,
                                          randnetw='False',
                                          agg_method='mean',
                                          save=False,
-                                         RESULTDIR_ROOT='/om2/user/gretatu/results/AUD/20210915_median_across_splits_correction',
+                                         RESULTDIR_ROOT='/Users/gt/bur/results',
                                          add_savestr=''):
     """
     Loads the score across layers for a list of source models, for a given target, ROI, and randnetw specification
@@ -3280,6 +3280,17 @@ def modelwise_scores_across_targets(source_models,
     for i in range(0, len(class_colours)):
         recs.append(mpatches.Rectangle((0, 0), 1, 1, fc=class_colours[i]))
     fig.legend(recs, classes_polished_name, bbox_to_anchor=(1.0, 1.))
+
+    # Merge the two dataframes and save it
+    df_merged = pd.concat([df_target1, df_target2])
+    df_merged['roi'] = roi
+    df_merged['randnetw'] = randnetw
+    df_merged['aggregation'] = aggregation
+    df_merged['value_of_interest'] = value_of_interest
+    df_merged['r'] = r
+    df_merged['r2'] = r2
+    df_merged['p-val'] = p
+
     if save:
         save_str = f'across-models_{target1}-vs-{target2}' \
                    f'{d_randnetw[randnetw]}_' \
@@ -3287,16 +3298,6 @@ def modelwise_scores_across_targets(source_models,
                    f'roi-{roi}_{value_of_interest}_{aggregation}_ylim-{ylim}'
         fig.savefig(join(save, f'{save_str}.png'), dpi=180)
         fig.savefig(join(save, f'{save_str}.svg'), dpi=180)
-        
-        # Merge the two dataframes and save it
-        df_merged = pd.concat([df_target1, df_target2])
-        df_merged['roi'] = roi
-        df_merged['randnetw'] = randnetw
-        df_merged['aggregation'] = aggregation
-        df_merged['value_of_interest'] = value_of_interest
-        df_merged['r'] = r
-        df_merged['r2'] = r2
-        df_merged['p-val'] = p
         df_merged.to_csv(join(save, f'{save_str}.csv'), index=False)
         
     fig.show()

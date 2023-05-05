@@ -4,14 +4,14 @@ Computes pca on the activations to the 165 sound set for all models and computes
 Assumes that the statistics are already normalized, if normalization should be performed. # TODO: change this to match normalization for predictions? 
 """
 import numpy as np
-import torch as ch
+# import torch as ch
 from pathlib import Path
 import pickle
 import matplotlib.pylab as plt
 import argparse
 import h5py
 import os
-from plotting_specs import d_layer_reindex, d_sound_category_colors, sound_category_order, d_model_colors, d_model_names
+from aud_dnn.resources import d_layer_reindex, d_sound_category_colors, sound_category_order, d_model_colors, d_model_names
 from sklearn.preprocessing import StandardScaler
 import sys # TODO: this is a bit hacky TODO: remove
 sys.path.append('../../') # TODO: remove

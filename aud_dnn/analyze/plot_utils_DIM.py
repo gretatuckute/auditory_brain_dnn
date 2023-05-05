@@ -14,6 +14,7 @@ import getpass
 import sys
 from os.path import join
 
+from aud_dnn.resources import d_layer_reindex
 from plot_utils_AUD_RSA import load_rsa_scores_across_layers_across_models, \
 	package_RSA_best_layer_scores
 from plot_utils_AUD import load_score_across_layers_across_models, \
@@ -29,16 +30,18 @@ datetag = now.strftime("%Y%m%d")
 #### Paths ####
 DATADIR = (Path(os.getcwd()) / '..' / 'data').resolve()
 user = getpass.getuser()
+# Set paths according to user
 if user == 'gt':
-    ROOT = f'/Users/{user}/om2/'
-else:
+    ROOT = f'/Users/gt/bur/'
+elif user == 'gretatu':
     print(f' ------------- Running on openmind as {user} -----------')
-    ROOT = f'/om2/user/{user}/'
+    ROOT = f'/mindhive/mcdermott/u/gretatu/auditory_brain_dnn/'
+else:
+	raise ValueError(f'Unknown user {user}. Specify paths manually.')
 
-SAVEDIR_CENTRALIZED = f'{ROOT}/results/AUD/20210915_median_across_splits_correction/PLOTS_across-models/'  # make sure that ind. comp. are named in the title
-DIAGDIR_CENTRALIZED = f'{ROOT}/results/AUD/20210915_median_across_splits_correction/DIAG_across-models/'
-STATSDIR_CENTRALIZED = f'{ROOT}/results/AUD/20210915_median_across_splits_correction/STATS_across-models/'
-RESULTDIR_ROOT = (Path(f'{ROOT}/results/AUD/20210915_median_across_splits_correction')).resolve()
+SAVEDIR_CENTRALIZED = f'{ROOT}/results/PLOTS_across-models/'  # make sure that ind. comp. are named in the title
+STATSDIR_CENTRALIZED = f'{ROOT}/results/STATS_across-models/'
+RESULTDIR_ROOT = (Path(f'{ROOT}/results')).resolve()
 
 
 def compile_dim_data(randnetw,
