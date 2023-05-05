@@ -11,7 +11,7 @@ SURFDIR = f'{DATADIR}/fsavg_surf/'
 
 ### Settings for which plots to make ###
 save = True # Whether to save any plots/csvs
-concat_over_models = False
+concat_over_models = True
 
 # If concat_over_models = False, we load each individual model and perform the analysis on that
 if not concat_over_models:
@@ -29,12 +29,12 @@ if not concat_over_models:
 if concat_over_models:
 	# Shared for neural and components
 	plot_barplot_across_models = False # Figure 2 for neural, Figure 5 for components; barplot of performance across models
-	plot_scatter_across_models = False # Figure 2, Seed1 vs Seed2 scatter for neural;
+	plot_scatter_across_models = True # Figure 2, Seed1 vs Seed2 scatter for neural;
 
 	# Neural specific
 	plot_anat_roi_scatter = False # Figure 7 neural; scatter of performance across models for anatomical ROIs
 	stats_barplot_across_models = False # Figure 2 neural; stats for barplot of performance across models
-	plot_word_clean_models = True
+	plot_word_clean_models = False
 	determine_surf_colorscale = False # For figuring out which colorscale to use for Figure 6
 	median_surface_across_models = False # Figure 6 neural; median surface across models for each dataset
 
@@ -44,7 +44,7 @@ if concat_over_models:
 	plot_scatter_pred_vs_actual = False # Figure 4, scatter for components
 
 
-target = 'B2021'
+target = 'NH2015'
 
 # Logging
 date = datetime.datetime.now().strftime("%m%d%Y-%T")
@@ -69,12 +69,12 @@ if user != 'gt':
 # source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
 # 				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask', ]
 # source_models = ['ResNet50multitask', 'spectemp', 'Kell2018multitask']
-# source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018audioset', 'Kell2018multitask',
-# 				'ResNet50word', 'ResNet50speaker', 'ResNet50audioset',   'ResNet50multitask',
-# 				 'Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
-# 				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
-source_models = ['Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
+source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018audioset', 'Kell2018multitask',
+				'ResNet50word', 'ResNet50speaker', 'ResNet50audioset',   'ResNet50multitask',
+				 'Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
 				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
+# source_models = ['Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
+# 				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
 # source_models = ['Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018music', 'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
 # 				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50music', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
 # source_models = ['Kell2018word','Kell2018wordClean',
@@ -265,19 +265,19 @@ if concat_over_models:  # assemble plots across models
 					ylim = [0.6,0.8]
 					xlim = [0.6,0.8]
 				else:
-					ylim = [0.0,0.8]
-					xlim = [0.0,0.8]
+					ylim = [0.0,0.6]
+					xlim = [0.0,0.6]
 				scatter_across_models(source_models=source_models,
 									  models1=['Kell2018word', 'Kell2018speaker', 'Kell2018audioset', 'Kell2018multitask',
 											   'ResNet50word', 'ResNet50speaker', 'ResNet50audioset',   'ResNet50multitask',],
 									  models2=['Kell2018wordSeed2', 'Kell2018speakerSeed2', 'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
-											   'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',   'ResNet50multitaskSeed2',],
+											   'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',],
 									  target=target,
 									  save=SAVEDIR_CENTRALIZED,
 									  randnetw=randnetw_flag,
 									  aggregation='CV-splits-nit-10',
 									  value_of_interest='median_r2_test_c',
-									  add_savestr=f'',
+									  add_savestr=f'_seed1-vs-seed2_xl={xlim[0]}-{xlim[1]}_yl={ylim[0]}-{ylim[1]}',
 									  ylim=ylim,
 									  xlim=xlim,
 									  )

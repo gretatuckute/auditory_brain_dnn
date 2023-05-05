@@ -2351,6 +2351,12 @@ def scatter_across_models(source_models,
                     yerr=df_models2[f'{value_of_interest}_yerr'].values[i],
                     fmt='o', markersize=10, color=color,
                     capsize=0, elinewidth=2, markeredgewidth=2)
+    # Also plot correlation r between models1 and models2
+    r, p = stats.pearsonr(df_models1[f'{value_of_interest}_mean'].values, df_models2[f'{value_of_interest}_mean'].values)
+    r2 = r ** 2
+    # Plot in lower right
+    plt.text(0.95, 0.05, f'$R^2$={r2:.2f}, p={p:.2f}', horizontalalignment='right', verticalalignment='bottom',
+             transform=ax.transAxes, fontsize=15)
     if ylim is not None:
         plt.ylim(ylim)
     if xlim is not None:
@@ -2371,7 +2377,7 @@ def scatter_across_models(source_models,
     if save:
         save_str = f'across-models_roi-{roi}_{target}{d_randnetw[randnetw]}_' \
                    f'{aggregation}_{yerr_type}_' \
-                   f'n-models={len(df_grouped)}' \
+                   f'n-models={len(df_grouped)}_' \
                    f'{value_of_interest}{add_savestr}'
         plt.savefig(join(save, f'{save_str}.png'), dpi=180)
         plt.savefig(join(save, f'{save_str}.svg'), dpi=180)
@@ -2387,6 +2393,9 @@ def scatter_across_models(source_models,
         df_grouped['n_models'] = len(df_grouped)
         df_grouped['models1'] = [models1] * len(df_grouped)
         df_grouped['models2'] = [models2] * len(df_grouped)
+        df_grouped['r'] = r
+        df_grouped['r2'] = r2
+        df_grouped['p'] = p
         df_grouped.to_csv(join(save, f'{save_str}.csv'))
     fig.show()
 
