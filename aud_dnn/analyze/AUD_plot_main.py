@@ -10,7 +10,7 @@ PLOTSURFDIR = Path(f'{ROOT}/results/PLOTS_SURF_across-models/')
 SURFDIR = f'{DATADIR}/fsavg_surf/'
 
 ### Settings for which plots to make ###
-save = True # Whether to save any plots/csvs
+save = False # Whether to save any plots/csvs
 concat_over_models = True
 
 # If concat_over_models = False, we load each individual model and perform the analysis on that
@@ -29,7 +29,7 @@ if not concat_over_models:
 if concat_over_models:
 	# Shared for neural and components
 	plot_barplot_across_models = False # Figure 2 for neural, Figure 5 for components; barplot of performance across models
-	plot_scatter_across_models = True # Figure 2, Seed1 vs Seed2 scatter for neural;
+	plot_scatter_across_models = False # Figure 2, Seed1 vs Seed2 scatter for neural;
 
 	# Neural specific
 	plot_anat_roi_scatter = False # Figure 7 neural; scatter of performance across models for anatomical ROIs
@@ -44,7 +44,7 @@ if concat_over_models:
 	plot_scatter_pred_vs_actual = False # Figure 4, scatter for components
 
 
-target = 'NH2015'
+target = 'NH2015comp'
 
 # Logging
 date = datetime.datetime.now().strftime("%m%d%Y-%T")
@@ -69,8 +69,8 @@ if user != 'gt':
 # source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
 # 				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask', ]
 # source_models = ['ResNet50multitask', 'spectemp', 'Kell2018multitask']
-source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018audioset', 'Kell2018multitask',
-				'ResNet50word', 'ResNet50speaker', 'ResNet50audioset',   'ResNet50multitask',
+source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
+				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
 				 'Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
 				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
 # source_models = ['Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
@@ -173,16 +173,16 @@ if concat_over_models:  # assemble plots across models
 				else:
 					ylim = [0, 1]
 
-				scatter_components_across_models(source_models=source_models,
-												 target=target,
-												 randnetw=randnetw_flag,
-												 aggregation='CV-splits-nit-10',
-												 save=SAVEDIR_CENTRALIZED,
-												 save_str=save_str,
-												 include_spectemp=False,
-												 ylim=ylim,
-												 value_of_interest='median_r2_test',
-												 sem_of_interest='median_r2_test_sem_over_it')
+				# scatter_components_across_models(source_models=source_models,
+				# 								 target=target,
+				# 								 randnetw=randnetw_flag,
+				# 								 aggregation='CV-splits-nit-10',
+				# 								 save=SAVEDIR_CENTRALIZED,
+				# 								 save_str=save_str,
+				# 								 include_spectemp=False,
+				# 								 ylim=ylim,
+				# 								 value_of_interest='median_r2_test',
+				# 								 sem_of_interest='median_r2_test_sem_over_it')
 
 				## Associated statistics - comp1 vs comp2 comparions for models of interest ##
 				# compare_CV_splits_nit(source_models=source_models,

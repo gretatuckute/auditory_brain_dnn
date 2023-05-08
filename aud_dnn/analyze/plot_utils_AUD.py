@@ -4531,13 +4531,21 @@ def pairwise_model_comparison_comp_boostrap(df_all,
         value_of_interest].values
     
     true_delta = np.mean(model1_val) - np.mean(model2_val)
+
+    # If true_delta is nan, we are probably quering a wrong value
+    if np.isnan(true_delta):
+        raise ValueError(f'true_delta is nan for component {comp_of_interest} between {model1} and {model2}')
     
     # Run bootstrap on the value of interest for model1 vs model2 by shuffling the values
     permuted_deltas = []
     for i in range(n_bootstrap):
         # shuffle the model1 and model2 values and assign randomly to two lists
         model1_model2_val = np.concatenate([model1_val, model2_val])
+        model1_model2_val_copy = copy.deepcopy(model1_model2_val)
         np.random.shuffle(model1_model2_val)
+        # Ensure that the shuffled values are not identical to the original values
+        if np.array_equal(model1_model2_val, model1_model2_val_copy):
+            raise ValueError('The shuffled values are identical to the original values!')
         model1_val_shuffled = model1_model2_val[:len(model1_val)]
         model2_val_shuffled = model1_model2_val[len(model1_val):]
         
