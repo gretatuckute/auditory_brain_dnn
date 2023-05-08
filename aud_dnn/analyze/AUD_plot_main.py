@@ -44,7 +44,7 @@ if concat_over_models:
 	plot_scatter_pred_vs_actual = False # Figure 4, scatter for components
 
 
-target = 'NH2015'
+target = 'B2021'
 
 # Logging
 date = datetime.datetime.now().strftime("%m%d%Y-%T")
