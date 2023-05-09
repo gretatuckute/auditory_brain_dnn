@@ -12,7 +12,7 @@ if [ "$model" = "Kell2018" ]; then
 fi
 if [ "$model" = "Kell2018Seed2" ]; then
   models="Kell2018wordSeed2 Kell2018speakerSeed2 Kell2018audiosetSeed2"
-  layers="input_after_preproc relu0 maxpool0 relu1 maxpool1 relu2 relu3 relu4 avgpool relufc final"
+  layers="input_after_preproc relu0 maxpool0 relu1 maxpool1 relu2 relu3 relu4 avgpool relufc"
 fi
 if [ "$model" = "Kell2018wordClean" ]; then
   models="Kell2018wordClean"
@@ -36,7 +36,7 @@ if [ "$model" = "ResNet50wordCleanSeed2" ]; then
 fi
 if [ "$model" = "ResNet50Seed2" ]; then
   models="ResNet50wordSeed2 ResNet50speakerSeed2 ResNet50audiosetSeed2"
-  layers="input_after_preproc conv1_relu1 maxpool1 layer1 layer2 layer3 layer4 avgpool final"
+  layers="input_after_preproc conv1_relu1 maxpool1 layer1 layer2 layer3 layer4 avgpool"
 fi
 if [ "$model" = "Kell2018multitask" ]; then
   models="Kell2018multitask"
@@ -160,7 +160,7 @@ for model in $models ; do
         else
           # If overwrite is set to 0, then we only run the script if the file doesn't exist
           if [ -f "$file_to_look_for" ]; then
-            echo "FILE EXISTS: $file_to_look_for"
+#            echo "FILE EXISTS: $file_to_look_for"
             echo "SKIPPING ......."
           else
             echo "FILE DOES NOT EXIST: $file_to_look_for"
