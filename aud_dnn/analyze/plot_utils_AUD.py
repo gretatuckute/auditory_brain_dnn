@@ -3004,7 +3004,7 @@ def barplot_components_across_models(source_models,
         color_order = [d_model_colors[x] for x in df_comp.source_model]
         r2 = df_comp[value_of_interest].values
         sem = df_comp[yerr_type].values
-        ax[i].set_box_aspect(0.9)
+        ax[i].set_box_aspect(1)
         if include_spectemp:
             ax[i].hlines(xmin=xmin, xmax=xmax, y=df_spectemp_comp[f'{value_of_interest}'].values, color='darkgrey',zorder=2)
             ax[i].fill_between(

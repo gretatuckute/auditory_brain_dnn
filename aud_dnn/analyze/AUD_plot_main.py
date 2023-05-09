@@ -11,7 +11,7 @@ SURFDIR = f'{DATADIR}/fsavg_surf/'
 
 ### Settings for which plots to make ###
 save = True # Whether to save any plots/csvs
-concat_over_models = True
+concat_over_models = False
 
 # If concat_over_models = False, we load each individual model and perform the analysis on that
 if not concat_over_models:
@@ -29,22 +29,22 @@ if not concat_over_models:
 if concat_over_models:
 	# Shared for neural and components
 	plot_barplot_across_models = False # Figure 2 for neural, Figure 5 for components; barplot of performance across models
-	plot_scatter_across_models = False # Figure 2, Seed1 vs Seed2 scatter for neural;
+	plot_scatter_across_models = False # Figure 2, Seed1 vs Seed2 scatter for neural
+	plot_word_clean_models = True # Figure 9 for neural and components; barplot of performance for word models vs clean models
 
 	# Neural specific
 	plot_anat_roi_scatter = False # Figure 7 neural; scatter of performance across models for anatomical ROIs
 	stats_barplot_across_models = False # Figure 2 neural; stats for barplot of performance across models
-	plot_word_clean_models = True # Figure 9 for neural
 	determine_surf_colorscale = False # For figuring out which colorscale to use for Figure 6
 	median_surface_across_models = False # Figure 6 neural; median surface across models for each dataset
 
 	# Component specific
 	plot_barplot_across_inhouse_models = False # Figure 8A) for components (in-house models)
-	plot_scatter_comp_vs_comp = True # Figure 8B) for components (in-house models)
+	plot_scatter_comp_vs_comp = False # Figure 8B) for components (in-house models)
 	plot_scatter_pred_vs_actual = False # Figure 4, scatter for components
 
 
-target = 'B2021'
+target = 'NH2015comp'
 
 # Logging
 date = datetime.datetime.now().strftime("%m%d%Y-%T")
@@ -95,7 +95,8 @@ if user != 'gt':
 # 				 'ResNet50wordClean', 'ResNet50wordCleanSeed2']
 # source_models = ['Kell2018word', 'Kell2018wordClean', 'Kell2018wordSeed2', 'Kell2018wordCleanSeed2',
 # 				 'ResNet50word', 'ResNet50wordClean', 'ResNet50wordSeed2', 'ResNet50wordCleanSeed2']
-
+source_models = ['Kell2018wordClean', 'Kell2018wordCleanSeed2',
+				 'ResNet50wordClean', 'ResNet50wordCleanSeed2',]
 
 print(f'---------- Target: {target} ----------')
 
@@ -154,11 +155,9 @@ if concat_over_models:  # assemble plots across models
 			add_savestr = f'_task-grouped-ymin-0.2-empty-bar-inhouse-models_seed2'
 			sort_flag_manual = ['Kell2018word', 'ResNet50word', 'Kell2018speaker', 'ResNet50speaker', 'Kell2018music', 'ResNet50music',
 							   'Kell2018audioset','ResNet50audioset', 'Kell2018multitask','ResNet50multitask',]
-			sort_flag_manual_seed2 = ['Kell2018wordSeed2', 'ResNet50wordSeed2', 'Kell2018speakerSeed2', 'ResNet50speakerSeed2', 'Kell2018music', 'ResNet50music',
-							   'Kell2018audiosetSeed2','ResNet50audiosetSeed2', 'Kell2018multitaskSeed2','ResNet50multitaskSeed2',]
 
 			#### Best layer component predictions across models (independently selected layer) ####
-			for sort_flag in [sort_flag_manual_seed2]: #'performance', NH2015_all_models_performance_order
+			for sort_flag in [sort_flag_manual]: #'performance', NH2015_all_models_performance_order
 				# Remember to make source_models align with sort_flag
 				for randnetw_flag in ['False', 'True']: # 'False', 'True'
 					barplot_components_across_models(source_models=source_models,
@@ -172,6 +171,36 @@ if concat_over_models:  # assemble plots across models
 													 sort_by=sort_flag,
 													 add_in_spacing_bar=True,
 													 ylim=[0.2,1])
+
+		### For plotting in-house models barplot (Figure 8A) ###
+		if plot_word_clean_models:
+			source_model_lst = [['Kell2018word', 'Kell2018wordClean',
+							 'ResNet50word', 'ResNet50wordClean'],
+							 ['Kell2018wordSeed2', 'Kell2018wordCleanSeed2',
+							 'ResNet50wordSeed2', 'ResNet50wordCleanSeed2']]
+
+			#### Best layer component predictions across models (independently selected layer) ####
+			for source_models in source_model_lst:
+				# if all end with 'Seed2' then add savestr
+				if all([x.endswith('Seed2') for x in source_models]):
+					add_savestr = f'_seed2'
+				else:
+					add_savestr = f'_seed1'
+
+				for sort_flag in [source_models]: #'performance'
+					# Remember to make source_models align with sort_flag
+					for randnetw_flag in ['False',]: # 'False', 'True'
+						barplot_components_across_models(source_models=source_models,
+														 target=target,
+														 randnetw=randnetw_flag,
+														 value_of_interest='median_r2_test',
+														 yerr_type='median_r2_test_sem_over_it',
+														 save=SAVEDIR_CENTRALIZED,
+														 include_spectemp=True,
+														 sort_by=sort_flag,
+														 add_in_spacing_bar=False,
+														 ylim=[0, 1],
+														 add_savestr=f'_word-clean-models{add_savestr}')
 
 		
 		#### Scatter: comp1 vs comp2 predictivity across models (Figure 8B) ####
