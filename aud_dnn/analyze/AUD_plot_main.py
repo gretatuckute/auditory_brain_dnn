@@ -11,7 +11,7 @@ SURFDIR = f'{DATADIR}/fsavg_surf/'
 
 ### Settings for which plots to make ###
 save = True # Whether to save any plots/csvs
-concat_over_models = False
+concat_over_models = True
 
 # If concat_over_models = False, we load each individual model and perform the analysis on that
 if not concat_over_models:
@@ -39,7 +39,7 @@ if concat_over_models:
 	median_surface_across_models = False # Figure 6 neural; median surface across models for each dataset
 
 	# Component specific
-	plot_barplot_across_inhouse_models = True # Figure 8A) for components (in-house models)
+	plot_barplot_across_inhouse_models = False # Figure 8A) for components (in-house models)
 	plot_scatter_comp_vs_comp = True # Figure 8B) for components (in-house models)
 	plot_scatter_pred_vs_actual = False # Figure 4, scatter for components
 
@@ -83,11 +83,11 @@ if user != 'gt':
 # 				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2', 'ResNet50multitaskSeed2',]
 
 # Just seed 2 models
-source_models = ['Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
-				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
+# source_models = ['Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
+# 				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
 # Seed 2 models with music
-# source_models = ['Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018music', 'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
-# 				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50music', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
+source_models = ['Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018music', 'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
+				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50music', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
 # source_models = ['Kell2018word','Kell2018wordClean',
 # 				 'ResNet50word', 'ResNet50wordClean']
 # All clean word models
@@ -161,7 +161,7 @@ if concat_over_models:  # assemble plots across models
 			#### Best layer component predictions across models (independently selected layer) ####
 			for sort_flag in [sort_flag_manual_seed2]: #'performance', NH2015_all_models_performance_order
 				# Remember to make source_models align with sort_flag
-				for randnetw_flag in ['False']: # 'False', 'True'
+				for randnetw_flag in ['False', 'True']: # 'False', 'True'
 					barplot_components_across_models(source_models=source_models,
 													 target=target,
 													 randnetw=randnetw_flag,
@@ -181,22 +181,22 @@ if concat_over_models:  # assemble plots across models
 
 			#### Best layer component predictions across models (independently selected layer) as scatters ####
 
-			for randnetw_flag in ['False',]: # 'False', 'True',
+			for randnetw_flag in ['False', 'True']: # 'False', 'True',
 				if randnetw_flag == 'False':
 					ylim = [0.5, 1]
 				else:
 					ylim = [0, 1]
 
-				# scatter_components_across_models(source_models=source_models,
-				# 								 target=target,
-				# 								 randnetw=randnetw_flag,
-				# 								 aggregation='CV-splits-nit-10',
-				# 								 save=SAVEDIR_CENTRALIZED,
-				# 								 save_str=save_str,
-				# 								 include_spectemp=False,
-				# 								 ylim=ylim,
-				# 								 value_of_interest='median_r2_test',
-				# 								 sem_of_interest='median_r2_test_sem_over_it')
+				scatter_components_across_models(source_models=source_models,
+												 target=target,
+												 randnetw=randnetw_flag,
+												 aggregation='CV-splits-nit-10',
+												 save=SAVEDIR_CENTRALIZED,
+												 save_str=save_str,
+												 include_spectemp=False,
+												 ylim=ylim,
+												 value_of_interest='median_r2_test',
+												 sem_of_interest='median_r2_test_sem_over_it')
 
 				## Associated statistics - comp1 vs comp2 comparions for models of interest ##
 				# compare_CV_splits_nit(source_models=source_models,
@@ -212,15 +212,13 @@ if concat_over_models:  # assemble plots across models
 				# 					  aggregation='CV-splits-nit-10',
 				# 					  randnetw=randnetw_flag,)
 
-				# For in-house Seed2
+				# For in-house (Seed2)
 				compare_CV_splits_nit(source_models=source_models,
 									  target=target,
 									  save=save,
-									  save_str='all-models-seed1-vs-seed2-bootstrap', # Here we just run all models such that all numbers are in the same place
-									  models1 = ['Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018music', 'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
-					 			'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50music', 'ResNet50audiosetSeed2',   'ResNet50multitaskSeed2'],
-									  models2 = ['Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018music', 'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
-					 			'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50music', 'ResNet50audiosetSeed2',   'ResNet50multitaskSeed2'],
+									  save_str=save_str,
+									  models1 = source_models,
+									  models2 = source_models,
 									  aggregation='CV-splits-nit-10',
 									  randnetw=randnetw_flag,
 									  )
