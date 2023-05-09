@@ -11,7 +11,7 @@ SURFDIR = f'{DATADIR}/fsavg_surf/'
 
 ### Settings for which plots to make ###
 save = True # Whether to save any plots/csvs
-concat_over_models = False
+concat_over_models = True
 
 # If concat_over_models = False, we load each individual model and perform the analysis on that
 if not concat_over_models:
@@ -95,8 +95,6 @@ if user != 'gt':
 # 				 'ResNet50wordClean', 'ResNet50wordCleanSeed2']
 # source_models = ['Kell2018word', 'Kell2018wordClean', 'Kell2018wordSeed2', 'Kell2018wordCleanSeed2',
 # 				 'ResNet50word', 'ResNet50wordClean', 'ResNet50wordSeed2', 'ResNet50wordCleanSeed2']
-source_models = ['Kell2018wordClean', 'Kell2018wordCleanSeed2',
-				 'ResNet50wordClean', 'ResNet50wordCleanSeed2',]
 
 print(f'---------- Target: {target} ----------')
 
@@ -189,7 +187,7 @@ if concat_over_models:  # assemble plots across models
 
 				for sort_flag in [source_models]: #'performance'
 					# Remember to make source_models align with sort_flag
-					for randnetw_flag in ['False',]: # 'False', 'True'
+					for randnetw_flag in ['False','True']: # 'False', 'True'
 						barplot_components_across_models(source_models=source_models,
 														 target=target,
 														 randnetw=randnetw_flag,
@@ -201,6 +199,17 @@ if concat_over_models:  # assemble plots across models
 														 add_in_spacing_bar=False,
 														 ylim=[0, 1],
 														 add_savestr=f'_word-clean-models{add_savestr}')
+
+				# Run associated stats
+				compare_CV_splits_nit(source_models=source_models,
+									  target=target,
+									  save=save,
+									  save_str=f'_word-clean-models{add_savestr}',
+									  models1=source_models,
+									  models2=source_models,
+									  aggregation='CV-splits-nit-10',
+									  randnetw=randnetw_flag,
+									  )
 
 		
 		#### Scatter: comp1 vs comp2 predictivity across models (Figure 8B) ####
