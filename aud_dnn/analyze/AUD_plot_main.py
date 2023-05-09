@@ -34,7 +34,7 @@ if concat_over_models:
 	# Neural specific
 	plot_anat_roi_scatter = False # Figure 7 neural; scatter of performance across models for anatomical ROIs
 	stats_barplot_across_models = False # Figure 2 neural; stats for barplot of performance across models
-	plot_word_clean_models = False
+	plot_word_clean_models = True # Figure 9 for neural
 	determine_surf_colorscale = False # For figuring out which colorscale to use for Figure 6
 	median_surface_across_models = False # Figure 6 neural; median surface across models for each dataset
 
@@ -44,7 +44,7 @@ if concat_over_models:
 	plot_scatter_pred_vs_actual = False # Figure 4, scatter for components
 
 
-target = 'NH2015comp'
+target = 'NH2015'
 
 # Logging
 date = datetime.datetime.now().strftime("%m%d%Y-%T")
@@ -86,8 +86,8 @@ if user != 'gt':
 # source_models = ['Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
 # 				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
 # Seed 2 models with music
-source_models = ['Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018music', 'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
-				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50music', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
+# source_models = ['Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018music', 'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
+# 				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50music', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
 # source_models = ['Kell2018word','Kell2018wordClean',
 # 				 'ResNet50word', 'ResNet50wordClean']
 # All clean word models
@@ -95,7 +95,6 @@ source_models = ['Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018music', 
 # 				 'ResNet50wordClean', 'ResNet50wordCleanSeed2']
 # source_models = ['Kell2018word', 'Kell2018wordClean', 'Kell2018wordSeed2', 'Kell2018wordCleanSeed2',
 # 				 'ResNet50word', 'ResNet50wordClean', 'ResNet50wordSeed2', 'ResNet50wordCleanSeed2']
-# source_models = ['Kell2018wordSeed2','ResNet50wordSeed2',]
 
 
 print(f'---------- Target: {target} ----------')
@@ -311,36 +310,47 @@ if concat_over_models:  # assemble plots across models
 
 		# PERFORMANCE OF CLEAN SPEECH NETWORKS (2 SEEDS)
 		if plot_word_clean_models:
-			source_models = ['Kell2018word', 'Kell2018wordClean', 'Kell2018wordSeed2', 'Kell2018wordCleanSeed2',
-							 'ResNet50word', 'ResNet50wordClean', 'ResNet50wordSeed2', 'ResNet50wordCleanSeed2']
+			source_model_lst = [['Kell2018word', 'Kell2018wordClean',
+							 'ResNet50word', 'ResNet50wordClean'],
+							 ['Kell2018wordSeed2', 'Kell2018wordCleanSeed2',
+							 'ResNet50wordSeed2', 'ResNet50wordCleanSeed2']]
 
-			for sort_flag in [source_models]: # 'performance' NH2015_all_models_performance_order B2021_all_models_performance_order
+			for source_models in source_model_lst:
+
+				# if all the models end with Seed2, create add_savestr = '_seed2'
+				if all([model.endswith('Seed2') for model in source_models]):
+					add_savestr = '_seed2'
+				else:
+					add_savestr = '_seed1'
+
+				for sort_flag in [source_models]: # 'performance' NH2015_all_models_performance_order B2021_all_models_performance_order
+					for val_flag in ['median_r2_test_c', ]:
+						for agg_flag in ['CV-splits-nit-10']:
+							for randnetw_flag in ['False', 'True' ]: # 'False', 'True'
+
+								barplot_across_models(source_models=source_models,
+													  target=target,
+													  roi=None,
+													  save=SAVEDIR_CENTRALIZED,
+													  randnetw=randnetw_flag,
+													  aggregation=agg_flag,
+													  value_of_interest=val_flag,
+													  sort_by=sort_flag,
+													  add_savestr=f'_word-clean-models{add_savestr}')
+
+				# Run according stats
 				for val_flag in ['median_r2_test_c', ]:
-					for agg_flag in ['CV-splits-nit-10']:
-						for randnetw_flag in ['False', 'True' ]: # 'False', 'True'
-							barplot_across_models(source_models=source_models,
-												  target=target,
-												  roi=None,
-												  save=SAVEDIR_CENTRALIZED,
-												  randnetw=randnetw_flag,
-												  aggregation=agg_flag,
-												  value_of_interest=val_flag,
-												  sort_by=sort_flag,
-												  add_savestr=f'')
-
-			# Run according stats
-			for val_flag in ['median_r2_test_c', ]:
-				for randnetw_flag in ['False', 'True' ]: # 'False', 'True'
-					compare_models_subject_bootstrap(source_models=source_models,
-													 target=target,
-													 save=save,
-													 value_of_interest=val_flag,
-													 save_str='all-word-clean-models_subject-bootstrap',
-													 models1=source_models, # just compile everything in this csv
-													 models2=source_models,
-													 aggregation='CV-splits-nit-10',
-													 randnetw=randnetw_flag,
-													 include_spectemp=False)
+					for randnetw_flag in ['False', 'True' ]: # 'False', 'True'
+						compare_models_subject_bootstrap(source_models=source_models,
+														 target=target,
+														 save=save,
+														 value_of_interest=val_flag,
+														 save_str=f'_word-clean-models_subject-bootstrap{add_savestr}',
+														 models1=source_models, # just compile everything in this csv
+														 models2=source_models,
+														 aggregation='CV-splits-nit-10',
+														 randnetw=randnetw_flag,
+														 include_spectemp=False)
 
 
 		# ANATOMICAL SCATTER PLOTS

@@ -2189,7 +2189,7 @@ def barplot_across_models(source_models,
         xmax = np.unique((bar_placement[-1] + np.diff(bar_placement) / 2))
 
         fig, ax = plt.subplots(figsize=(6, 7.5))
-        ax.set_box_aspect(0.8)
+        ax.set_box_aspect(1)
         ax.hlines(xmin=xmin, xmax=xmax,
                   y=df_spectemp[f'{value_of_interest}_mean'].values, color='darkgrey',
                   zorder=2)
