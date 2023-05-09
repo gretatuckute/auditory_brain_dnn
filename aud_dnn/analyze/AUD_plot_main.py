@@ -11,7 +11,7 @@ SURFDIR = f'{DATADIR}/fsavg_surf/'
 
 ### Settings for which plots to make ###
 save = True # Whether to save any plots/csvs
-concat_over_models = True
+concat_over_models = False
 
 # If concat_over_models = False, we load each individual model and perform the analysis on that
 if not concat_over_models:
@@ -29,7 +29,7 @@ if not concat_over_models:
 if concat_over_models:
 	# Shared for neural and components
 	plot_barplot_across_models = False # Figure 2 for neural, Figure 5 for components; barplot of performance across models
-	plot_scatter_across_models = True # Figure 2, Seed1 vs Seed2 scatter for neural;
+	plot_scatter_across_models = False # Figure 2, Seed1 vs Seed2 scatter for neural;
 
 	# Neural specific
 	plot_anat_roi_scatter = False # Figure 7 neural; scatter of performance across models for anatomical ROIs
@@ -39,12 +39,12 @@ if concat_over_models:
 	median_surface_across_models = False # Figure 6 neural; median surface across models for each dataset
 
 	# Component specific
-	plot_barplot_across_inhouse_models = False # Figure 8A) for components (in-house models)
+	plot_barplot_across_inhouse_models = True # Figure 8A) for components (in-house models)
 	plot_scatter_comp_vs_comp = True # Figure 8B) for components (in-house models)
 	plot_scatter_pred_vs_actual = False # Figure 4, scatter for components
 
 
-target = 'B2021'
+target = 'NH2015comp'
 
 # Logging
 date = datetime.datetime.now().strftime("%m%d%Y-%T")
@@ -77,13 +77,15 @@ if user != 'gt':
 # 				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
 
 # All inhouse models that have both seed 1 and seed 2 (ie exclusing music)
-source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018audioset', 'Kell2018multitask',
-				'ResNet50word', 'ResNet50speaker', 'ResNet50audioset',  'ResNet50multitask',
-				 'Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
-				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2', 'ResNet50multitaskSeed2',]
+# source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018audioset', 'Kell2018multitask',
+# 				'ResNet50word', 'ResNet50speaker', 'ResNet50audioset',  'ResNet50multitask',
+# 				 'Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
+# 				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2', 'ResNet50multitaskSeed2',]
 
-# source_models = ['Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
-# 				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
+# Just seed 2 models
+source_models = ['Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
+				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
+# Seed 2 models with music
 # source_models = ['Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018music', 'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
 # 				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50music', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
 # source_models = ['Kell2018word','Kell2018wordClean',
@@ -150,13 +152,16 @@ if concat_over_models:  # assemble plots across models
 
 		### For plotting in-house models barplot (Figure 8A) ###
 		if plot_barplot_across_inhouse_models:
-			add_savestr = f'_task-grouped-ymin-0.2-empty-bar-inhouse-models'
+			add_savestr = f'_task-grouped-ymin-0.2-empty-bar-inhouse-models_seed2'
+			sort_flag_manual = ['Kell2018word', 'ResNet50word', 'Kell2018speaker', 'ResNet50speaker', 'Kell2018music', 'ResNet50music',
+							   'Kell2018audioset','ResNet50audioset', 'Kell2018multitask','ResNet50multitask',]
+			sort_flag_manual_seed2 = ['Kell2018wordSeed2', 'ResNet50wordSeed2', 'Kell2018speakerSeed2', 'ResNet50speakerSeed2', 'Kell2018music', 'ResNet50music',
+							   'Kell2018audiosetSeed2','ResNet50audiosetSeed2', 'Kell2018multitaskSeed2','ResNet50multitaskSeed2',]
 
 			#### Best layer component predictions across models (independently selected layer) ####
-			for sort_flag in [['Kell2018word', 'ResNet50word', 'Kell2018speaker', 'ResNet50speaker', 'Kell2018music',  'ResNet50music',
-							   'Kell2018audioset','ResNet50audioset', 'Kell2018multitask','ResNet50multitask',]]: #'performance', NH2015_all_models_performance_order
+			for sort_flag in [sort_flag_manual_seed2]: #'performance', NH2015_all_models_performance_order
 				# Remember to make source_models align with sort_flag
-				for randnetw_flag in ['False', 'True']:
+				for randnetw_flag in ['False']: # 'False', 'True'
 					barplot_components_across_models(source_models=source_models,
 													 target=target,
 													 randnetw=randnetw_flag,
@@ -172,11 +177,11 @@ if concat_over_models:  # assemble plots across models
 		
 		#### Scatter: comp1 vs comp2 predictivity across models (Figure 8B) ####
 		if plot_scatter_comp_vs_comp:
-			save_str = '_inhouse-models_symbols-no-err-Seed2' # !!!!!!!!
+			save_str = '_inhouse-models_symbols-no-err-seed2' # !!!!!!!!
 
 			#### Best layer component predictions across models (independently selected layer) as scatters ####
 
-			for randnetw_flag in ['False', 'True',]: # 'False', 'True',
+			for randnetw_flag in ['False',]: # 'False', 'True',
 				if randnetw_flag == 'False':
 					ylim = [0.5, 1]
 				else:
