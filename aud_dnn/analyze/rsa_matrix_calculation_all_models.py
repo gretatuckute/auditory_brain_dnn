@@ -354,9 +354,6 @@ def rsa_comparison_neural_roi(roi_names=['Primary', 'Lateral', 'Posterior', 'Ant
             plt.savefig(os.path.join(analysis_folder_name,
                         '-'.join(roi_names) + '_individual_roi_neural_rdms.pdf'))
 
-    if save_name_base is not None:
-        
-
 
 def rsa_cross_validated_all_models(randnetw='False', 
                                    save_name_base=None,
@@ -365,7 +362,8 @@ def rsa_cross_validated_all_models(randnetw='False',
                                    with_std=False,
                                    noise_correction=False,
                                    target='NH2015',
-                                   ignore_layer_keys=None):
+                                   ignore_layer_keys=None,
+                                   overwrite=False):
     """
     Runs the RSA analysis between fMRI activations and model responses, choosing 
     the best layer for each model (cross validated) for a summary measure. 
@@ -384,7 +382,8 @@ def rsa_cross_validated_all_models(randnetw='False',
                                                                                     distance_measure='spearman',
                                                                                     noise_correction=noise_correction,
                                                                                     target=target,
-                                                                                    ignore_layer_keys=ignore_layer_keys)
+                                                                                    ignore_layer_keys=ignore_layer_keys,
+                                                                                    overwrite=overwrite)
         else:
             rsa_analysis_dict[model] = run_cross_validated_rsa_to_choose_best_layer(model, 
                                                                                     randnetw=randnetw,
@@ -396,7 +395,8 @@ def rsa_cross_validated_all_models(randnetw='False',
                                                                                     distance_measure='spearman',
                                                                                     noise_correction=noise_correction,
                                                                                     target=target,
-                                                                                    ignore_layer_keys=ignore_layer_keys)
+                                                                                    ignore_layer_keys=ignore_layer_keys,
+                                                                                    overwrite=overwrite)
 
     return rsa_analysis_dict
 
@@ -411,7 +411,8 @@ def run_cross_validated_rsa_to_choose_best_layer(model_name,
                                                  reorder_sounds=True,
                                                  noise_correction=False,
                                                  target='NH2015',
-                                                 ignore_layer_keys=None):
+                                                 ignore_layer_keys=None,
+                                                 overwrite=False):
     """
     For a given model, runs the RSA analysis choosing the best layer with
     cross validation over sounds. 
@@ -429,6 +430,14 @@ def run_cross_validated_rsa_to_choose_best_layer(model_name,
                                                     with_std,
                                                     noise_correction))
         os.makedirs(analysis_folder_name, exist_ok=True)
+
+        # If we are not forcing overwriting, load in any results that are saved for the model.
+        # Assume that the plots are already made for the file. 
+        pckl_results_path = os.path.join(analysis_folder_name, 'rsa_cross_val_results_10_splits.pckl')
+        if os.path.isfile(pckl_results_path) and (not overwrite):
+            with open(pckl_results_path, 'rb') as f:
+                save_all_participant_info = pickle.load(f)
+            return save_all_participant_info 
 
     ## Setup splits ##
     np.random.seed(0)
@@ -705,6 +714,10 @@ def run_cross_validated_rsa_to_choose_best_layer(model_name,
                     'best_layer_correlation_matrix_with_labels.pdf'))
         plt.show()
 
+        # Save the results so that we can reload them later
+        with open(pckl_results_path, 'wb') as f:
+            pickle.dump(save_all_participant_info, f)
+
     return save_all_participant_info
 
 
@@ -721,10 +734,15 @@ def plot_correlation_matrix_with_color_categories(correlation_matrix,
     for category in sound_category_order:
         sound_idx_in_category = [c_idx for c_idx, c in enumerate(
             category_color_order) if c == category]
-        plt.plot([-6, -6], [sound_idx_in_category[0], sound_idx_in_category[-1]+1],
-                 color=d_sound_category_colors[category], linewidth=linewidth, solid_capstyle="butt", zorder=0)
-        plt.plot([sound_idx_in_category[0], sound_idx_in_category[-1]+1], [len(category_color_order) + 5, len(category_color_order) + 5],
-                 color=d_sound_category_colors[category], linewidth=linewidth, solid_capstyle="butt", zorder=0)
+        plt.fill_betweenx([sound_idx_in_category[0], sound_idx_in_category[-1]+1], 
+                          x1=[-6,-6], x2=[0,0], 
+                          facecolor=d_sound_category_colors[category],
+                          zorder=0, linewidth=0.0)
+        plt.fill_between([sound_idx_in_category[0], sound_idx_in_category[-1]+1], 
+                          y1=[len(category_color_order)+6,len(category_color_order)+6], 
+                          y2=[len(category_color_order),len(category_color_order)], 
+                          facecolor=d_sound_category_colors[category],
+                          zorder=0, linewidth=0.0)
 
     plt.pcolormesh(correlation_matrix, cmap='Greys',
                    zorder=100, vmin=climits[0], vmax=climits[1])
@@ -1131,7 +1149,7 @@ def make_best_layer_roi_scatter_plots_from_pckl(pckl_path,
                                  save_fig_path=save_fig_path)
 
 
-def make_best_layer_roi_scatter_plots(save_fig_path):
+def make_best_layer_roi_scatter_plots(save_fig_path, overwrite=False):
     """
     Makes the best layer scatter plots. 
     """
@@ -1144,7 +1162,8 @@ def make_best_layer_roi_scatter_plots(save_fig_path):
                                                                roi_name=ROI,
                                                                mean_subtract=True,
                                                                with_std=True,
-                                                               target=dataset)
+                                                               target=dataset,
+                                                               overwrite=overwrite)
             rsa_analysis_dict_all_rois[dataset][ROI] = rsa_analysis_dict
 
         plot_all_roi_rsa_scatter(rsa_analysis_dict_all_rois[dataset],
@@ -1158,7 +1177,8 @@ def make_best_layer_roi_scatter_plots(save_fig_path):
                                                                mean_subtract=True,
                                                                with_std=True,
                                                                target=dataset,
-                                                               ignore_layer_keys=['input_after_preproc'])
+                                                               ignore_layer_keys=['input_after_preproc'],
+                                                               overwrite=overwrite)
             rsa_analysis_dict_all_rois_permuted[dataset][ROI] = rsa_analysis_dict
 
         plot_all_roi_rsa_scatter(rsa_analysis_dict_all_rois_permuted[dataset],
@@ -1195,7 +1215,7 @@ def make_all_voxel_rsa_bar_plots_from_pckl(pckl_path, save_fig_path):
                                        save_fig_path=save_fig_path)
 
 
-def make_all_voxel_rsa_bar_plots(save_fig_path):
+def make_all_voxel_rsa_bar_plots(save_fig_path, overwrite=False):
     """
     Get the plots for the RSA across all models (Figure 2)
     """
@@ -1206,7 +1226,8 @@ def make_all_voxel_rsa_bar_plots(save_fig_path):
                                                                    mean_subtract=True,
                                                                    with_std=True,
                                                                    target=dataset,
-                                                                   save_name_base=save_fig_path)
+                                                                   save_name_base=save_fig_path,
+                                                                   overwrite=overwrite)
 
         all_dataset_rsa_dict[dataset] = {'trained': rsa_analysis_dict_trained}
         model_ordering = plot_ordered_cross_val_RSA(rsa_analysis_dict_trained,
@@ -1221,7 +1242,8 @@ def make_all_voxel_rsa_bar_plots(save_fig_path):
                                                                     mean_subtract=True,
                                                                     with_std=True,
                                                                     target=dataset,
-                                                                    save_name_base=save_fig_path)
+                                                                    save_name_base=save_fig_path,
+                                                                    overwrite=overwrite)
 
         _ = plot_ordered_cross_val_RSA(rsa_analysis_dict_permuted,
                                        model_ordering=model_ordering,
