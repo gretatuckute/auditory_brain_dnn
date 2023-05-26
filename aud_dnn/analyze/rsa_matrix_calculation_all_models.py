@@ -400,55 +400,6 @@ def rsa_cross_validated_all_models(randnetw='False',
 
     return rsa_analysis_dict
 
-
-# TODO: This should be moved to helpers, rather than part of RSA
-def check_num_sounds_with_all_same_activations(model_name, 
-                                               randnetw='False',
-                                               mean_subtract=False,
-                                               with_std=False):
-    """
-    Helper to check for layers where the sounds lead to all the same activations
-    in a particular units. 
-    """ 
-    all_model_layers_count_sound_all_same = {}
-    for model_layer in d_layer_reindex[model_name]:
-        all_model_features = get_source_features(source_model=model_name,
-                                                 source_layer=model_layer,
-                                                 source_layer_map=source_layer_map,
-                                                 stimuli_IDs=stimuli_IDs,
-                                                 randnetw=randnetw,
-                                                 CACHEDIR=CACHEDIR)
-
-        # Get a matrix using all of the data.
-        if mean_subtract:
-            scalar_all_data = StandardScaler(
-                with_std=with_std).fit(all_model_features)
-            all_network_activation = scalar_all_data.transform(
-                all_model_features)
-        else:
-            all_network_activation = all_model_features
-        all_model_layers_count_sound_all_same[model_layer] = sum(
-            all_network_activation.std(1) == 0)
-
-    return all_model_layers_count_sound_all_same
-
-# TODO: This should be moved to helpers, rather than part of RSA
-def count_dead_units_all_models(randnetw='False',
-                                mean_subtract=False,
-                                with_std=False):
-    """
-    Goes through the list of models and counds the number of dead units. 
-    """
-    num_sounds_with_all_same_activations = {}
-    for model, layers in d_layer_reindex.items():
-        if (model in ['spectemp']) and randnetw == 'True':
-            continue
-        print('Analyzing model %s' % model)
-        num_sounds_with_all_same_activations[model] = check_num_sounds_with_all_same_activations(
-            model, randnetw=randnetw, mean_subtract=mean_subtract, with_std=with_std)
-    return num_sounds_with_all_same_activations
-
-
 def run_cross_validated_rsa_to_choose_best_layer(model_name,
                                                  randnetw='False',
                                                  save_name_base=None, 
