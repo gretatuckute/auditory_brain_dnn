@@ -1,6 +1,10 @@
 """
 Performs RSA analysis. 
 """
+import sys  # TODO: this is a bit hacky TODO: remove with installation script.
+sys.path.append('/om2/user/jfeather/projects/auditory_brain_dnn')
+print(sys.path)
+
 import pandas as pd
 import matplotlib
 from scipy.stats import wilcoxon
@@ -15,11 +19,8 @@ import matplotlib.pylab as plt
 import argparse
 import h5py
 import os
-from aud_dnn.resources import d_layer_reindex, d_sound_category_colors, sound_category_order, d_model_colors, d_model_names
+from aud_dnn.resources import d_layer_reindex, d_sound_category_colors, sound_category_order, d_model_colors, d_model_names, source_layer_map
 from sklearn.preprocessing import StandardScaler
-import sys  # TODO: this is a bit hacky TODO: remove with installation script.
-sys.path.append('../../')  # TODO: remove
-sys.path.append('../')
 
 try:
     import pingouin as pg
@@ -37,6 +38,7 @@ matplotlib.rcParams['svg.fonttype'] = 'none'
 
 DATADIR = (Path(os.getcwd()) / '..' / 'data').resolve()
 RESULTDIR = (Path(os.getcwd()) / '..' / 'results').resolve()
+CACHEDIR = (Path(os.getcwd()) / '..' / 'model_actv').resolve().as_posix()
 
 # TODO: move this into utils?
 ## Stimuli (original indexing, activations are extracted in this order) ##
@@ -85,35 +87,13 @@ def correlate_two_matrices_rsa(matrix_1, matrix_2, distance_measure='pearson'):
         r, _ = stats.spearmanr(matrix_1[upper_tri], matrix_2[upper_tri])
         return r
 
-def noise_correct_two_roi_from_scan_splits(true_r, split_r_roi_1, split_r_roi_2, data_len):
-    if data_len == 82:  # TODO: are thse the right floors for this analysis? # If we are using spearman, are these values the same?????
-        correlation_floor = 0.182
-    elif data_len == 83:
-        correlation_floor = 0.183
-    elif data_len == 165:
-        correlation_floor = 0
-    else:
-        raise ValueError('Not Implemented For this data len')
-
-    rv_med_roi_1 = np.median(split_r_roi_1)
-    rv_roi_1 = np.max(
-        [3 * rv_med_roi_1 / (1 + 2 * rv_med_roi_1), correlation_floor])
-
-    rv_med_roi_2 = np.median(split_r_roi_2)
-    rv_roi_2 = np.max(
-        [3 * rv_med_roi_2 / (1 + 2 * rv_med_roi_2), correlation_floor])
-
-    # TODO: What should this be?
-    return true_r / np.sqrt(rv_roi_1 * rv_roi_2)
-
-def get_neural_data_matrix(roi_name=None, 
-                           data_by_participant=False, 
+def get_neural_data_matrix(roi_name=None,
+                           data_by_participant=False,
                            reorder_sounds=True,
-                           noise_correction=False,
                            target='NH2015'):
-    # TODO: update for Dana's data too.
-    DATADIR = '/om/user/gretatu/aud-dnn/data'
-
+    """
+    Loads in the neural data for the specified target. 
+    """
     if target == 'NH2015':
         voxel_meta_with_roi = pd.read_pickle(os.path.join(
             DATADIR, f'neural/{target}/df_roi_meta.pkl'))
@@ -154,19 +134,30 @@ def get_neural_data_matrix(roi_name=None,
         all_participant_data = {}
         for participant in np.unique(voxel_meta['subj_idx']):
             is_in_participant = voxel_meta['subj_idx'] == participant
-            all_participant_data['participant_%d' % participant] = {'voxel_data': voxel_data[:, is_in_participant, :],
-                                                                    'voxel_meta': voxel_meta[is_in_participant]}
+            all_participant_data['participant_%d' % participant] = {
+                'voxel_data': voxel_data[:, is_in_participant, :],
+                'voxel_meta': voxel_meta[is_in_participant]}
         return all_participant_data
     else:
         return {'voxel_data': voxel_data, 'voxel_meta': voxel_meta}
 
 
-def get_all_participants_correlation_matrices(participant_neural_data_dict, all_splits_train_test_bool, mean_subtract, with_std, corr_type_matrix, distance_measure, noise_correction, n_CV_splits):
+def get_all_participants_correlation_matrices(participant_neural_data_dict, 
+                                              all_splits_train_test_bool,
+                                              mean_subtract,
+                                              with_std,
+                                              corr_type_matrix,
+                                              noise_correction,
+                                              n_CV_splits):
+    """
+    For each participant, computes the correlation matrix. This is performed 
+    across multiple data splits if applicable. 
+    """
     all_participants_neural_rsa_matrix = {}
     for participant_id, participant_info in participant_neural_data_dict.items():
         all_participants_neural_rsa_matrix[participant_id] = {
             'train_corr_matrix': [], 'test_corr_matrix': [], 'r_scan_splits': []}
-        # First make a matrix on all of the data for visualization purposes. # TODO: should this be on splits? Or is it fine to use all of it for visualization?
+        # Make a matrix on all of the data for visualization purposes.
         if mean_subtract:
             scalar_transform = StandardScaler(with_std=with_std).fit(
                 participant_info['voxel_data'].mean(2))
@@ -175,7 +166,6 @@ def get_all_participants_correlation_matrices(participant_neural_data_dict, all_
         else:
             all_voxel_activations = participant_info['voxel_data'].mean(2)
 
-        # TODO: should these be noise corrected? Not sure.
         all_participants_neural_rsa_matrix[participant_id]['all_data_corr_mat'] = run_correlation_on_feature_matrix(
             all_voxel_activations, corr_type=corr_type_matrix)
 
@@ -221,17 +211,15 @@ def get_all_participants_correlation_matrices(participant_neural_data_dict, all_
     # Only do this once.
     if n_CV_splits > 1:
         for participant_id in participant_neural_data_dict.keys():
-            all_participants_neural_rsa_matrix[participant_id]['leave_one_out_neural_r_cv_test_splits'] = [
-            ]
+            all_participants_neural_rsa_matrix[participant_id]['leave_one_out_neural_r_cv_test_splits'] = []
             for split_idx in range(n_CV_splits):
                 this_participant = all_participants_neural_rsa_matrix[
                     participant_id]['test_corr_matrix'][split_idx]
                 other_participants = np.array([all_participants_neural_rsa_matrix[p]['test_corr_matrix'][split_idx]
                                               for p in participant_neural_data_dict.keys() if p != participant_id])
                 other_participants_avg = other_participants.mean(0)
-                all_participants_neural_rsa_matrix[participant_id]['leave_one_out_neural_r_cv_test_splits'].append(correlate_two_matrices_rsa(this_participant,
-                                                                                                                                              other_participants_avg,
-                                                                                                                                              ))
+                all_participants_neural_rsa_matrix[participant_id]['leave_one_out_neural_r_cv_test_splits'].append(
+                    correlate_two_matrices_rsa(this_participant, other_participants_avg))
     else:
         for participant_id in participant_neural_data_dict.keys():
             all_participants_neural_rsa_matrix[participant_id]['leave_one_out_neural_r_cv_test_splits'] = np.nan
@@ -240,7 +228,9 @@ def get_all_participants_correlation_matrices(participant_neural_data_dict, all_
 
 
 def get_train_test_splits_bool(n_CV_splits, n_for_train, n_for_test, n_stim):
-    # Randomly pick train/test indices. Reuse for model layers and participants.
+    """
+    Randomly pick train/test splits. Reuse the same splits for model layers and participants. 
+    """
     all_splits_train_test_bool = []
     for split_idx in range(n_CV_splits):
         train_data_idxs = np.random.choice(
@@ -260,7 +250,21 @@ def get_train_test_splits_bool(n_CV_splits, n_for_train, n_for_test, n_stim):
     return all_splits_train_test_bool
 
 
-def rsa_comparison_neural_roi(roi_names=['Primary', 'Lateral', 'Posterior', 'Anterior'], save_name_base=None, mean_subtract=False, with_std=False, reorder_sounds=True, corr_type_matrix='pearson', distance_measure='spearman', extra_title_str='', noise_correction=False, target='NH2015', climits=[0, 1.5], with_tick_labels=False):
+def rsa_comparison_neural_roi(roi_names=['Primary', 'Lateral', 'Posterior', 'Anterior'], 
+                              save_name_base=None,
+                              mean_subtract=False,
+                              with_std=False,
+                              reorder_sounds=True,
+                              corr_type_matrix='pearson',
+                              distance_measure='spearman',
+                              extra_title_str='',
+                              noise_correction=False,
+                              target='NH2015',
+                              climits=[0, 1.5],
+                              with_tick_labels=False):
+    """
+    Runs an RSA comparison between activations in given neural ROIs. 
+    """
     if save_name_base is not None:
         analysis_folder_name = os.path.join(save_name_base, target, "%s_corr-%s_distance-%s_meansub-%s_withstd-%s" % (
             'fmri-data-comparison', corr_type_matrix, distance_measure, mean_subtract, with_std))
@@ -268,8 +272,8 @@ def rsa_comparison_neural_roi(roi_names=['Primary', 'Lateral', 'Posterior', 'Ant
 
     ## Setup splits ##
     np.random.seed(0)
-    n_CV_splits = 1
     # Here we don't need to choose a "best" layer so we can use all of the sounds for constructing the RDM.
+    n_CV_splits = 1
     n_for_train = 165
     n_for_test = 0
     n_stim = 165
@@ -287,7 +291,6 @@ def rsa_comparison_neural_roi(roi_names=['Primary', 'Lateral', 'Posterior', 'Ant
                                                                                                  mean_subtract,
                                                                                                  with_std,
                                                                                                  corr_type_matrix,
-                                                                                                 distance_measure,
                                                                                                  noise_correction,
                                                                                                  n_CV_splits)
 
@@ -352,31 +355,72 @@ def rsa_comparison_neural_roi(roi_names=['Primary', 'Lateral', 'Posterior', 'Ant
                         '-'.join(roi_names) + '_individual_roi_neural_rdms.pdf'))
 
 
-def rsa_cross_validated_all_models(randnetw='False', save_name_base=None, roi_name=None, mean_subtract=False, with_std=False, noise_correction=False, target='NH2015', ignore_layer_keys=None):
+def rsa_cross_validated_all_models(randnetw='False', 
+                                   save_name_base=None,
+                                   roi_name=None,
+                                   mean_subtract=False,
+                                   with_std=False,
+                                   noise_correction=False,
+                                   target='NH2015',
+                                   ignore_layer_keys=None):
+    """
+    Runs the RSA analysis between fMRI activations and model responses, choosing 
+    the best layer for each model (cross validated) for a summary measure. 
+    """
     rsa_analysis_dict = {}
-    # TODO: handle all zero rows better.
     for model, layers in d_layer_reindex.items():
         # These models don't have random activations saved.
+        # TODO @gretatuckute have these moels just been removed at this point? I think they were old? 
         if (model in ['Kell2018init', 'ResNet50init', 'wav2vecpower']) and randnetw == 'True':
             continue
         elif (model in ['wav2vecpower', 'ResNet50init', 'Kell2018init']):
             continue
         print('Analyzing model %s' % model)
-        if model == 'spectemp':  # No random model for spectemmp
-            rsa_analysis_dict[model] = run_cross_validated_rsa_to_choose_best_layer(model, randnetw='False', save_name_base=save_name_base, roi_name=roi_name, mean_subtract=mean_subtract, with_std=with_std,
-                                                                                    corr_type_matrix='pearson', distance_measure='spearman', noise_correction=noise_correction, target=target, ignore_layer_keys=ignore_layer_keys)  # TODO: add other options
+        if model == 'spectemp':  # No random model for spectemp, but we still use as baseline. 
+            rsa_analysis_dict[model] = run_cross_validated_rsa_to_choose_best_layer(model, 
+                                                                                    randnetw='False',
+                                                                                    save_name_base=save_name_base,
+                                                                                    roi_name=roi_name,
+                                                                                    mean_subtract=mean_subtract,
+                                                                                    with_std=with_std,
+                                                                                    corr_type_matrix='pearson',
+                                                                                    distance_measure='spearman',
+                                                                                    noise_correction=noise_correction,
+                                                                                    target=target,
+                                                                                    ignore_layer_keys=ignore_layer_keys)
         else:
-            rsa_analysis_dict[model] = run_cross_validated_rsa_to_choose_best_layer(model, randnetw=randnetw, save_name_base=save_name_base, roi_name=roi_name, mean_subtract=mean_subtract, with_std=with_std,
-                                                                                    corr_type_matrix='pearson', distance_measure='spearman', noise_correction=noise_correction, target=target, ignore_layer_keys=ignore_layer_keys)  # TODO: add other options
+            rsa_analysis_dict[model] = run_cross_validated_rsa_to_choose_best_layer(model, 
+                                                                                    randnetw=randnetw,
+                                                                                    save_name_base=save_name_base,
+                                                                                    roi_name=roi_name,
+                                                                                    mean_subtract=mean_subtract,
+                                                                                    with_std=with_std,
+                                                                                    corr_type_matrix='pearson',
+                                                                                    distance_measure='spearman',
+                                                                                    noise_correction=noise_correction,
+                                                                                    target=target,
+                                                                                    ignore_layer_keys=ignore_layer_keys)
 
     return rsa_analysis_dict
 
 
-def check_num_sounds_with_all_same_activations(model_name, randnetw='False', mean_subtract=False, with_std=False):
+# TODO: This should be moved to helpers, rather than part of RSA
+def check_num_sounds_with_all_same_activations(model_name, 
+                                               randnetw='False',
+                                               mean_subtract=False,
+                                               with_std=False):
+    """
+    Helper to check for layers where the sounds lead to all the same activations
+    in a particular units. 
+    """ 
     all_model_layers_count_sound_all_same = {}
     for model_layer in d_layer_reindex[model_name]:
-        all_model_features = get_source_features(
-            model_name, model_layer, randnetw=randnetw, stimuli_IDs=stimuli_IDs)
+        all_model_features = get_source_features(source_model=model_name,
+                                                 source_layer=model_layer,
+                                                 source_layer_map=source_layer_map,
+                                                 stimuli_IDs=stimuli_IDs,
+                                                 randnetw=randnetw,
+                                                 CACHEDIR=CACHEDIR)
 
         # Get a matrix using all of the data.
         if mean_subtract:
@@ -391,11 +435,17 @@ def check_num_sounds_with_all_same_activations(model_name, randnetw='False', mea
 
     return all_model_layers_count_sound_all_same
 
-
-def count_dead_units_all_models(randnetw='False', mean_subtract=False, with_std=False):
+# TODO: This should be moved to helpers, rather than part of RSA
+def count_dead_units_all_models(randnetw='False',
+                                mean_subtract=False,
+                                with_std=False):
+    """
+    Goes through the list of models and counds the number of dead units. 
+    """
     num_sounds_with_all_same_activations = {}
     for model, layers in d_layer_reindex.items():
         # These models don't have random activations saved.
+        # TODO @gretatuckute have these moels just been removed at this point? I think they were old? 
         if (model in ['Kell2018init', 'ResNet50init', 'wav2vecpower', 'spectemp']) and randnetw == 'True':
             continue
         if (model in ['wav2vecpower', 'ResNet50init', 'Kell2018init']):
@@ -406,11 +456,34 @@ def count_dead_units_all_models(randnetw='False', mean_subtract=False, with_std=
     return num_sounds_with_all_same_activations
 
 
-def run_cross_validated_rsa_to_choose_best_layer(model_name, randnetw='False', save_name_base=None, roi_name=None, corr_type_matrix='pearson', distance_measure='spearman', mean_subtract=False, with_std=False, reorder_sounds=True, noise_correction=False, target='NH2015', ignore_layer_keys=None):
-
+def run_cross_validated_rsa_to_choose_best_layer(model_name,
+                                                 randnetw='False',
+                                                 save_name_base=None, 
+                                                 roi_name=None,
+                                                 corr_type_matrix='pearson',
+                                                 distance_measure='spearman',
+                                                 mean_subtract=False,
+                                                 with_std=False,
+                                                 reorder_sounds=True,
+                                                 noise_correction=False,
+                                                 target='NH2015',
+                                                 ignore_layer_keys=None):
+    """
+    For a given model, runs the RSA analysis choosing the best layer with
+    cross validation over sounds. 
+    """
     if save_name_base is not None:
-        analysis_folder_name = os.path.join(save_name_base, target, "%s_rand-%s_roi-%s_corr-%s_distance-%s_meansub-%s_withstd-%s-noisecorrect-%s" % (
-            model_name, randnetw, roi_name, corr_type_matrix, distance_measure, mean_subtract, with_std, noise_correction))
+        analysis_folder_name = os.path.join(save_name_base, 
+                                            target, 
+                                            "%s_rand-%s_roi-%s_corr-%s_distance-%s_meansub-%s_withstd-%s-noisecorrect-%s" % (
+                                                    model_name,
+                                                    randnetw,
+                                                    roi_name,
+                                                    corr_type_matrix,
+                                                    distance_measure,
+                                                    mean_subtract,
+                                                    with_std,
+                                                    noise_correction))
         os.makedirs(analysis_folder_name, exist_ok=True)
 
     ## Setup splits ##
@@ -427,9 +500,18 @@ def run_cross_validated_rsa_to_choose_best_layer(model_name, randnetw='False', s
     print('Measuring the correlation matrix for each participant')
     # Measure the train and test correlation matrix for each participant for each split
     participant_neural_data_dict = get_neural_data_matrix(
-        roi_name=roi_name, data_by_participant=True, reorder_sounds=reorder_sounds, target=target)
+                                        roi_name=roi_name, 
+                                        data_by_participant=True,
+                                        reorder_sounds=reorder_sounds,
+                                        target=target)
     all_participants_neural_rsa_matrix = get_all_participants_correlation_matrices(
-        participant_neural_data_dict, all_splits_train_test_bool, mean_subtract, with_std, corr_type_matrix, distance_measure, noise_correction, n_CV_splits)
+                                                participant_neural_data_dict, 
+                                                all_splits_train_test_bool, 
+                                                mean_subtract,
+                                                with_std, 
+                                                corr_type_matrix,
+                                                noise_correction,
+                                                n_CV_splits)
 
     print('Measuring the correlation matrix for each model and each layer')
     # For each layer of the model, measure the correlation matrix for the train and test splits.
@@ -443,8 +525,13 @@ def run_cross_validated_rsa_to_choose_best_layer(model_name, randnetw='False', s
 
         activations_layers_order.append(model_layer)
 
-        all_model_features = get_source_features(
-            model_name, model_layer, randnetw=randnetw, stimuli_IDs=stimuli_IDs)
+        all_model_features = get_source_features(source_model=model_name,
+                                                 source_layer=model_layer,
+                                                 source_layer_map=source_layer_map,
+                                                 stimuli_IDs=stimuli_IDs,
+                                                 randnetw=randnetw,
+                                                 CACHEDIR=CACHEDIR)
+
         if reorder_sounds:
             all_model_features = all_model_features[correlation_plot_order, :]
 
@@ -535,7 +622,6 @@ def run_cross_validated_rsa_to_choose_best_layer(model_name, randnetw='False', s
         # Run using the whole correlation matrix -- this is used for the argmax analysis (because we aren't comparing the values)
 
         for split_idx in range(n_CV_splits):
-            # TODO: how to handle singular matrix?
             all_layer_training_correlations = [correlate_two_matrices_rsa(all_model_layers_rsa_matrix[model_layer]['train_corr_matrix'][split_idx],
                                                                           participant_correlations['train_corr_matrix'][split_idx],
                                                                           distance_measure=distance_measure)
@@ -678,30 +764,30 @@ def run_cross_validated_rsa_to_choose_best_layer(model_name, randnetw='False', s
     return save_all_participant_info
 
 
-def plot_correlation_matrix_with_color_categories(correlation_matrix, with_tick_labels=False, linewidth=25, climits=[None, None]):
+def plot_correlation_matrix_with_color_categories(correlation_matrix,
+                                                  with_tick_labels=False,
+                                                  linewidth=25,
+                                                  climits=[None, None]):
+    """
+    Plots the correlation matrix and includes color labels on the x and y 
+    axes corresponding to the sound categories. 
+    """
     stimuli_id_ticks = [stimuli_IDs[s_idx] for s_idx in correlation_plot_order]
 
-#     plt.imshow(correlation_matrix,cmap='Greys', origin='lower')
     for category in sound_category_order:
         sound_idx_in_category = [c_idx for c_idx, c in enumerate(
             category_color_order) if c == category]
-#         plt.plot([-3, -3], [sound_idx_in_category[0]-0.5, sound_idx_in_category[-1]+0.5], color=d_sound_category_colors[category], linewidth=linewidth, solid_capstyle="butt", zorder=0)
-#         plt.plot([sound_idx_in_category[0]-0.5, sound_idx_in_category[-1]+0.5], [len(category_color_order) + 2, len(category_color_order) + 2], color=d_sound_category_colors[category], linewidth=linewidth, solid_capstyle="butt", zorder=0)
-
         plt.plot([-6, -6], [sound_idx_in_category[0], sound_idx_in_category[-1]+1],
                  color=d_sound_category_colors[category], linewidth=linewidth, solid_capstyle="butt", zorder=0)
         plt.plot([sound_idx_in_category[0], sound_idx_in_category[-1]+1], [len(category_color_order) + 5, len(category_color_order) + 5],
                  color=d_sound_category_colors[category], linewidth=linewidth, solid_capstyle="butt", zorder=0)
 
-#     plt.imshow(correlation_matrix,cmap='Greys', origin='lower', zorder=100, vmin=climits[0], vmax=climits[1], interpolation='none', rasterized=True)
     plt.pcolormesh(correlation_matrix, cmap='Greys',
                    zorder=100, vmin=climits[0], vmax=climits[1])
     plt.colorbar(fraction=0.046, pad=0.04)
     plt.gca().set_aspect(1)
     plt.gca().invert_yaxis()
 
-#     plt.xlim([-3.5, correlation_matrix.shape[0]-0.5])
-#     plt.ylim([correlation_matrix.shape[0]+2.5, -0.5])
     plt.xlim([-4, correlation_matrix.shape[0]])
     plt.ylim([correlation_matrix.shape[0]+4, 0])
     if with_tick_labels:
@@ -713,7 +799,16 @@ def plot_correlation_matrix_with_color_categories(correlation_matrix, with_tick_
         plt.axis('off')
 
 
-def plot_ordered_cross_val_RSA(rsa_analysis_dict, model_ordering=None, alpha=1, extra_title_str='', save_fig_path=None, use_165_sounds_for_fMRI_ceiling=True):
+def plot_ordered_cross_val_RSA(rsa_analysis_dict,
+                               model_ordering=None, 
+                               alpha=1, 
+                               extra_title_str='', 
+                               save_fig_path=None, 
+                               use_165_sounds_for_fMRI_ceiling=True):
+    """
+    Plots each model from the RSA analysis as a bar plot, ordered by their scores
+    or by the specified model_ordering. 
+    """
     participant_ids = np.sort(list(rsa_analysis_dict['Kell2018music'].keys()))
     leave_one_out_neural_r = None
     all_model_names = []
@@ -831,7 +926,13 @@ def plot_ordered_cross_val_RSA(rsa_analysis_dict, model_ordering=None, alpha=1, 
     return df_grouped.source_model.to_numpy()
 
 
-def get_mean_and_sem_best_layer(model_participant_matrix,  all_model_names, roi_name):
+def get_mean_and_sem_best_layer(model_participant_matrix,
+                                all_model_names,
+                                roi_name):
+    """
+    Makes a data frame with the mean and sem for each model across
+    participants.  
+    """
     mean_subtract_models = model_participant_matrix - \
         np.nanmean(model_participant_matrix, 0)
     y_err_within_participant = np.nanstd(
@@ -846,7 +947,16 @@ def get_mean_and_sem_best_layer(model_participant_matrix,  all_model_names, roi_
     return df_grouped
 
 
-def load_all_models_best_layer_df(pckl_path, target, roi_non_primary, permuted=True, use_all_165_sounds=True, save_fig_path=None):
+def load_all_models_best_layer_df(pckl_path,
+                                  target,
+                                  roi_non_primary,
+                                  permuted=True,
+                                  use_all_165_sounds=True,
+                                  save_fig_path=None):
+    """
+    Loads in the RSA analyses for the best layer analysis comparing the primary 
+    ROI to a specified non-primary ROI. 
+    """
     with open(pckl_path, 'rb') as f:
         best_layer_roi_data_dict = pickle.load(f)
 
@@ -895,7 +1005,6 @@ def load_all_models_best_layer_df(pckl_path, target, roi_non_primary, permuted=T
                                              combine_roi_model_dict['Primary']['all_model_names'],
                                              'Primary')
 
-    # TODO: do we want to list through them?
     for roi_idx, roi_name in enumerate([roi_non_primary]):
         df_roi = get_mean_and_sem_best_layer(combine_roi_model_dict[roi_name]['model_participant_matrix'],
                                              combine_roi_model_dict[roi_name]['all_model_names'],
@@ -905,7 +1014,14 @@ def load_all_models_best_layer_df(pckl_path, target, roi_non_primary, permuted=T
     return two_roi_df
 
 
-def plot_all_roi_rsa_scatter(rsa_analysis_dict_all_rois, extra_title_str='', use_all_165_sounds=True, save_fig_path=None):
+def plot_all_roi_rsa_scatter(rsa_analysis_dict_all_rois,
+                             extra_title_str='',
+                             use_all_165_sounds=True,
+                             save_fig_path=None):
+    """
+    Makes the best layer scatter plot comparing the primary ROI "best layer" 
+    to the non-primary ROI "best layer". 
+    """
     if use_all_165_sounds:
         rsa_key = 'all_data_rsa_for_best_layer'
     else:
@@ -966,7 +1082,6 @@ def plot_all_roi_rsa_scatter(rsa_analysis_dict_all_rois, extra_title_str='', use
         avg_best_roi = df_roi['%s_mean_values' % roi_name].mean()
         print(f'{extra_title_str} Avg across models best layer Primary: {avg_best_primary}, ROI: {avg_best_roi}')
 
-        # This doesn't propagate the errors from the participants, but maybe thats fine?
         w, p = wilcoxon(df_primary['Primary_mean_values'],
                         df_roi['%s_mean_values' % roi_name])
         print(f'{extra_title_str} Wilcoxon signed-rank test between Primary and {roi_name}: {w}, p-value: {p:.5f}')
@@ -1010,17 +1125,23 @@ def plot_all_roi_rsa_scatter(rsa_analysis_dict_all_rois, extra_title_str='', use
 
 
 def make_paper_plots(save_fig_path='rsa_plots'):
+    """
+    Makes all of the RSA plots used for the paper. 
+    """
     # Figure 2
     make_all_voxel_rsa_bar_plots(save_fig_path=save_fig_path)
 
     # Figure 5 schematic (and supplement)
-#     make_neural_roi_rdms(save_fig_path=save_fig_path)
+    make_neural_roi_rdms(save_fig_path=save_fig_path)
 
     # Figure 5, and Supplement Fig
-#     make_best_layer_roi_scatter_plots(save_fig_path)
+    make_best_layer_roi_scatter_plots(save_fig_path)
 
 
 def make_neural_roi_rdms(save_fig_path):
+    """
+    Makes the RDM for each of the neural ROIs. 
+    """
     for dataset in ['NH2015', 'B2021']:
         rsa_comparison_neural_roi(mean_subtract=True,
                                   with_std=True,
@@ -1044,7 +1165,11 @@ def make_neural_roi_rdms(save_fig_path):
                                   save_name_base=save_fig_path)
 
 
-def make_best_layer_roi_scatter_plots_from_pckl(pckl_path, save_fig_path):
+def make_best_layer_roi_scatter_plots_from_pckl(pckl_path,
+                                                save_fig_path):
+    """
+    Makes the best layer scatter plots, using specified saved values.  
+    """
     with open(pckl_path, 'rb') as f:
         best_layer_roi_data_dict = pickle.load(f)
 
@@ -1063,6 +1188,9 @@ def make_best_layer_roi_scatter_plots_from_pckl(pckl_path, save_fig_path):
 
 
 def make_best_layer_roi_scatter_plots(save_fig_path):
+    """
+    Makes the best layer scatter plots. 
+    """
     rsa_analysis_dict_all_rois = {}
     rsa_analysis_dict_all_rois_permuted = {}
     for dataset in ['NH2015', 'B2021']:
@@ -1079,11 +1207,6 @@ def make_best_layer_roi_scatter_plots(save_fig_path):
                                  extra_title_str=dataset + '_Trained: ',
                                  save_fig_path=save_fig_path)
 
-#         plot_all_roi_rsa_scatter(rsa_analysis_dict_all_rois[dataset],
-#                                  extra_title_str = dataset + '_Trained_10_SPLIT_MEDIAN: ',
-#                                  use_all_165_sounds=False,
-#                                  save_fig_path=save_fig_path)
-
         rsa_analysis_dict_all_rois_permuted[dataset] = {}
         for ROI in ['Primary', 'Lateral', 'Posterior', 'Anterior']:
             rsa_analysis_dict = rsa_cross_validated_all_models(randnetw='True',
@@ -1097,10 +1220,6 @@ def make_best_layer_roi_scatter_plots(save_fig_path):
         plot_all_roi_rsa_scatter(rsa_analysis_dict_all_rois_permuted[dataset],
                                  extra_title_str=dataset + '_Permuted: ',
                                  save_fig_path=save_fig_path)
-#         plot_all_roi_rsa_scatter(rsa_analysis_dict_all_rois_permuted[dataset],
-#                                  extra_title_str = dataset + '_Permuted_10_SPLIT_MEDIAN: ',
-#                                  use_all_165_sounds=False,
-#                                  save_fig_path=save_fig_path)
 
     with open(os.path.join(save_fig_path, 'best_layer_rsa_analysis_dict.pckl'), 'wb') as f:
         pickle.dump({'rsa_analysis_dict_all_rois': rsa_analysis_dict_all_rois,
@@ -1109,6 +1228,9 @@ def make_best_layer_roi_scatter_plots(save_fig_path):
 
 
 def make_all_voxel_rsa_bar_plots_from_pckl(pckl_path, save_fig_path):
+    """
+    Make the cross validated RSA bar plots for all models, using saved data. 
+    """
     with open(pckl_path, 'rb') as f:
         all_dataset_rsa_dict = pickle.load(f)
 
@@ -1117,20 +1239,22 @@ def make_all_voxel_rsa_bar_plots_from_pckl(pckl_path, save_fig_path):
         rsa_analysis_dict_trained = all_dataset_rsa_dict[dataset]['trained']
         model_ordering = plot_ordered_cross_val_RSA(rsa_analysis_dict_trained,
                                                     model_ordering=None,
-                                                    use_165_sounds_for_fMRI_ceiling=False,  # Plot the ceiling based on the splits
+                                                    use_165_sounds_for_fMRI_ceiling=False,
                                                     extra_title_str=dataset + '_Trained: ',
                                                     save_fig_path=save_fig_path)
 
         rsa_analysis_dict_permuted = all_dataset_rsa_dict[dataset]['permuted']
         _ = plot_ordered_cross_val_RSA(rsa_analysis_dict_permuted,
                                        model_ordering=model_ordering,
-                                       use_165_sounds_for_fMRI_ceiling=False,  # Plot the ceiling based on the splits
+                                       use_165_sounds_for_fMRI_ceiling=False,
                                        extra_title_str=dataset + '_Permuted: ',
                                        save_fig_path=save_fig_path)
 
 
 def make_all_voxel_rsa_bar_plots(save_fig_path):
-    # Get the plots for the RSA across all models (Figure 2)
+    """
+    Get the plots for the RSA across all models (Figure 2)
+    """
     all_dataset_rsa_dict = {}
     for dataset in ['B2021', 'NH2015']:
         rsa_analysis_dict_trained = rsa_cross_validated_all_models(randnetw='False',
@@ -1143,7 +1267,7 @@ def make_all_voxel_rsa_bar_plots(save_fig_path):
         all_dataset_rsa_dict[dataset] = {'trained': rsa_analysis_dict_trained}
         model_ordering = plot_ordered_cross_val_RSA(rsa_analysis_dict_trained,
                                                     model_ordering=None,
-                                                    use_165_sounds_for_fMRI_ceiling=False,  # Plot the ceiling based on the splits
+                                                    use_165_sounds_for_fMRI_ceiling=False,
                                                     extra_title_str=dataset + '_Trained: ',
                                                     save_fig_path=save_fig_path)
 
@@ -1157,7 +1281,7 @@ def make_all_voxel_rsa_bar_plots(save_fig_path):
 
         _ = plot_ordered_cross_val_RSA(rsa_analysis_dict_permuted,
                                        model_ordering=model_ordering,
-                                       use_165_sounds_for_fMRI_ceiling=False,  # Plot the ceiling based on the splits
+                                       use_165_sounds_for_fMRI_ceiling=False,
                                        extra_title_str=dataset + '_Permuted: ',
                                        save_fig_path=save_fig_path)
 
