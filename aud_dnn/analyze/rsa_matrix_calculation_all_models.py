@@ -354,6 +354,9 @@ def rsa_comparison_neural_roi(roi_names=['Primary', 'Lateral', 'Posterior', 'Ant
             plt.savefig(os.path.join(analysis_folder_name,
                         '-'.join(roi_names) + '_individual_roi_neural_rdms.pdf'))
 
+    if save_name_base is not None:
+        
+
 
 def rsa_cross_validated_all_models(randnetw='False', 
                                    save_name_base=None,
@@ -369,12 +372,6 @@ def rsa_cross_validated_all_models(randnetw='False',
     """
     rsa_analysis_dict = {}
     for model, layers in d_layer_reindex.items():
-        # These models don't have random activations saved.
-        # TODO @gretatuckute have these moels just been removed at this point? I think they were old? 
-        if (model in ['Kell2018init', 'ResNet50init', 'wav2vecpower']) and randnetw == 'True':
-            continue
-        elif (model in ['wav2vecpower', 'ResNet50init', 'Kell2018init']):
-            continue
         print('Analyzing model %s' % model)
         if model == 'spectemp':  # No random model for spectemp, but we still use as baseline. 
             rsa_analysis_dict[model] = run_cross_validated_rsa_to_choose_best_layer(model, 
@@ -444,11 +441,7 @@ def count_dead_units_all_models(randnetw='False',
     """
     num_sounds_with_all_same_activations = {}
     for model, layers in d_layer_reindex.items():
-        # These models don't have random activations saved.
-        # TODO @gretatuckute have these moels just been removed at this point? I think they were old? 
-        if (model in ['Kell2018init', 'ResNet50init', 'wav2vecpower', 'spectemp']) and randnetw == 'True':
-            continue
-        if (model in ['wav2vecpower', 'ResNet50init', 'Kell2018init']):
+        if (model in ['spectemp']) and randnetw == 'True':
             continue
         print('Analyzing model %s' % model)
         num_sounds_with_all_same_activations[model] = check_num_sounds_with_all_same_activations(
