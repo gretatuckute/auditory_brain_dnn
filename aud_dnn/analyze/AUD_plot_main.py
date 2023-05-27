@@ -10,7 +10,7 @@ PLOTSURFDIR = Path(f'{ROOT}/results/PLOTS_SURF_across-models/')
 SURFDIR = f'{DATADIR}/fsavg_surf/'
 
 ### Settings for which plots to make ###
-save = True # Whether to save any plots/csvs
+save = False # Whether to save any plots/csvs
 concat_over_models = True
 
 # If concat_over_models = False, we load each individual model and perform the analysis on that
@@ -19,7 +19,7 @@ if not concat_over_models:
 	best_layer_cv_nit = True # Basis for Figure 2 for neural, basis for Figure 5 for components; obtain best layer for each voxel based on independent CV splits across 10 iterations
 
 	# Neural specific
-	pred_across_layers = True # SI 2; predictivity for each model across all layers
+	pred_across_layers = False # SI 2; predictivity for each model across all layers
 	best_layer_anat_ROI = True # Basis for Figure 7 for neural; best layer for each anatomical ROI
 	run_surf_argmax = False # Basis for Figure 6 for neural, dump argmax surface position to .mat file
 	run_surf_argmax_merge_datsets = False # Basis for Figure 6 for neural, merge NH2015 and B2021 datasets to find argmax surface position across both datasets
@@ -29,11 +29,11 @@ if not concat_over_models:
 if concat_over_models:
 	# Shared for neural and components
 	plot_barplot_across_models = False # Figure 2 for neural, Figure 5 for components; barplot of performance across models
-	plot_scatter_across_models = True # Figure 2, Seed1 vs Seed2 scatter for neural
+	plot_scatter_across_models = False # Figure 2, Seed1 vs Seed2 scatter for neural
 	plot_word_clean_models = False # Figure 9 for neural and components; barplot of performance for word models vs clean models
 
 	# Neural specific
-	plot_anat_roi_scatter = False # Figure 7 neural; scatter of performance across models for anatomical ROIs
+	plot_anat_roi_scatter = True # Figure 7 neural; scatter of performance across models for anatomical ROIs
 	stats_barplot_across_models = False # Figure 2 neural; stats for barplot of performance across models
 	determine_surf_colorscale = False # For figuring out which colorscale to use for Figure 6
 	median_surface_across_models = False # Figure 6 neural; median surface across models for each dataset
@@ -44,7 +44,7 @@ if concat_over_models:
 	plot_scatter_pred_vs_actual = False # Figure 4, scatter for components
 
 
-target = 'NH2015comp'
+target = 'NH2015'
 
 # Logging
 date = datetime.datetime.now().strftime("%m%d%Y-%T")
@@ -58,9 +58,9 @@ if user != 'gt':
 # # source_models = [ 'ResNet50audioset',   'ResNet50multitask',
 # 				'AST',  'wav2vec', 'DCASE2020', 'DS2',  'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer', 'spectemp']
 # Models above spectemp baseline (n=15)
-# source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-# 				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-# 				'AST',  'wav2vec', 'VGGish', 'S2T',  'sepformer']
+source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
+				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
+				'AST',  'wav2vec', 'VGGish', 'S2T',  'sepformer']
 
 # # Models below spectemp baseline (n=4)
 # source_models = [  'DCASE2020', 'DS2',  'ZeroSpeech2020', 'metricGAN']
@@ -77,10 +77,10 @@ if user != 'gt':
 # 				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
 
 # All inhouse models that have both seed 1 and seed 2 (ie exclusing music)
-source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018audioset', 'Kell2018multitask',
-				'ResNet50word', 'ResNet50speaker', 'ResNet50audioset',  'ResNet50multitask',
-				 'Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
-				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2', 'ResNet50multitaskSeed2',]
+# source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018audioset', 'Kell2018multitask',
+# 				'ResNet50word', 'ResNet50speaker', 'ResNet50audioset',  'ResNet50multitask',
+# 				 'Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
+# 				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2', 'ResNet50multitaskSeed2',]
 
 # Just seed 2 models
 # source_models = ['Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
@@ -95,6 +95,7 @@ source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018audioset', 'Kell20
 # 				 'ResNet50wordClean', 'ResNet50wordCleanSeed2']
 # source_models = ['Kell2018word', 'Kell2018wordClean', 'Kell2018wordSeed2', 'Kell2018wordCleanSeed2',
 # 				 'ResNet50word', 'ResNet50wordClean', 'ResNet50wordSeed2', 'ResNet50wordCleanSeed2']
+
 
 print(f'---------- Target: {target} ----------')
 
@@ -125,7 +126,8 @@ if concat_over_models:  # assemble plots across models
 													 include_spectemp=True,
 													 sort_by=sort_flag,
 													 add_in_spacing_bar=False,
-													 ylim=[0,1])
+													 ylim=[0,1],
+													 box_aspect=0.8)
 
 		### Scatterplot of Seed1 vs Seed2 ###
 		if plot_scatter_across_models:
@@ -173,7 +175,8 @@ if concat_over_models:  # assemble plots across models
 													 include_spectemp=True,
 													 sort_by=sort_flag,
 													 add_in_spacing_bar=True,
-													 ylim=[0.2,1])
+													 ylim=[0.2,1],
+													 box_aspect=0.8) # 1?
 
 		### For plotting in-house models barplot (Figure 8A) ###
 		if plot_word_clean_models:
@@ -203,7 +206,8 @@ if concat_over_models:  # assemble plots across models
 														 sort_by=sort_flag,
 														 add_in_spacing_bar=False,
 														 ylim=[0, 1],
-														 add_savestr=f'_word-clean-models{add_savestr}')
+														 add_savestr=f'_word-clean-models{add_savestr}',
+														 box_aspect=0.8)
 
 				# Run associated stats
 				compare_CV_splits_nit(source_models=source_models,
@@ -309,7 +313,8 @@ if concat_over_models:  # assemble plots across models
 												  aggregation=agg_flag,
 												  value_of_interest=val_flag,
 												  sort_by=sort_flag,
-												  add_savestr=f'')
+												  add_savestr=f'',
+												  box_aspect=0.8)
 
 		# SCATTER ACROSS MODELS (SEED1 VS SEED2) #
 		if plot_scatter_across_models:
@@ -379,7 +384,8 @@ if concat_over_models:  # assemble plots across models
 													  aggregation=agg_flag,
 													  value_of_interest=val_flag,
 													  sort_by=sort_flag,
-													  add_savestr=f'_word-clean-models{add_savestr}')
+													  add_savestr=f'_word-clean-models{add_savestr}',
+													  box_aspect=1)
 
 				# Run according stats
 				for val_flag in ['median_r2_test_c', ]:

@@ -39,6 +39,7 @@ random.seed(0)
 DATADIR = (Path(os.getcwd()) / '..' / '..' / 'data').resolve()
 if user == 'gt':
     ROOT = f'/Users/{user}/bur/'
+    ROOT = f'/Users/gt/Documents/GitHub/auditory_brain_dnn/'
 else:
     print(f' ------------- Running on openmind as {user} -----------')
     ROOT = f'/mindhive/mcdermott/u/{user}/auditory_brain_dnn/'
@@ -1976,7 +1977,8 @@ def barplot_across_models(source_models,
                           sort_by=True,
                           yerr_type='within_subject_sem',
                           add_savestr='',
-                          alpha=1):
+                          alpha=1,
+                          box_aspect=0.8):
     """
     Plot median variance explained across models for voxels in a given ROI or all ROIs.
     The score is loaded using CV-splits-nit-10 (default) layer selection procedure (can be changed if the user
@@ -2189,7 +2191,7 @@ def barplot_across_models(source_models,
         xmax = np.unique((bar_placement[-1] + np.diff(bar_placement) / 2))
 
         fig, ax = plt.subplots(figsize=(6, 7.5))
-        ax.set_box_aspect(1)
+        ax.set_box_aspect(box_aspect) # 0.8 for all barplots, 1 for clean speech
         ax.hlines(xmin=xmin, xmax=xmax,
                   y=df_spectemp[f'{value_of_interest}_mean'].values, color='darkgrey',
                   zorder=2)
@@ -2935,7 +2937,8 @@ def barplot_components_across_models(source_models,
                                      add_savestr='',
                                      alpha=1,
                                      ylim=[0,1],
-                                     add_in_spacing_bar=True):
+                                     add_in_spacing_bar=True,
+                                     box_aspect=0.8):
     """Load the best layer per component csv files and make a plot across all models, one for each component.
 
     :param source_models:
@@ -3004,7 +3007,7 @@ def barplot_components_across_models(source_models,
         color_order = [d_model_colors[x] for x in df_comp.source_model]
         r2 = df_comp[value_of_interest].values
         sem = df_comp[yerr_type].values
-        ax[i].set_box_aspect(1)
+        ax[i].set_box_aspect(box_aspect)
         if include_spectemp:
             ax[i].hlines(xmin=xmin, xmax=xmax, y=df_spectemp_comp[f'{value_of_interest}'].values, color='darkgrey',zorder=2)
             ax[i].fill_between(
