@@ -40,6 +40,18 @@ DATADIR = (Path(os.getcwd()) / '..' / 'data').resolve()
 RESULTDIR = (Path(os.getcwd()) / '..' / 'results').resolve()
 CACHEDIR = (Path(os.getcwd()) / '..' / 'model_actv').resolve().as_posix()
 
+# Models for the bar plot in Figure 2
+FIG2_MODEL_LIST = ['Kell2018word', 'Kell2018speaker',
+                   'Kell2018music', 'Kell2018audioset',
+                   'Kell2018multitask',
+                   'ResNet50word', 'ResNet50speaker',
+                   'ResNet50music', 'ResNet50audioset',
+                   'ResNet50multitask',
+                   'AST',  'wav2vec', 'DCASE2020',
+                   'DS2',  'VGGish', 'ZeroSpeech2020',
+                   'S2T', 'metricGAN', 'sepformer',
+                   'spectemp']
+
 # TODO: move this into utils?
 ## Stimuli (original indexing, activations are extracted in this order) ##
 sound_meta = np.load(os.path.join(
@@ -363,13 +375,17 @@ def rsa_cross_validated_all_models(randnetw='False',
                                    noise_correction=False,
                                    target='NH2015',
                                    ignore_layer_keys=None,
+                                   model_list=None,
                                    overwrite=False):
     """
     Runs the RSA analysis between fMRI activations and model responses, choosing 
     the best layer for each model (cross validated) for a summary measure. 
     """
     rsa_analysis_dict = {}
-    for model, layers in d_layer_reindex.items():
+    if model_list is None:
+        model_list = d_layer_reindex.keys()
+    for model in model_list:
+        layers = d_layer_reindex[model]
         print('Analyzing model %s' % model)
         if model == 'spectemp':  # No random model for spectemp, but we still use as baseline. 
             rsa_analysis_dict[model] = run_cross_validated_rsa_to_choose_best_layer(model, 
@@ -1090,8 +1106,13 @@ def make_paper_plots(save_fig_path='rsa_plots'):
     """
     Makes all of the RSA plots used for the paper. 
     """
-    # Figure 2
+    # All model bar plot
     make_all_voxel_rsa_bar_plots(save_fig_path=save_fig_path)
+
+    # Figure 2 bar plot, 19 models in main analysis
+    make_all_voxel_rsa_bar_plots(save_fig_path=save_fig_path,
+                                 model_list=FIG2_MODEL_LIST,
+                                 extra_title='FIG2_19Models_')
 
     # Figure 5 schematic (and supplement)
     make_neural_roi_rdms(save_fig_path=save_fig_path)
@@ -1215,7 +1236,10 @@ def make_all_voxel_rsa_bar_plots_from_pckl(pckl_path, save_fig_path):
                                        save_fig_path=save_fig_path)
 
 
-def make_all_voxel_rsa_bar_plots(save_fig_path, overwrite=False):
+def make_all_voxel_rsa_bar_plots(save_fig_path,
+                                 overwrite=False,
+                                 extra_title='',
+                                 model_list=None):
     """
     Get the plots for the RSA across all models (Figure 2)
     """
@@ -1227,13 +1251,14 @@ def make_all_voxel_rsa_bar_plots(save_fig_path, overwrite=False):
                                                                    with_std=True,
                                                                    target=dataset,
                                                                    save_name_base=save_fig_path,
+                                                                   model_list=model_list,
                                                                    overwrite=overwrite)
 
         all_dataset_rsa_dict[dataset] = {'trained': rsa_analysis_dict_trained}
         model_ordering = plot_ordered_cross_val_RSA(rsa_analysis_dict_trained,
                                                     model_ordering=None,
                                                     use_165_sounds_for_fMRI_ceiling=False,
-                                                    extra_title_str=dataset + '_Trained: ',
+                                                    extra_title_str=extra_title + dataset + '_Trained: ',
                                                     save_fig_path=save_fig_path)
 
         # Cochleagram is currently included in the permuted model analysis for Figure 2.
@@ -1243,12 +1268,13 @@ def make_all_voxel_rsa_bar_plots(save_fig_path, overwrite=False):
                                                                     with_std=True,
                                                                     target=dataset,
                                                                     save_name_base=save_fig_path,
+                                                                    model_list=model_list,
                                                                     overwrite=overwrite)
 
         _ = plot_ordered_cross_val_RSA(rsa_analysis_dict_permuted,
                                        model_ordering=model_ordering,
                                        use_165_sounds_for_fMRI_ceiling=False,
-                                       extra_title_str=dataset + '_Permuted: ',
+                                       extra_title_str=extra_title + dataset + '_Permuted: ',
                                        save_fig_path=save_fig_path)
 
         all_dataset_rsa_dict[dataset]['permuted'] = rsa_analysis_dict_permuted
