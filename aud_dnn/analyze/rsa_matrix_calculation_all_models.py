@@ -41,6 +41,7 @@ DATADIR = (Path(os.getcwd()) / '..' / 'data').resolve()
 RESULTDIR = (Path(os.getcwd()) / '..' / 'results').resolve()
 CACHEDIR = (Path(os.getcwd()) / '..' / 'model_actv').resolve().as_posix()
 
+# TODO: Move these lists into resources. 
 # Models for the bar plot in Figure 2
 FIG2_MODEL_LIST = ['Kell2018word', 'Kell2018speaker',
                    'Kell2018music', 'Kell2018audioset',
@@ -53,6 +54,7 @@ FIG2_MODEL_LIST = ['Kell2018word', 'Kell2018speaker',
                    'S2T', 'metricGAN', 'sepformer',
                    'spectemp']
 
+# Models for the scatter plot of 2 seeds 
 FIG2_SEED_PAIRS = [['Kell2018word', 'Kell2018wordSeed2'],
                    ['Kell2018speaker', 'Kell2018speakerSeed2'],
                    ['Kell2018audioset', 'Kell2018audiosetSeed2'],
@@ -61,7 +63,23 @@ FIG2_SEED_PAIRS = [['Kell2018word', 'Kell2018wordSeed2'],
                    ['ResNet50speaker', 'ResNet50speakerSeed2'],
                    ['ResNet50audioset', 'ResNet50audiosetSeed2'],
                    ['ResNet50multitask', 'ResNet50multitaskSeed2']
-                   ]    
+                   ]
+
+# Word trained models with and without background
+CLEAN_SPEECH_LIST = ['Kell2018word','Kell2018wordClean',
+                     'ResNet50word', 'ResNet50wordClean']
+
+# Models included in the best-layer scatter plot
+FIG5_MODEL_LIST = ['Kell2018word', 'Kell2018speaker',
+                   'Kell2018music', 'Kell2018audioset',
+                   'Kell2018multitask',
+                   'ResNet50word', 'ResNet50speaker',
+                   'ResNet50music', 'ResNet50audioset',
+                   'ResNet50multitask',
+                   'AST',  'wav2vec',
+                   'VGGish',
+                   'S2T', 'sepformer',
+                   'spectemp']
 
 # TODO: move this into utils?
 ## Stimuli (original indexing, activations are extracted in this order) ##
@@ -1235,10 +1253,21 @@ def make_paper_plots(save_fig_path='rsa_plots'):
                                 extra_title='FIG2_Seed_Scatter_',
                                )
 
+    # Figure ? clean speech bar plot
+    make_all_voxel_rsa_bar_plots(save_fig_path=save_fig_path,
+                                 model_list=CLEAN_SPEECH_LIST + ['spectemp'],
+                                 model_order=CLEAN_SPEECH_LIST,
+                                 extra_title='FIG9_Clean_Speech_')
+
     # Figure 5 schematic (and supplement)
     make_neural_roi_rdms(save_fig_path=save_fig_path)
 
-    # Figure 5, and Supplement Fig
+    # Figure 5, and Supplement Fig, best layer scatter plot
+    make_best_layer_roi_scatter_plots(save_fig_path,
+                                      model_list=FIG5_MODEL_LIST,
+                                      extra_title='FIG5_BestLayerModels_')
+
+    # Figure 5, but including all models
     make_best_layer_roi_scatter_plots(save_fig_path)
 
 
@@ -1291,7 +1320,9 @@ def make_best_layer_roi_scatter_plots_from_pckl(pckl_path,
                                  save_fig_path=save_fig_path)
 
 
-def make_best_layer_roi_scatter_plots(save_fig_path, overwrite=False):
+def make_best_layer_roi_scatter_plots(save_fig_path, model_list=None,
+                                      extra_title='',
+                                      overwrite=False):
     """
     Makes the best layer scatter plots. 
     """
@@ -1305,11 +1336,13 @@ def make_best_layer_roi_scatter_plots(save_fig_path, overwrite=False):
                                                                mean_subtract=True,
                                                                with_std=True,
                                                                target=dataset,
+                                                               save_name_base=save_fig_path,
+                                                               model_list=model_list,
                                                                overwrite=overwrite)
             rsa_analysis_dict_all_rois[dataset][ROI] = rsa_analysis_dict
 
         plot_all_roi_rsa_scatter(rsa_analysis_dict_all_rois[dataset],
-                                 extra_title_str=dataset + '_Trained: ',
+                                 extra_title_str=extra_title + dataset + '_Trained: ',
                                  save_fig_path=save_fig_path)
 
         rsa_analysis_dict_all_rois_permuted[dataset] = {}
@@ -1319,12 +1352,13 @@ def make_best_layer_roi_scatter_plots(save_fig_path, overwrite=False):
                                                                mean_subtract=True,
                                                                with_std=True,
                                                                target=dataset,
-                                                               ignore_layer_keys=['input_after_preproc'],
+                                                               save_name_base=save_fig_path, 
+                                                               model_list=model_list,
                                                                overwrite=overwrite)
             rsa_analysis_dict_all_rois_permuted[dataset][ROI] = rsa_analysis_dict
 
         plot_all_roi_rsa_scatter(rsa_analysis_dict_all_rois_permuted[dataset],
-                                 extra_title_str=dataset + '_Permuted: ',
+                                 extra_title_str=extra_title + dataset + '_Permuted: ',
                                  save_fig_path=save_fig_path)
 
     with open(os.path.join(save_fig_path, 'best_layer_rsa_analysis_dict.pckl'), 'wb') as f:
@@ -1387,7 +1421,8 @@ def make_model_vs_model_scatter(save_fig_path,
                                           ylabel=ylabel)
 
 
-def make_all_voxel_rsa_bar_plots_from_pckl(pckl_path, save_fig_path):
+def make_all_voxel_rsa_bar_plots_from_pckl(pckl_path, save_fig_path, 
+                                           model_order=None):
     """
     Make the cross validated RSA bar plots for all models, using saved data. 
     """
@@ -1398,7 +1433,7 @@ def make_all_voxel_rsa_bar_plots_from_pckl(pckl_path, save_fig_path):
     for dataset in ['B2021', 'NH2015']:
         rsa_analysis_dict_trained = all_dataset_rsa_dict[dataset]['trained']
         model_ordering = plot_ordered_cross_val_RSA(rsa_analysis_dict_trained,
-                                                    model_ordering=None,
+                                                    model_ordering=model_order,
                                                     use_165_sounds_for_fMRI_ceiling=False,
                                                     extra_title_str=dataset + '_Trained: ',
                                                     save_fig_path=save_fig_path)
@@ -1414,7 +1449,8 @@ def make_all_voxel_rsa_bar_plots_from_pckl(pckl_path, save_fig_path):
 def make_all_voxel_rsa_bar_plots(save_fig_path,
                                  overwrite=False,
                                  extra_title='',
-                                 model_list=None):
+                                 model_list=None,
+                                 model_order=None):
     """
     Get the plots for the RSA across all models (Figure 2)
     """
@@ -1431,7 +1467,7 @@ def make_all_voxel_rsa_bar_plots(save_fig_path,
 
         all_dataset_rsa_dict[dataset] = {'trained': rsa_analysis_dict_trained}
         model_ordering = plot_ordered_cross_val_RSA(rsa_analysis_dict_trained,
-                                                    model_ordering=None,
+                                                    model_ordering=model_order,
                                                     use_165_sounds_for_fMRI_ceiling=False,
                                                     extra_title_str=extra_title + dataset + '_Trained: ',
                                                     save_fig_path=save_fig_path)
