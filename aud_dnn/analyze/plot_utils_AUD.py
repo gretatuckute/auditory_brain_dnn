@@ -23,12 +23,9 @@ import scipy.stats as stats
 import statsmodels.stats.descriptivestats as ds
 import sys
 user = getpass.getuser()
-if user == 'gretatu':
-    # Go one directory up to import resources
-    sys.path.append(str(Path(os.getcwd()).parent))
-    from resources import *
-else:
-    from aud_dnn.resources import *
+# Go one directory up to import resources
+sys.path.append(str(Path(os.getcwd()).parent))
+from resources import *
 now = datetime.datetime.now()
 datetag = now.strftime("%Y%m%d-%H%M")
 

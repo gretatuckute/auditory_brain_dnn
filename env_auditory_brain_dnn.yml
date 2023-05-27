@@ -24,3 +24,4 @@ dependencies:
     - statsmodels==0.12.0
     - tqdm==4.54.0
     - xarray==0.12.0
+    - jupyter==1.0.0
