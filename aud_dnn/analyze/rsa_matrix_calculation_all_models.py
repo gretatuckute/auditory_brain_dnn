@@ -7,6 +7,7 @@ print(sys.path)
 
 import pandas as pd
 import matplotlib
+from matplotlib.lines import Line2D
 from scipy.stats import wilcoxon
 from scipy.io import loadmat
 from scipy import stats
@@ -51,6 +52,16 @@ FIG2_MODEL_LIST = ['Kell2018word', 'Kell2018speaker',
                    'DS2',  'VGGish', 'ZeroSpeech2020',
                    'S2T', 'metricGAN', 'sepformer',
                    'spectemp']
+
+FIG2_SEED_PAIRS = [['Kell2018word', 'Kell2018wordSeed2'],
+                   ['Kell2018speaker', 'Kell2018speakerSeed2'],
+                   ['Kell2018audioset', 'Kell2018audiosetSeed2'],
+                   ['Kell2018multitask', 'Kell2018multitaskSeed2'],
+                   ['ResNet50word', 'ResNet50wordSeed2'],
+                   ['ResNet50speaker', 'ResNet50speakerSeed2'],
+                   ['ResNet50audioset', 'ResNet50audiosetSeed2'],
+                   ['ResNet50multitask', 'ResNet50multitaskSeed2']
+                   ]    
 
 # TODO: move this into utils?
 ## Stimuli (original indexing, activations are extracted in this order) ##
@@ -776,23 +787,111 @@ def plot_correlation_matrix_with_color_categories(correlation_matrix,
     else:
         plt.axis('off')
 
+def plot_scatter_RSA_vals_model_pairs(model_pairs,
+                                      rsa_analysis_dict,
+                                      save_fig_path=None,
+                                      use_165_sounds_for_fMRI_ceiling=False,
+                                      extra_title_str='',
+                                      ax_lims=None,
+                                      xlabel='Model 1 RSA',
+                                      ylabel='Model 2 RSA'):
+    """
+    Makes a scatter plot of the RSA values plotting the value for the 
+    first model in each pair on the x axis and the second model in each
+    pair on the y axis. Color set with the first model in the pair. 
+    """
+    # Get the values 
+    df_grouped, leave_one_out_neural_r = combine_model_vals_into_df_rsa(
+                                                rsa_analysis_dict, 
+                                                use_165_sounds_for_fMRI_ceiling)
 
-def plot_ordered_cross_val_RSA(rsa_analysis_dict,
-                               model_ordering=None, 
-                               alpha=1, 
-                               extra_title_str='', 
-                               save_fig_path=None, 
-                               use_165_sounds_for_fMRI_ceiling=True):
+    # Make the figure -- make sure it is square for direct comparison
+    fig, ax = plt.subplots(figsize=(7, 7))
+    ax.set_box_aspect(1)
+    # Plot scatter with error bars. Iterate over each point because
+    # otherwise we can't have different colors for each point.
+    means1 = []
+    means2 = []
+    for model_1, model_2 in model_pairs:
+        df_model1 = df_grouped.loc[df_grouped['source_model'] == model_1]
+        df_model2 = df_grouped.loc[df_grouped['source_model'] == model_2]
+
+        color = d_model_colors[model_1]
+        ax.errorbar(df_model1['mean_values'],
+                    df_model2['mean_values'],
+                    xerr=df_model1['y_err'],
+                    yerr=df_model2['y_err'],
+                    fmt='o', markersize=10, color=color,
+                    capsize=0, elinewidth=2, markeredgewidth=2)
+
+        means1.append(df_model1['mean_values'].values[0])
+        means2.append(df_model2['mean_values'].values[0])
+
+    # Also plot correlation r between models1 and models2
+    r, p = stats.pearsonr(means1, means2)
+    r2 = r ** 2
+    # Plot in lower right
+    plt.text(0.95, 0.05, f'$R^2$={r2:.2f}, p={p:.2f}', 
+             horizontalalignment='right', verticalalignment='bottom',
+             transform=ax.transAxes, fontsize=15)
+
+    # Set axis limits
+    if ax_lims is not None:
+        plt.ylim(ax_lims)
+        plt.xlim(ax_lims)
+        lim_min = min(ax.get_xlim()[0], ax.get_ylim()[0])
+        lim_max = max(ax.get_xlim()[1], ax.get_ylim()[1])
+    else:
+        lim_max = max(ax.get_xlim()[1], ax.get_ylim()[1])
+        lim_min = min(ax.get_xlim()[0], ax.get_ylim()[0])
+        plt.ylim([lim_min, lim_max])
+        plt.xlim([lim_min, lim_max])
+
+    plt.xlabel(xlabel, fontsize=15)
+    plt.ylabel(ylabel, fontsize=15)
+    # Add legend
+    legend_elements = [Line2D([0], [0], marker='o', 
+                              color='w', label=x, 
+                              markerfacecolor=d_model_colors[x],
+                              markersize=10) 
+                       for (x, y) in model_pairs]
+    # Plot legend outside of plot
+    ax.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), 
+              loc='upper left')
+    # Make ticks bigger
+    plt.xticks(fontsize=15)
+    plt.yticks(fontsize=15)
+    title_str = extra_title_str + 'ModelVsModel RSA'
+    plt.title(title_str, fontsize=15)
+    # Plot diagonal line -- limits should be the same.
+    plt.plot([lim_min, lim_max], [lim_min, lim_max],
+             color='black', linestyle='--')
+    plt.tight_layout(pad=2.5)
+
+    if save_fig_path is not None:
+        plt.savefig(os.path.join(save_fig_path, title_str.replace(
+            ':', '_').replace(' ', '') + '.pdf'))
+    if save_fig_path is not None:
+        plt.savefig(os.path.join(save_fig_path, title_str.replace(
+            ':', '_').replace(' ', '') + '.svg'))
+
+    fig.show()
+
+def combine_model_vals_into_df_rsa(rsa_analysis_dict,
+                                   use_165_sounds_for_fMRI_ceiling):
     """
-    Plots each model from the RSA analysis as a bar plot, ordered by their scores
-    or by the specified model_ordering. 
+    Extracts the values from the rsa_analysis_dict and computes the 
+    mean and sem across partitipants for each model.
     """
-    participant_ids = np.sort(list(rsa_analysis_dict['Kell2018music'].keys()))
+    participant_ids = None
     leave_one_out_neural_r = None
     all_model_names = []
     model_participant_matrix = []
 
     for model_name, model_info in rsa_analysis_dict.items():
+        if participant_ids is None:
+            participant_ids = np.sort(list(model_info.keys()))
+
         all_model_names.append(model_name)
         model_participant_matrix.append(
             [model_info[p]['best_layer_rsa_median_across_splits'] for p in participant_ids])
@@ -827,6 +926,22 @@ def plot_ordered_cross_val_RSA(rsa_analysis_dict,
                                'y_err': y_err_within_participant,
                                'source_model': all_model_names},
                               )
+    return df_grouped, leave_one_out_neural_r 
+
+
+def plot_ordered_cross_val_RSA(rsa_analysis_dict,
+                               model_ordering=None, 
+                               alpha=1, 
+                               extra_title_str='', 
+                               save_fig_path=None, 
+                               use_165_sounds_for_fMRI_ceiling=False):
+    """
+    Plots each model from the RSA analysis as a bar plot, ordered by their scores
+    or by the specified model_ordering. 
+    """
+    df_grouped, leave_one_out_neural_r = combine_model_vals_into_df_rsa(
+                                                rsa_analysis_dict, 
+                                                use_165_sounds_for_fMRI_ceiling) 
 
     df_grouped_w_spectemp = df_grouped.copy(deep=True)
 
@@ -1114,6 +1229,12 @@ def make_paper_plots(save_fig_path='rsa_plots'):
                                  model_list=FIG2_MODEL_LIST,
                                  extra_title='FIG2_19Models_')
 
+    # Figure 2 scatter plot with 2 seeds of in-house models
+    make_model_vs_model_scatter(save_fig_path,
+                                model_pairs=FIG2_SEED_PAIRS,
+                                extra_title='FIG2_Seed_Scatter_',
+                               )
+
     # Figure 5 schematic (and supplement)
     make_neural_roi_rdms(save_fig_path=save_fig_path)
 
@@ -1211,6 +1332,60 @@ def make_best_layer_roi_scatter_plots(save_fig_path, overwrite=False):
                      'rsa_analysis_dict_all_rois_permuted': rsa_analysis_dict_all_rois_permuted},
                     f)
 
+def make_model_vs_model_scatter(save_fig_path,
+                                model_pairs,
+                                overwrite=False,
+                                extra_title='',
+                                xlabel='Seed 1',
+                                ylabel='Seed 2',
+                               ):
+    """
+    Makes scatter plots comparing the RSA values from the best-layer analysis 
+    between two models (i.e. comparing the RSA values from two seeds). 
+    """
+    # Flatten model pairs and get the RSA values for all of the models
+    model_list=[m for mp in model_pairs for m in mp]
+
+    all_dataset_rsa_dict = {}
+    for dataset in ['B2021', 'NH2015']:
+        # Make plots for trained model pairs
+        rsa_analysis_dict_trained = rsa_cross_validated_all_models(randnetw='False',
+                                                                   roi_name=None,
+                                                                   mean_subtract=True,
+                                                                   with_std=True,
+                                                                   target=dataset,
+                                                                   save_name_base=save_fig_path,
+                                                                   model_list=model_list,
+                                                                   overwrite=overwrite)
+
+        plot_scatter_RSA_vals_model_pairs(model_pairs,
+                                          rsa_analysis_dict_trained,
+                                          save_fig_path=save_fig_path,
+                                          use_165_sounds_for_fMRI_ceiling=False,
+                                          extra_title_str=extra_title + dataset + '_Trained: ',
+                                          ax_lims=[0.35,0.55],
+                                          xlabel=xlabel,
+                                          ylabel=ylabel)
+
+        # Make plots for permuted model pairs
+        rsa_analysis_dict_permuted = rsa_cross_validated_all_models(randnetw='True',
+                                                                    roi_name=None,
+                                                                    mean_subtract=True,
+                                                                    with_std=True,
+                                                                    target=dataset,
+                                                                    save_name_base=save_fig_path,
+                                                                    model_list=model_list,
+                                                                    overwrite=overwrite)
+
+        plot_scatter_RSA_vals_model_pairs(model_pairs,
+                                          rsa_analysis_dict_permuted,
+                                          save_fig_path=save_fig_path,
+                                          use_165_sounds_for_fMRI_ceiling=False,
+                                          extra_title_str=extra_title + dataset + '_Permuted: ',
+                                          ax_lims=None,
+                                          xlabel=xlabel,
+                                          ylabel=ylabel)
+
 
 def make_all_voxel_rsa_bar_plots_from_pckl(pckl_path, save_fig_path):
     """
@@ -1261,7 +1436,6 @@ def make_all_voxel_rsa_bar_plots(save_fig_path,
                                                     extra_title_str=extra_title + dataset + '_Trained: ',
                                                     save_fig_path=save_fig_path)
 
-        # Cochleagram is currently included in the permuted model analysis for Figure 2.
         rsa_analysis_dict_permuted = rsa_cross_validated_all_models(randnetw='True',
                                                                     roi_name=None,
                                                                     mean_subtract=True,
