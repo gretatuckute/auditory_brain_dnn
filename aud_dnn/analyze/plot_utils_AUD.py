@@ -2684,38 +2684,38 @@ def scatter_components_across_models(source_models,
     bar_placement = np.arange(0, 6 / 2, 0.5)
     
     # Plot across all models and components
-    plt.figure(figsize=(9, 5))
-    plt.scatter(np.repeat(bar_placement, len(source_models)),
-                [lowfreq_r2, highfreq_r2, envsounds_r2, pitch_r2, speech_r2, music_r2], c=color_order * 6, s=50)
-    # plot spectemp separately
-    if include_spectemp:
-        plt.scatter(bar_placement, [df_spectemp[value_of_interest].values], c='grey', s=50)
-        plt.plot(bar_placement, df_spectemp[value_of_interest].values, alpha=alpha_dot, c='grey', ls='--')
-    for i in range(len(source_models)):
-        plt.plot(bar_placement,
-                 [lowfreq_r2[i], highfreq_r2[i], envsounds_r2[i], pitch_r2[i], speech_r2[i], music_r2[i]],
-                 c=color_order[i], alpha=0.3)
-    plt.ylim([0, 1])
-    plt.ylabel(f'Median $R^2$')
-    plt.xticks(bar_placement, ['lowfreq', 'highfreq', 'envsounds', 'pitch', 'speech', 'music'])
-    plt.title(f'Predictivity of components across all models {d_randnetw[randnetw]}')
-    classes = source_models
-    classes_polished_name = [d_model_names[x] for x in classes]
-    class_colours = color_order
-    recs = []
-    for i in range(0, len(class_colours)):
-        recs.append(mpatches.Rectangle((0, 0), 1, 1, fc=class_colours[i]))
-    plt.legend(recs, classes_polished_name, bbox_to_anchor=(1.05, 1.1))
-    plt.tight_layout()
-    if save:
-        save_str = f'across-models_scatter_{aggregation}_{target}{d_randnetw[randnetw]}{save_str}_{value_of_interest}'
-        plt.savefig(join(save, f'{save_str}.svg'), dpi=180)
-        plt.savefig(join(save, f'{save_str}.png'), dpi=180)
-    plt.show()
+    # plt.figure(figsize=(9, 5))
+    # plt.scatter(np.repeat(bar_placement, len(source_models)),
+    #             [lowfreq_r2, highfreq_r2, envsounds_r2, pitch_r2, speech_r2, music_r2], c=color_order * 6, s=50)
+    # # plot spectemp separately
+    # if include_spectemp:
+    #     plt.scatter(bar_placement, [df_spectemp[value_of_interest].values], c='grey', s=50)
+    #     plt.plot(bar_placement, df_spectemp[value_of_interest].values, alpha=alpha_dot, c='grey', ls='--')
+    # for i in range(len(source_models)):
+    #     plt.plot(bar_placement,
+    #              [lowfreq_r2[i], highfreq_r2[i], envsounds_r2[i], pitch_r2[i], speech_r2[i], music_r2[i]],
+    #              c=color_order[i], alpha=0.3)
+    # plt.ylim([0, 1])
+    # plt.ylabel(f'Median $R^2$')
+    # plt.xticks(bar_placement, ['lowfreq', 'highfreq', 'envsounds', 'pitch', 'speech', 'music'])
+    # plt.title(f'Predictivity of components across all models {d_randnetw[randnetw]}')
+    # classes = source_models
+    # classes_polished_name = [d_model_names[x] for x in classes]
+    # class_colours = color_order
+    # recs = []
+    # for i in range(0, len(class_colours)):
+    #     recs.append(mpatches.Rectangle((0, 0), 1, 1, fc=class_colours[i]))
+    # plt.legend(recs, classes_polished_name, bbox_to_anchor=(1.05, 1.1))
+    # plt.tight_layout()
+    # if save:
+    #     save_str = f'across-models_scatter_{aggregation}_{target}{d_randnetw[randnetw]}{save_str}_{value_of_interest}'
+    #     plt.savefig(join(save, f'{save_str}.svg'), dpi=180)
+    #     plt.savefig(join(save, f'{save_str}.png'), dpi=180)
+    # plt.show()
     
     ## 2D scatter plot ##
-    for comp1 in ['lowfreq', 'highfreq', 'envsounds', 'pitch', 'speech', 'music']:
-        for comp2 in ['pitch', 'speech', 'music']:
+    for comp1 in ['music']: # ['lowfreq', 'highfreq', 'envsounds', 'pitch', 'speech', 'music']
+        for comp2 in ['pitch', 'speech']:
             if comp1 == comp2:
                 continue
             
