@@ -3105,6 +3105,10 @@ def scatter_components_across_models_seed(source_models,
 
         df_models1 = df_comp[df_comp['source_model'].isin(models1)]
         df_models2 = df_comp[df_comp['source_model'].isin(models2)]
+        # Remove "Seed2" from source_model in df_models2 and assert
+        if 'Seed2' in df_models2.source_model.values[0]:
+            source_models2_no_seed2 = [x.replace('Seed2', '') for x in df_models2.source_model.values]
+            assert (df_models1.source_model.values == source_models2_no_seed2).all(), 'models1 and models2 should have the same order'
 
         # plot specs
         color_order_models1 = [d_model_colors[x] for x in df_models1.source_model.values]
@@ -3137,6 +3141,19 @@ def scatter_components_across_models_seed(source_models,
 
             # Make ticks bigger
             ax[i].tick_params(axis='both', which='major', labelsize=15)
+
+        # Also plot correlation r between models1 and models2
+        r, p = stats.pearsonr(df_models1[f'{value_of_interest}'].values,
+                              df_models2[f'{value_of_interest}'].values)
+        r2 = r ** 2
+        # Plot in lower right
+        ax[i].text(0.95, 0.05, f'$R^2$={r2:.2f}, p={p:.2f}', horizontalalignment='right', verticalalignment='bottom',
+                   fontsize=15, transform=ax[i].transAxes)
+
+        # Store these r, r2 and p values in df_grouped
+        df_grouped.loc[df_grouped['comp'] == comp, 'r'] = r
+        df_grouped.loc[df_grouped['comp'] == comp, 'r2'] = r2
+        df_grouped.loc[df_grouped['comp'] == comp, 'p'] = p
 
     # Add legend
     legend_elements = [Line2D([0], [0], marker='o', color='w', label=x, markerfacecolor=mcolors.to_rgba(d_model_colors[x]),

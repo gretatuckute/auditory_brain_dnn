@@ -29,8 +29,8 @@ if not concat_over_models:
 if concat_over_models:
 	# Shared for neural and components
 	plot_barplot_across_models = False # Figure 2 for neural, Figure 5 for components; barplot of performance across models
-	plot_scatter_across_models = False # Figure 2, Seed1 vs Seed2 scatter for neural
-	plot_word_clean_models = True # Figure 9 for neural and components; barplot of performance for word models vs clean models
+	plot_scatter_across_models = True # Figure 2, Seed1 vs Seed2 scatter for neural
+	plot_word_clean_models = False # Figure 9 for neural and components; barplot of performance for word models vs clean models
 
 	# Neural specific
 	plot_anat_roi_scatter = False # Figure 7 neural; scatter of performance across models for anatomical ROIs
@@ -77,10 +77,10 @@ if user != 'gt':
 # 				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
 
 # All inhouse models that have both seed 1 and seed 2 (ie exclusing music)
-# source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018audioset', 'Kell2018multitask',
-# 				'ResNet50word', 'ResNet50speaker', 'ResNet50audioset',  'ResNet50multitask',
-# 				 'Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
-# 				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2', 'ResNet50multitaskSeed2',]
+source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018audioset', 'Kell2018multitask',
+				'ResNet50word', 'ResNet50speaker', 'ResNet50audioset',  'ResNet50multitask',
+				 'Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
+				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2', 'ResNet50multitaskSeed2',]
 
 # Just seed 2 models
 # source_models = ['Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
@@ -132,6 +132,11 @@ if concat_over_models:  # assemble plots across models
 			add_savestr = f'_seed1-vs-seed2'
 
 			for randnetw_flag in ['False', 'True']: # 'False', 'True'
+				if randnetw_flag == 'False':
+					ylim = [0.4, 1]
+				else:
+					ylim = [0, 1]
+
 				scatter_components_across_models_seed(source_models=source_models,
 												 target=target,
 												 randnetw=randnetw_flag,
@@ -143,8 +148,8 @@ if concat_over_models:  # assemble plots across models
 												 yerr_type='median_r2_test_sem_over_it',
 												 save=SAVEDIR_CENTRALIZED,
 												 add_savestr=add_savestr,
-												 ylim=[0.4,0.9],
-												 xlim=[0.4,0.9])
+												 ylim=ylim,
+												 xlim=ylim)
 
 
 
