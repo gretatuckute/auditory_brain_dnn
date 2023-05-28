@@ -178,7 +178,7 @@ if concat_over_models:  # assemble plots across models
 													 ylim=[0.2,1],
 													 box_aspect=0.8) # 1?
 
-		### For plotting in-house models barplot (Figure 8A) ###
+		### For plotting in-house models barplot (Figure 9A) ###
 		if plot_word_clean_models:
 			source_model_lst = [['Kell2018word', 'Kell2018wordClean',
 							 'ResNet50word', 'ResNet50wordClean'],
