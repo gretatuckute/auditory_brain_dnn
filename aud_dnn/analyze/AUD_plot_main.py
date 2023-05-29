@@ -44,7 +44,7 @@ if concat_over_models:
 	plot_scatter_pred_vs_actual = False # Figure 4, scatter for components
 
 
-target = 'NH2015'
+target = 'B2021'
 
 # Logging
 date = datetime.datetime.now().strftime("%m%d%Y-%T")
@@ -553,14 +553,31 @@ if not concat_over_models:
 				val_flags = ['median_r2_test_c']
 
 			print(f'Aggregating data for {source_model} model')
-			for collapse_flag in ['median']:
-				for val_flag in val_flags:
-					obtain_spectemp_val_CV_splits_nit(roi=None,
-													  target=target,
-													  df_meta_roi=df_meta_roi,
-													  collapse_over_splits=collapse_flag,
-													  value_of_interest=val_flag,
-													  nit=10)
+
+			if best_layer_cv_nit:
+				for collapse_flag in ['median']:
+					for val_flag in val_flags:
+						obtain_spectemp_val_CV_splits_nit(roi=None,
+														  target=target,
+														  df_meta_roi=df_meta_roi,
+														  collapse_over_splits=collapse_flag,
+														  value_of_interest=val_flag,
+														  nit=10)
+
+			if pred_across_layers:
+
+				# Plot predictivity across the one layer, all voxels (for getting the output file for consistency with all other models)
+				plot_score_across_layers(output=output,
+										 output_randnetw=output_randnetw,
+										 source_model=source_model,
+										 target=target,
+										 ylim=[0, 1],
+										 roi=None,
+										 save=PLOTDIR,
+										 value_of_interest='median_r2_test_c', )
+
+
+
 		else: # Move on to all other possible analyses for models
 
 			######### FIGURE OUT WHETHER WE HAVE NEURAL OR COMPONENT TARGET DATA ########

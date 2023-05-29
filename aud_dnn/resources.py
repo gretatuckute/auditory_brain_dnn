@@ -244,6 +244,7 @@ d_layer_names = {'Kell2018music': {'input_after_preproc': 'Cochleagram', 'relu0'
                  'DS2': {'Tanh_1': 'HardTanh_1', 'Tanh_2': 'HardTanh_2', 'LSTM_1-cell': 'LSTM_1', 'LSTM_2-cell': 'LSTM_2',
                             'LSTM_3-cell': 'LSTM_3', 'LSTM_4-cell': 'LSTM_4', 'LSTM_5-cell': 'LSTM_5', 'Linear': 'Linear_1'},
                  'DCASE2020': {'GRU_1': 'GRU_1', 'GRU_2': 'GRU_2', 'GRU_3': 'GRU_3', 'GRU_4': 'GRU_4', 'Linear': 'Linear_1'},
+                 'spectemp': {'avgpool': 'AvgPool'},
 
                  }
 
