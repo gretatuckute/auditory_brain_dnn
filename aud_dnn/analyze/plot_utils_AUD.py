@@ -3560,6 +3560,9 @@ def direct_plot_val_surface(output,
         # Add in the median r2 test c and multiply by 10 and +1  to offset from zero
         df_meta_roi['median_r2_test_c'] = (output.query(f'source_layer == "{selected_layer}"').median_r2_test_c.values * 10) + 1
 
+    elif val == 'shared_by':
+        df_meta_roi['shared_by'] = df_meta_roi['shared_by'].astype(int)
+
     else:
         raise ValueError(f'{val} is not supported yet.')
         

@@ -747,7 +747,7 @@ if not concat_over_models:
 						SURFDIR = False
 
 					# Not used in paper, but can come in handy
-					val_flags = ['median_r2_test_c'] # ['kell_r_reliability', 'roi_label_general', 'pearson_r_reliability', 'shared_by']
+					val_flags = ['shared_by'] # ['kell_r_reliability', 'roi_label_general', 'pearson_r_reliability', 'shared_by']
 
 					# Transform values and assign their correct names
 					for val_flag in val_flags:
