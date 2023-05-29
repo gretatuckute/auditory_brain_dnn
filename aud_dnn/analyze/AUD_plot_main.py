@@ -11,19 +11,19 @@ SURFDIR = f'{DATADIR}/fsavg_surf/'
 
 ### Settings for which plots to make ###
 save = True # Whether to save any plots/csvs
-concat_over_models = True
+concat_over_models = False
 
 # If concat_over_models = False, we load each individual model and perform the analysis on that
 if not concat_over_models:
 	# Shared for neural and components
-	best_layer_cv_nit = True # Basis for Figure 2 for neural, basis for Figure 5 for components; obtain best layer for each voxel based on independent CV splits across 10 iterations
+	best_layer_cv_nit = False # Basis for Figure 2 for neural, basis for Figure 5 for components; obtain best layer for each voxel based on independent CV splits across 10 iterations
 
 	# Neural specific
 	pred_across_layers = False # SI 2; predictivity for each model across all layers
-	best_layer_anat_ROI = True # Basis for Figure 7 for neural; best layer for each anatomical ROI
+	best_layer_anat_ROI = False # Basis for Figure 7 for neural; best layer for each anatomical ROI
 	run_surf_argmax = False # Basis for Figure 6 for neural, dump argmax surface position to .mat file
 	run_surf_argmax_merge_datsets = False # Basis for Figure 6 for neural, merge NH2015 and B2021 datasets to find argmax surface position across both datasets
-	run_surf_direct_val = False # plotting arbitrary values on the surface (not used in paper)
+	run_surf_direct_val = True # plotting arbitrary values on the surface (not used in paper)
 
 
 if concat_over_models:
@@ -33,7 +33,7 @@ if concat_over_models:
 	plot_word_clean_models = False # Figure 9 for neural and components; barplot of performance for word models vs clean models
 
 	# Neural specific
-	plot_anat_roi_scatter = True # Figure 7 neural; scatter of performance across models for anatomical ROIs
+	plot_anat_roi_scatter = False # Figure 7 neural; scatter of performance across models for anatomical ROIs
 	stats_barplot_across_models = False # Figure 2 neural; stats for barplot of performance across models
 	determine_surf_colorscale = False # For figuring out which colorscale to use for Figure 6
 	median_surface_across_models = False # Figure 6 neural; median surface across models for each dataset
@@ -95,7 +95,7 @@ source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell201
 # 				 'ResNet50wordClean', 'ResNet50wordCleanSeed2']
 # source_models = ['Kell2018word', 'Kell2018wordClean', 'Kell2018wordSeed2', 'Kell2018wordCleanSeed2',
 # 				 'ResNet50word', 'ResNet50wordClean', 'ResNet50wordSeed2', 'ResNet50wordCleanSeed2']
-
+source_models = ['DCASE2020']
 
 print(f'---------- Target: {target} ----------')
 
@@ -731,7 +731,7 @@ if not concat_over_models:
 
 					# Not used in paper, but can come in handy
 					val_flags = ['kell_r_reliability', 'roi_label_general', 'pearson_r_reliability', 'shared_by']
-					val_flags = ['median_r2_test_c']
+					val_flags = ['kell_r_reliability']
 
 					# Transform values
 					for val_flag in val_flags:

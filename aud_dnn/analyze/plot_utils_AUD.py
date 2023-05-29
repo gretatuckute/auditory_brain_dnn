@@ -3539,12 +3539,20 @@ def direct_plot_val_surface(output,
     if val == 'kell_r_reliability' or val == 'pearson_r_reliability':
         # Multiply by 10
         df_meta_roi[f'{val}*10'] = df_meta_roi[val] * 10
-        
-    
+
+    if val == 'median_r2_test_c':
+        raise(ValueError(f'{val} is needs to be multiplied with *10 or be an int to avoid KNN interpolation oddness.'))
+        arbitrary_test_layer = output.source_layer.unique()[0]
+        # Check voxel_id aligns with the output df
+        assert (output.query(f'source_layer == "{arbitrary_test_layer}"').voxel_id.values == df_meta_roi.voxel_id.values).all()
+        # Add in the median r2 test c
+        df_meta_roi['median_r2_test_c'] = output.query(f'source_layer == "{arbitrary_test_layer}"').median_r2_test_c.values
+
+
     if val in output.columns:
         # Check whether meta aligns with the output df
         arbitrary_test_layer = output.source_layer.unique()[0]
-        assert (output.query(f'source_layer == "{arbitrary_test_layer}"')[val] == df_meta_roi[val]).all()
+        assert (output.query(f'source_layer == "{arbitrary_test_layer}"')[val].values == df_meta_roi[val].values).all()
     else:
         print(f'{val} not in output df. Skipping check between output and df meta roi.')
         
