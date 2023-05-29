@@ -10,7 +10,7 @@ PLOTSURFDIR = Path(f'{ROOT}/results/PLOTS_SURF_across-models/')
 SURFDIR = f'{DATADIR}/fsavg_surf/'
 
 ### Settings for which plots to make ###
-save = False # Whether to save any plots/csvs
+save = True # Whether to save any plots/csvs
 concat_over_models = True
 
 # If concat_over_models = False, we load each individual model and perform the analysis on that
@@ -44,7 +44,7 @@ if concat_over_models:
 	plot_scatter_pred_vs_actual = False # Figure 4, scatter for components
 
 
-target = 'NH2015'
+target = 'B2021'
 
 # Logging
 date = datetime.datetime.now().strftime("%m%d%Y-%T")
@@ -55,7 +55,7 @@ if user != 'gt':
 # source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
 # 				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
 # 				'AST',  'wav2vec', 'DCASE2020', 'DS2',  'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer']# 'spectemp']
-# # source_models = [ 'ResNet50audioset',   'ResNet50multitask',
+# source_models = [ 'ResNet50audioset',   'ResNet50multitask',
 # 				'AST',  'wav2vec', 'DCASE2020', 'DS2',  'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer', 'spectemp']
 # Models above spectemp baseline (n=15)
 source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
@@ -412,7 +412,7 @@ if concat_over_models:  # assemble plots across models
 				save_str = f'_{len(source_models)}-models'
 
 			for val_flag in ['median_r2_test_c']:
-				for non_primary_flag in ['Anterior', 'Lateral', 'Posterior']: # ['Anterior', 'Lateral', 'Posterior']
+				for non_primary_flag in ['Posterior']: # ['Anterior', 'Lateral', 'Posterior']
 					for cond_flag in ['roi_label_general']:
 						for collapse_flag in ['median']: # How we collapsed over the relative position value for each subject (median is the default)
 							for randnetw_flag in ['False',]: # 'True', 'False'
@@ -422,7 +422,7 @@ if concat_over_models:  # assemble plots across models
 															   randnetw=randnetw_flag,
 															   condition_col=cond_flag,
 															   collapse_over_val_layer=collapse_flag,
-															   primary_rois=['Primary', ], # 'Primary',
+															   primary_rois=['Lateral', ], # 'Primary',
 															   non_primary_rois=[non_primary_flag],
 															   annotate=False,
 															   save_str=save_str,
@@ -731,6 +731,7 @@ if not concat_over_models:
 
 					# Not used in paper, but can come in handy
 					val_flags = ['kell_r_reliability', 'roi_label_general', 'pearson_r_reliability', 'shared_by']
+					val_flags = ['median_r2_test_c']
 
 					# Transform values
 					for val_flag in val_flags:

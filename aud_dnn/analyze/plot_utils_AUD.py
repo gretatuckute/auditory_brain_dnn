@@ -36,7 +36,7 @@ random.seed(0)
 DATADIR = (Path(os.getcwd()) / '..' / '..' / 'data').resolve()
 if user == 'gt':
     ROOT = f'/Users/{user}/bur/'
-    ROOT = f'/Users/gt/Documents/GitHub/auditory_brain_dnn/'
+    # ROOT = f'/Users/gt/Documents/GitHub/auditory_brain_dnn/' # For running locally, to-do make nice
 else:
     print(f' ------------- Running on openmind as {user} -----------')
     ROOT = f'/mindhive/mcdermott/u/{user}/auditory_brain_dnn/'
