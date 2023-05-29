@@ -2581,7 +2581,7 @@ def load_scatter_anat_roi_best_layer(target,
                                     save_str='',
                                     value_of_interest='median_r2_test_c',
                                     layer_value_of_interest='rel_pos',
-                                    layers_to_exclude=None,
+                                    layers_to_exclude='',
                                      RESULTDIR_ROOT='/om2/user/gretatu/results/AUD/20210915_median_across_splits_correction/PLOTS_ACROSS_MODELS/',
                                      ):
     """
@@ -2593,12 +2593,8 @@ def load_scatter_anat_roi_best_layer(target,
         layers_to_exclude was None none in trained, but 'input_after_preproc' for permuted.
 
     """
-    
-    if layers_to_exclude:
-        layers_exclusion_savestr = f'_layer-exclude-{"-".join(layers_to_exclude)}' # suffix with this
-        # layers_exclusion_savestr = f'_layer-exclude-{layers_to_exclude}' # suffix with this
-    else:
-        layers_exclusion_savestr = '' # otherwise no suffix
+    # We didn't exclude any layers, so the file is suffixed with layer-exclude-.csv
+    layers_exclusion_savestr = f'_layer-exclude-{"-".join(layers_to_exclude)}' # suffix with this
 
     load_str = f'across-models_scatter{d_annotate[annotate]}{save_str}_' \
                f'{yerr_type}_{condition_col}_' \
@@ -3221,8 +3217,8 @@ def modelwise_scores_across_targets(source_models,
                                     aggregation='CV-splits-nit-10',
                                     value_of_interest='median_r2_test_c',
                                     randnetw='False',
-                                    target1_loadstr_suffix='__performance_sorted_20220311',
-                                    target2_loadstr_suffix='_performance_sorted_20220311',
+                                    target1_loadstr_suffix='_performance_sorted',
+                                    target2_loadstr_suffix='_performance_sorted',
                                     save=False,
                                     add_savestr='',
                                     ylim=(0.2,0.8)):
@@ -3393,8 +3389,13 @@ def layerwise_scores_across_targets(source_models,
         df_model_layer_target1 = df_model_layer_target1.drop(columns=nans.index)
         df_model_layer_target2 = df_model_layer_target2.drop(columns=nans.index)
     
+    # Find discrepancy in layers, find models not in both
+    if df_model_layer_target1.columns.tolist() != df_model_layer_target2.columns.tolist():
+        diff = list(set(df_model_layer_target1.columns.tolist()) - set(df_model_layer_target2.columns.tolist()))
+        print(f'Found discrepancy in layers between {target1} and {target2}: {diff}')
+        assert len(df_model_layer_target1.columns) == len(df_model_layer_target2.columns)
+
     # get num layers (columns)
-    assert len(df_model_layer_target1.columns) == len(df_model_layer_target2.columns)
     n_layers = len(df_model_layer_target1.columns)
     
     # Now we have subj x layer (unique to each model). Let's compute within-subject SEM

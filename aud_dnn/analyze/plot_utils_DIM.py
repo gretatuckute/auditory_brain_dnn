@@ -14,7 +14,7 @@ import getpass
 import sys
 from os.path import join
 
-from aud_dnn.resources import d_layer_reindex
+from aud_dnn.resources import d_layer_reindex, d_randnetw
 from plot_utils_AUD_RSA import load_rsa_scores_across_layers_across_models, \
 	package_RSA_best_layer_scores
 from plot_utils_AUD import load_score_across_layers_across_models, \
@@ -42,7 +42,7 @@ else:
 SAVEDIR_CENTRALIZED = f'{ROOT}/results/PLOTS_across-models/'  # make sure that ind. comp. are named in the title
 STATSDIR_CENTRALIZED = f'{ROOT}/results/STATS_across-models/'
 RESULTDIR_ROOT = (Path(f'{ROOT}/results')).resolve()
-
+# RESULTDIR_ROOT = '/Users/gt/Documents/GitHub/auditory_brain_dnn/results/' # LOCAL
 
 def compile_dim_data(randnetw,
 					 fname_dim,
@@ -538,9 +538,9 @@ def loop_across_best_layer_regr_rsa(source_models,
 	
 	# Obtain specs for randnetw False and True
 	if randnetw == 'False':
-		save_str = '_all-good-models'
+		save_str = '_good-models'
 		permuted_flag = False
-		layer_exclude_flag = None
+		layer_exclude_flag = ''
 		print(f'randnetw = {randnetw}, \n'
 			  f'using save_str = {save_str}\n'
 			  f'permuted_flag = {permuted_flag}\n'
@@ -549,7 +549,7 @@ def loop_across_best_layer_regr_rsa(source_models,
 	elif randnetw == 'True':  # PERMUTED: Version used for paper n=15 models and excludes input layer for in-house
 		save_str = '_good-models'  # Was stored with this suffix with the input layers excluded for in-house
 		permuted_flag = True
-		layer_exclude_flag = ['input_after_preproc']
+		layer_exclude_flag = ''
 		print(f'randnetw = {randnetw}, \n'
 			  f'using save_str = {save_str}\n'
 			  f'permuted_flag = {permuted_flag}\n'
