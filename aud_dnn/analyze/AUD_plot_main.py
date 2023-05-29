@@ -44,7 +44,7 @@ if concat_over_models:
 	plot_scatter_pred_vs_actual = False # Figure 4, scatter for components
 
 
-target = 'B2021'
+target = 'NH2015'
 
 # Logging
 date = datetime.datetime.now().strftime("%m%d%Y-%T")
@@ -411,7 +411,7 @@ if concat_over_models:  # assemble plots across models
 				save_str = f'_{len(source_models)}-models'
 
 			for val_flag in ['median_r2_test_c']:
-				for non_primary_flag in ['Lateral','Posterior']: # ['Anterior', 'Lateral', 'Posterior'] # For other combs, run with "Posterior" and then 'Lateral','Posterior'
+				for non_primary_flag in ['Posterior']: # ['Anterior', 'Lateral', 'Posterior'] # For other combs, run with "Posterior" and then 'Lateral','Posterior'
 					for cond_flag in ['roi_label_general']:
 						for collapse_flag in ['median']: # How we collapsed over the relative position value for each subject (median is the default)
 							for randnetw_flag in ['True',]: # 'True', 'False'
@@ -421,7 +421,7 @@ if concat_over_models:  # assemble plots across models
 															   randnetw=randnetw_flag,
 															   condition_col=cond_flag,
 															   collapse_over_val_layer=collapse_flag,
-															   primary_rois=['Anterior', ], # 'Primary',# For other combs, run with "Lateral" and then "Anterior"
+															   primary_rois=['Lateral', ], # 'Primary',# For other combs, run with "Lateral" and then "Anterior"
 															   non_primary_rois=[non_primary_flag],
 															   annotate=False,
 															   save_str=save_str,
