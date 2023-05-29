@@ -3519,10 +3519,14 @@ def add_int_to_meta_col(df_meta_roi,
 #### SURFACE PLOTTING FUNCTIONS ####
 def direct_plot_val_surface(output,
                             df_meta_roi,
-                            val='kell_r_reliability',):
+                            val='kell_r_reliability',
+                            selected_layer=None,
+                            ):
     """takes an output df and packages it in a df where the val of interest directly will be used as the value to
         plot on the surface.
         Ultimately just creates a df with index voxel id and a column with the plotting value of interest.
+
+    If we plot median r2 test, we need a selected layer.
         
 
     :return: df with index as voxel id and "layer_pos" column as the argmax layer as a str, and
@@ -3531,31 +3535,33 @@ def direct_plot_val_surface(output,
             The column "rel_pos" is zero indexed, i.e. 0 is the first layer, and if the model has 11 layers,
             then 10 is the top layer.
     """
-    
-    # Various transformations to get the value of interest to e.g. int
-    if val == 'roi_label_general':
-        # Transform from str to int
-        df_meta_roi = add_int_to_meta_col(df_meta_roi=df_meta_roi,
-                                          col_name=val)
-    if val == 'kell_r_reliability' or val == 'pearson_r_reliability':
-        # Multiply by 10
-        df_meta_roi[f'{val}*10'] = df_meta_roi[val] * 10
-
-    if val == 'median_r2_test_c':
-        raise(ValueError(f'{val} is needs to be multiplied with *10 or be an int to avoid KNN interpolation oddness.'))
-        arbitrary_test_layer = output.source_layer.unique()[0]
-        # Check voxel_id aligns with the output df
-        assert (output.query(f'source_layer == "{arbitrary_test_layer}"').voxel_id.values == df_meta_roi.voxel_id.values).all()
-        # Add in the median r2 test c
-        df_meta_roi['median_r2_test_c'] = output.query(f'source_layer == "{arbitrary_test_layer}"').median_r2_test_c.values
-
-
-    if val in output.columns:
+    if val in output.columns and val in df_meta_roi.columns:
         # Check whether meta aligns with the output df
         arbitrary_test_layer = output.source_layer.unique()[0]
         assert (output.query(f'source_layer == "{arbitrary_test_layer}"')[val].values == df_meta_roi[val].values).all()
     else:
         print(f'{val} not in output df. Skipping check between output and df meta roi.')
+
+    # Various transformations to get the value of interest to e.g. int
+    if val == 'roi_label_general':
+        # Transform from str to int
+        df_meta_roi = add_int_to_meta_col(df_meta_roi=df_meta_roi,
+                                          col_name=val)
+    elif val == 'kell_r_reliability' or val == 'pearson_r_reliability':
+        # Multiply by 10
+        df_meta_roi[f'{val}*10'] = df_meta_roi[val] * 10
+
+    elif val == 'median_r2_test_c':
+        print(f'Using selected layer {selected_layer} to get median r2 test c.')
+
+        # Check voxel_id aligns with the output df
+        assert (output.query(f'source_layer == "{selected_layer}"').voxel_id.values == df_meta_roi.voxel_id.values).all()
+
+        # Add in the median r2 test c and multiply by 10 and +1  to offset from zero
+        df_meta_roi['median_r2_test_c'] = (output.query(f'source_layer == "{selected_layer}"').median_r2_test_c.values * 10) + 1
+
+    else:
+        raise ValueError(f'{val} is not supported yet.')
         
     # Create df with voxel id and value of interest
     df_plot_direct = df_meta_roi.set_index('voxel_id').copy()
@@ -4102,8 +4108,8 @@ def create_avg_subject_surface(df_plot,
         meta_unique_coords_save['source_model'] = source_model
         meta_unique_coords_save['target'] = target
         meta_unique_coords_save['randnetw'] = randnetw
-        meta_unique_coords_save['val_of_interest'] = val_of_interest
-        meta_unique_coords_save['plot_val_of_interest'] = plot_val_of_interest
+        meta_unique_coords_save['val_of_interest'] = val_of_interest # The original name of the value, pre transformations
+        meta_unique_coords_save['plot_val_of_interest'] = plot_val_of_interest # The name of the value, post transformations
         meta_unique_coords_save['datetag'] = datetag
         meta_unique_coords_save.to_csv(join(save, f'surf_coords_full_{source_model}_'
                                                   f'{target}_'

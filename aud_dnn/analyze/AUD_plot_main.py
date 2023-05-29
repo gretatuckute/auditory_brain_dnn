@@ -19,11 +19,11 @@ if not concat_over_models:
 	best_layer_cv_nit = False # Basis for Figure 2 for neural, basis for Figure 5 for components; obtain best layer for each voxel based on independent CV splits across 10 iterations
 
 	# Neural specific
-	pred_across_layers = True # SI 2; predictivity for each model across all layers
+	pred_across_layers = False # SI 2; predictivity for each model across all layers
 	best_layer_anat_ROI = False # Basis for Figure 7 for neural; best layer for each anatomical ROI
 	run_surf_argmax = False # Basis for Figure 6 for neural, dump argmax surface position to .mat file
 	run_surf_argmax_merge_datsets = False # Basis for Figure 6 for neural, merge NH2015 and B2021 datasets to find argmax surface position across both datasets
-	run_surf_direct_val = False # plotting arbitrary values on the surface (not used in paper)
+	run_surf_direct_val = True # plotting arbitrary values on the surface (not used in paper)
 
 
 if concat_over_models:
@@ -95,7 +95,7 @@ source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell201
 # 				 'ResNet50wordClean', 'ResNet50wordCleanSeed2']
 # source_models = ['Kell2018word', 'Kell2018wordClean', 'Kell2018wordSeed2', 'Kell2018wordCleanSeed2',
 # 				 'ResNet50word', 'ResNet50wordClean', 'ResNet50wordSeed2', 'ResNet50wordCleanSeed2']
-source_models = ['spectemp']
+source_models = ['ResNet50multitask']
 
 print(f'---------- Target: {target} ----------')
 
@@ -747,22 +747,25 @@ if not concat_over_models:
 						SURFDIR = False
 
 					# Not used in paper, but can come in handy
-					val_flags = ['kell_r_reliability', 'roi_label_general', 'pearson_r_reliability', 'shared_by']
-					val_flags = ['kell_r_reliability']
+					val_flags = ['median_r2_test_c'] # ['kell_r_reliability', 'roi_label_general', 'pearson_r_reliability', 'shared_by']
 
-					# Transform values
+					# Transform values and assign their correct names
 					for val_flag in val_flags:
 						# Transformations
 						if val_flag.endswith('reliability'):
 							val_flag_to_plot = f'{val_flag}*10'
 						elif val_flag == 'roi_label_general':
 							val_flag_to_plot = 'roi_label_general_int'
+						elif val_flag == 'median_r2_test_c':
+							selected_layer = 'layer3'
+							val_flag_to_plot = f'median_r2_test_c*10+1_{selected_layer}' # Offset to avoid 0 values in KNN interpolation
 						else:
 							val_flag_to_plot = val_flag
 
 						df_plot_direct = direct_plot_val_surface(output=output,
 																 df_meta_roi=df_meta_roi,
-																 val=val_flag, )
+																 val=val_flag,
+																 selected_layer='layer3')
 
 						# Make sure we take the median across shared coordinates across subjects!
 						df_plot_direct_median = create_avg_subject_surface(df_plot=df_plot_direct,
@@ -773,7 +776,7 @@ if not concat_over_models:
 																		   save=PLOTSURFDIR,
 																		   target=target,
 																		   randnetw='False',
-																		   plot_val_of_interest=val_flag_to_plot, )
+																		   plot_val_of_interest=val_flag, )
 
 						# Dump to mat file
 						dump_for_surface_writing_direct(df_plot_direct=df_plot_direct_median,
