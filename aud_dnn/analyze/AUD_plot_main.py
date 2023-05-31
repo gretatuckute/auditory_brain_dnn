@@ -16,14 +16,14 @@ concat_over_models = False
 # If concat_over_models = False, we load each individual model and perform the analysis on that
 if not concat_over_models:
 	# Shared for neural and components
-	best_layer_cv_nit = False # Basis for Figure 2 for neural, basis for Figure 5 for components; obtain best layer for each voxel based on independent CV splits across 10 iterations
+	best_layer_cv_nit = True # Basis for Figure 2 for neural, basis for Figure 5 for components; obtain best layer for each voxel based on independent CV splits across 10 iterations
 
 	# Neural specific
 	pred_across_layers = False # SI 2; predictivity for each model across all layers
 	best_layer_anat_ROI = False # Basis for Figure 7 for neural; best layer for each anatomical ROI
 	run_surf_argmax = False # Basis for Figure 6 for neural, dump argmax surface position to .mat file
 	run_surf_argmax_merge_datsets = False # Basis for Figure 6 for neural, merge NH2015 and B2021 datasets to find argmax surface position across both datasets
-	run_surf_direct_val = True # plotting arbitrary values on the surface (not used in paper)
+	run_surf_direct_val = False # plotting arbitrary values on the surface (not used in paper)
 
 
 if concat_over_models:
@@ -44,7 +44,7 @@ if concat_over_models:
 	plot_scatter_pred_vs_actual = False # Figure 4, scatter for components
 
 
-target = 'B2021'
+target = 'NH2015comp'
 
 # Logging
 date = datetime.datetime.now().strftime("%m%d%Y-%T")
@@ -95,7 +95,10 @@ source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell201
 # 				 'ResNet50wordClean', 'ResNet50wordCleanSeed2']
 # source_models = ['Kell2018word', 'Kell2018wordClean', 'Kell2018wordSeed2', 'Kell2018wordCleanSeed2',
 # 				 'ResNet50word', 'ResNet50wordClean', 'ResNet50wordSeed2', 'ResNet50wordCleanSeed2']
-source_models = ['ResNet50multitask']
+# Clean speaker models
+source_models = ['Kell2018speakerClean', 'Kell2018speakerCleanSeed2',
+				 'ResNet50speakerClean', 'ResNet50speakerCleanSeed2']
+
 
 print(f'---------- Target: {target} ----------')
 
