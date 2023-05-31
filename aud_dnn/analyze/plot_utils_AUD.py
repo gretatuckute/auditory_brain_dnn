@@ -4437,13 +4437,16 @@ def compare_CV_splits_nit(source_models,
 
     Intended for use with components (where we don't have individual subjects to bootstrap over).
     """
+    source_models_copy = copy.deepcopy(source_models)
+    models1_copy = copy.deepcopy(models1)
+    models2_copy = copy.deepcopy(models2)
     if include_spectemp:
-        source_models.append('spectemp')
-        models1.append('spectemp')
-        models2.append('spectemp')
+        source_models_copy.append('spectemp')
+        models1_copy.append('spectemp')
+        models2_copy.append('spectemp')
         
     df_lst = []
-    for source_model in source_models:
+    for source_model in source_models_copy:
         if target == 'NH2015comp': # saved with comp specific name
             load_str = f'best-layer-{aggregation}_per-comp_{source_model}{d_randnetw[randnetw]}_{target}_{value_of_interest}_stats.csv'
         else:
@@ -4456,8 +4459,8 @@ def compare_CV_splits_nit(source_models,
     df_all = pd.concat(df_lst)
     
     lst_df_stat = []
-    for model1 in tqdm(models1):
-        for model2 in models2:
+    for model1 in tqdm(models1_copy):
+        for model2 in models2_copy:
             if model1 == model2:
                 continue
                 

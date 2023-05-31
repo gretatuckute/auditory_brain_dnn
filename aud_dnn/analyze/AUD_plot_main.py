@@ -11,7 +11,7 @@ SURFDIR = f'{DATADIR}/fsavg_surf/'
 
 ### Settings for which plots to make ###
 save = True # Whether to save any plots/csvs
-concat_over_models = False
+concat_over_models = True
 
 # If concat_over_models = False, we load each individual model and perform the analysis on that
 if not concat_over_models:
@@ -30,17 +30,18 @@ if concat_over_models:
 	# Shared for neural and components
 	plot_barplot_across_models = False # Figure 2 for neural, Figure 5 for components; barplot of performance across models
 	plot_scatter_across_models = False # Figure 2, Seed1 vs Seed2 scatter for neural
-	plot_word_clean_models = False # Figure 9 for neural and components; barplot of performance for word models vs clean models
+	plot_word_clean_models = False # Figure 8 for neural and components; barplot of performance for word models vs clean models
+	plot_speaker_clean_models = True # Figure 8 for neural and components; barplot of performance for speaker models vs clean models
 
 	# Neural specific
-	plot_anat_roi_scatter = True # Figure 7 neural; scatter of performance across models for anatomical ROIs
+	plot_anat_roi_scatter = False # Figure 7 neural; scatter of performance across models for anatomical ROIs
 	stats_barplot_across_models = False # Figure 2 neural; stats for barplot of performance across models
 	determine_surf_colorscale = False # For figuring out which colorscale to use for Figure 6
 	median_surface_across_models = False # Figure 6 neural; median surface across models for each dataset
 
 	# Component specific
-	plot_barplot_across_inhouse_models = False # Figure 8A) for components (in-house models)
-	plot_scatter_comp_vs_comp = False # Figure 8B) for components (in-house models)
+	plot_barplot_across_inhouse_models = False # Figure 9A) for components (in-house models)
+	plot_scatter_comp_vs_comp = False # Figure 9B) for components (in-house models)
 	plot_scatter_pred_vs_actual = False # Figure 4, scatter for components
 
 
@@ -210,7 +211,7 @@ if concat_over_models:  # assemble plots across models
 														 add_in_spacing_bar=False,
 														 ylim=[0, 1],
 														 add_savestr=f'_word-clean-models{add_savestr}',
-														 box_aspect=0.8)
+														 box_aspect=1)
 
 				# Run associated stats
 				compare_CV_splits_nit(source_models=source_models,
@@ -222,6 +223,48 @@ if concat_over_models:  # assemble plots across models
 									  aggregation='CV-splits-nit-10',
 									  randnetw=randnetw_flag,
 									  )
+
+		### For plotting in-house models barplot (Figure 9A) ###
+		if plot_speaker_clean_models:
+			source_model_lst = [['Kell2018speaker', 'Kell2018speakerClean',
+							 'ResNet50speaker', 'ResNet50speakerClean'],
+							 ['Kell2018speakerSeed2', 'Kell2018speakerCleanSeed2',
+							 'ResNet50speakerSeed2', 'ResNet50speakerCleanSeed2']]
+
+			#### Best layer component predictions across models (independently selected layer) ####
+			for source_models in source_model_lst:
+				# if all end with 'Seed2' then add savestr
+				if all([x.endswith('Seed2') for x in source_models]):
+					add_savestr = f'_seed2'
+				else:
+					add_savestr = f'_seed1'
+
+				for sort_flag in [source_models]: #'performance'
+					# Remember to make source_models align with sort_flag
+					for randnetw_flag in ['False','True']: # 'False', 'True'
+						barplot_components_across_models(source_models=source_models,
+														 target=target,
+														 randnetw=randnetw_flag,
+														 value_of_interest='median_r2_test',
+														 yerr_type='median_r2_test_sem_over_it',
+														 save=SAVEDIR_CENTRALIZED,
+														 include_spectemp=True,
+														 sort_by=sort_flag,
+														 add_in_spacing_bar=False,
+														 ylim=[0, 1],
+														 add_savestr=f'_speaker-clean-models{add_savestr}',
+														 box_aspect=1)
+
+						# Run associated stats
+						compare_CV_splits_nit(source_models=sort_flag,
+											  target=target,
+											  save=save,
+											  save_str=f'_speaker-clean-models{add_savestr}',
+											  models1=sort_flag,
+											  models2=sort_flag,
+											  aggregation='CV-splits-nit-10',
+											  randnetw=randnetw_flag,
+											  )
 
 		
 		#### Scatter: comp1 vs comp2 predictivity across models (Figure 8B) ####
