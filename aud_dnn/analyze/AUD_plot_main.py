@@ -30,8 +30,8 @@ if concat_over_models:
 	# Shared for neural and components
 	plot_barplot_across_models = False # Figure 2 for neural, Figure 5 for components; barplot of performance across models
 	plot_scatter_across_models = False # Figure 2, Seed1 vs Seed2 scatter for neural
-	plot_word_clean_models = False # Figure 8 for neural and components; barplot of performance for word models vs clean models
-	plot_speaker_clean_models = True # Figure 8 for neural and components; barplot of performance for speaker models vs clean models
+	plot_word_clean_models = True # Figure 8 for neural and components; barplot of performance for word models vs clean models
+	plot_speaker_clean_models = False # Figure 8 for neural and components; barplot of performance for speaker models vs clean models
 
 	# Neural specific
 	plot_anat_roi_scatter = False # Figure 7 neural; scatter of performance across models for anatomical ROIs
@@ -213,16 +213,16 @@ if concat_over_models:  # assemble plots across models
 														 add_savestr=f'_word-clean-models{add_savestr}',
 														 box_aspect=1)
 
-				# Run associated stats
-				compare_CV_splits_nit(source_models=source_models,
-									  target=target,
-									  save=save,
-									  save_str=f'_word-clean-models{add_savestr}',
-									  models1=source_models,
-									  models2=source_models,
-									  aggregation='CV-splits-nit-10',
-									  randnetw=randnetw_flag,
-									  )
+						# Run associated stats
+						compare_CV_splits_nit(source_models=sort_flag,
+											  target=target,
+											  save=save,
+											  save_str=f'_word-clean-models{add_savestr}',
+											  models1=sort_flag,
+											  models2=sort_flag,
+											  aggregation='CV-splits-nit-10',
+											  randnetw=randnetw_flag,
+											  )
 
 		### For plotting in-house models barplot (Figure 9A) ###
 		if plot_speaker_clean_models:
