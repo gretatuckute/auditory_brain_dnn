@@ -30,8 +30,8 @@ if concat_over_models:
 	# Shared for neural and components
 	plot_barplot_across_models = False # Figure 2 for neural, Figure 5 for components; barplot of performance across models
 	plot_scatter_across_models = False # Figure 2, Seed1 vs Seed2 scatter for neural
-	plot_scatter_across_models_clean = False # For components, seed1 vs seed2 scatter for clean models
-	plot_word_speaker_clean_models = True # Figure 8 for neural; barplot of performance for word/speaker models vs clean models (SI for components)
+	plot_scatter_across_models_clean = True # For components, seed1 vs seed2 scatter for clean models
+	plot_word_speaker_clean_models = False # Figure 8 for neural; barplot of performance for word/speaker models vs clean models (SI for components)
 
 	# Neural specific
 	plot_anat_roi_scatter = False # Figure 7 neural; scatter of performance across models for anatomical ROIs
@@ -168,7 +168,7 @@ if concat_over_models:  # assemble plots across models
 
 			for randnetw_flag in ['False', 'True']: # 'False', 'True'
 				if randnetw_flag == 'False':
-					ylim = [0.4, 1]
+					ylim = [0.2, 1]
 				else:
 					ylim = [0, 1]
 
