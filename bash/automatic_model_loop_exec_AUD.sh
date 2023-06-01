@@ -22,6 +22,14 @@ if [ "$model" = "Kell2018wordCleanSeed2" ]; then
   models="Kell2018wordCleanSeed2"
   layers="input_after_preproc relu0 maxpool0 relu1 maxpool1 relu2 relu3 relu4 avgpool relufc final"
 fi
+if [ "$model" = "Kell2018speakerClean" ]; then
+  models="Kell2018speakerClean"
+  layers="input_after_preproc relu0 maxpool0 relu1 maxpool1 relu2 relu3 relu4 avgpool relufc"
+fi
+if [ "$model" = "Kell2018speakerCleanSeed2" ]; then
+  models="Kell2018speakerCleanSeed2"
+  layers="input_after_preproc relu0 maxpool0 relu1 maxpool1 relu2 relu3 relu4 avgpool relufc"
+fi
 if [ "$model" = "ResNet50" ]; then
   models="ResNet50word ResNet50speaker ResNet50audioset ResNet50music"
   layers="input_after_preproc conv1_relu1 maxpool1 layer1 layer2 layer3 layer4 avgpool final"
@@ -33,6 +41,14 @@ fi
 if [ "$model" = "ResNet50wordCleanSeed2" ]; then
   models="ResNet50wordCleanSeed2"
   layers="input_after_preproc conv1_relu1 maxpool1 layer1 layer2 layer3 layer4 avgpool final"
+fi
+if [ "$model" = "ResNet50speakerClean" ]; then
+  models="ResNet50speakerClean"
+  layers="input_after_preproc conv1_relu1 maxpool1 layer1 layer2 layer3 layer4 avgpool"
+fi
+if [ "$model" = "ResNet50speakerCleanSeed2" ]; then
+  models="ResNet50speakerCleanSeed2"
+  layers="input_after_preproc conv1_relu1 maxpool1 layer1 layer2 layer3 layer4 avgpool"
 fi
 if [ "$model" = "ResNet50Seed2" ]; then
   models="ResNet50wordSeed2 ResNet50speakerSeed2 ResNet50audiosetSeed2"

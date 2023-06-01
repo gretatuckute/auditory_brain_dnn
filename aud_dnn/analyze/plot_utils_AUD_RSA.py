@@ -56,9 +56,9 @@ def load_rsa_scores_across_layers_across_models(source_models,
 	"""
 	
 	if roi == None:
-		fname = f'{RESULTDIR_ROOT}/all_dataset_rsa_dict.pckl'
+		fname = f'{RESULTDIR_ROOT}/ALL_MODELS_all_dataset_rsa.pckl'
 	else:  # This has the ROI specific scores
-		fname = f'{RESULTDIR_ROOT}/best_layer_rsa_analysis_dict.pckl'
+		fname = f'{RESULTDIR_ROOT}/ALL_MODELS_best_layer_rsa_analysis_dict.pckl'
 	
 	try:
 		with open(fname, 'rb') as f:

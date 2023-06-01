@@ -19,8 +19,8 @@ if not concat_over_models:
 	best_layer_cv_nit = True # Basis for Figure 2 for neural, basis for Figure 5 for components; obtain best layer for each voxel based on independent CV splits across 10 iterations
 
 	# Neural specific
-	pred_across_layers = True # SI 2; predictivity for each model across all layers
-	best_layer_anat_ROI = True # Basis for Figure 7 for neural; best layer for each anatomical ROI
+	pred_across_layers = False # SI 2; predictivity for each model across all layers
+	best_layer_anat_ROI = False # Basis for Figure 7 for neural; best layer for each anatomical ROI
 	run_surf_argmax = False # Basis for Figure 6 for neural, dump argmax surface position to .mat file
 	run_surf_argmax_merge_datsets = False # Basis for Figure 6 for neural, merge NH2015 and B2021 datasets to find argmax surface position across both datasets
 	run_surf_direct_val = False # plotting arbitrary values on the surface (not used in paper)
@@ -30,7 +30,8 @@ if concat_over_models:
 	# Shared for neural and components
 	plot_barplot_across_models = False # Figure 2 for neural, Figure 5 for components; barplot of performance across models
 	plot_scatter_across_models = False # Figure 2, Seed1 vs Seed2 scatter for neural
-	plot_word_clean_models = True # Figure 9 for neural and components; barplot of performance for word models vs clean models
+	plot_word_clean_models = True # Figure 8 for neural and components; barplot of performance for word models vs clean models
+	plot_speaker_clean_models = False # Figure 8 for neural and components; barplot of performance for speaker models vs clean models
 
 	# Neural specific
 	plot_anat_roi_scatter = False # Figure 7 neural; scatter of performance across models for anatomical ROIs
@@ -39,8 +40,8 @@ if concat_over_models:
 	median_surface_across_models = False # Figure 6 neural; median surface across models for each dataset
 
 	# Component specific
-	plot_barplot_across_inhouse_models = False # Figure 8A) for components (in-house models)
-	plot_scatter_comp_vs_comp = False # Figure 8B) for components (in-house models)
+	plot_barplot_across_inhouse_models = False # Figure 9A) for components (in-house models)
+	plot_scatter_comp_vs_comp = False # Figure 9B) for components (in-house models)
 	plot_scatter_pred_vs_actual = False # Figure 4, scatter for components
 
 
@@ -55,12 +56,12 @@ if user != 'gt':
 # source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
 # 				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
 # 				'AST',  'wav2vec', 'DCASE2020', 'DS2',  'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer']# 'spectemp']
-# # source_models = [ 'ResNet50audioset',   'ResNet50multitask',
+# source_models = [ 'ResNet50audioset',   'ResNet50multitask',
 # 				'AST',  'wav2vec', 'DCASE2020', 'DS2',  'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer', 'spectemp']
 # Models above spectemp baseline (n=15)
-# source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-# 				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-# 				'AST',  'wav2vec', 'VGGish', 'S2T',  'sepformer']
+source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
+				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
+				'AST',  'wav2vec', 'VGGish', 'S2T',  'sepformer']
 
 # # Models below spectemp baseline (n=4)
 # source_models = [  'DCASE2020', 'DS2',  'ZeroSpeech2020', 'metricGAN']
@@ -95,6 +96,10 @@ if user != 'gt':
 # 				 'ResNet50wordClean', 'ResNet50wordCleanSeed2']
 # source_models = ['Kell2018word', 'Kell2018wordClean', 'Kell2018wordSeed2', 'Kell2018wordCleanSeed2',
 # 				 'ResNet50word', 'ResNet50wordClean', 'ResNet50wordSeed2', 'ResNet50wordCleanSeed2']
+# Clean speaker models
+source_models = ['Kell2018speakerClean', 'Kell2018speakerCleanSeed2',
+				 'ResNet50speakerClean', 'ResNet50speakerCleanSeed2']
+
 
 print(f'---------- Target: {target} ----------')
 
@@ -125,13 +130,19 @@ if concat_over_models:  # assemble plots across models
 													 include_spectemp=True,
 													 sort_by=sort_flag,
 													 add_in_spacing_bar=False,
-													 ylim=[0,1])
+													 ylim=[0,1],
+													 box_aspect=0.8)
 
 		### Scatterplot of Seed1 vs Seed2 ###
 		if plot_scatter_across_models:
 			add_savestr = f'_seed1-vs-seed2'
 
 			for randnetw_flag in ['False', 'True']: # 'False', 'True'
+				if randnetw_flag == 'False':
+					ylim = [0.4, 1]
+				else:
+					ylim = [0, 1]
+
 				scatter_components_across_models_seed(source_models=source_models,
 												 target=target,
 												 randnetw=randnetw_flag,
@@ -143,8 +154,8 @@ if concat_over_models:  # assemble plots across models
 												 yerr_type='median_r2_test_sem_over_it',
 												 save=SAVEDIR_CENTRALIZED,
 												 add_savestr=add_savestr,
-												 ylim=[0.4,0.9],
-												 xlim=[0.4,0.9])
+												 ylim=ylim,
+												 xlim=ylim)
 
 
 
@@ -168,9 +179,10 @@ if concat_over_models:  # assemble plots across models
 													 include_spectemp=True,
 													 sort_by=sort_flag,
 													 add_in_spacing_bar=True,
-													 ylim=[0.2,1])
+													 ylim=[0.2,1],
+													 box_aspect=0.8) # 1?
 
-		### For plotting in-house models barplot (Figure 8A) ###
+		### For plotting in-house models barplot (Figure 9A) ###
 		if plot_word_clean_models:
 			source_model_lst = [['Kell2018word', 'Kell2018wordClean',
 							 'ResNet50word', 'ResNet50wordClean'],
@@ -198,18 +210,61 @@ if concat_over_models:  # assemble plots across models
 														 sort_by=sort_flag,
 														 add_in_spacing_bar=False,
 														 ylim=[0, 1],
-														 add_savestr=f'_word-clean-models{add_savestr}')
+														 add_savestr=f'_word-clean-models{add_savestr}',
+														 box_aspect=1)
 
-				# Run associated stats
-				compare_CV_splits_nit(source_models=source_models,
-									  target=target,
-									  save=save,
-									  save_str=f'_word-clean-models{add_savestr}',
-									  models1=source_models,
-									  models2=source_models,
-									  aggregation='CV-splits-nit-10',
-									  randnetw=randnetw_flag,
-									  )
+						# Run associated stats
+						compare_CV_splits_nit(source_models=sort_flag,
+											  target=target,
+											  save=save,
+											  save_str=f'_word-clean-models{add_savestr}',
+											  models1=sort_flag,
+											  models2=sort_flag,
+											  aggregation='CV-splits-nit-10',
+											  randnetw=randnetw_flag,
+											  )
+
+		### For plotting in-house models barplot (Figure 9A) ###
+		if plot_speaker_clean_models:
+			source_model_lst = [['Kell2018speaker', 'Kell2018speakerClean',
+							 'ResNet50speaker', 'ResNet50speakerClean'],
+							 ['Kell2018speakerSeed2', 'Kell2018speakerCleanSeed2',
+							 'ResNet50speakerSeed2', 'ResNet50speakerCleanSeed2']]
+
+			#### Best layer component predictions across models (independently selected layer) ####
+			for source_models in source_model_lst:
+				# if all end with 'Seed2' then add savestr
+				if all([x.endswith('Seed2') for x in source_models]):
+					add_savestr = f'_seed2'
+				else:
+					add_savestr = f'_seed1'
+
+				for sort_flag in [source_models]: #'performance'
+					# Remember to make source_models align with sort_flag
+					for randnetw_flag in ['False','True']: # 'False', 'True'
+						barplot_components_across_models(source_models=source_models,
+														 target=target,
+														 randnetw=randnetw_flag,
+														 value_of_interest='median_r2_test',
+														 yerr_type='median_r2_test_sem_over_it',
+														 save=SAVEDIR_CENTRALIZED,
+														 include_spectemp=True,
+														 sort_by=sort_flag,
+														 add_in_spacing_bar=False,
+														 ylim=[0, 1],
+														 add_savestr=f'_speaker-clean-models{add_savestr}',
+														 box_aspect=1)
+
+						# Run associated stats
+						compare_CV_splits_nit(source_models=sort_flag,
+											  target=target,
+											  save=save,
+											  save_str=f'_speaker-clean-models{add_savestr}',
+											  models1=sort_flag,
+											  models2=sort_flag,
+											  aggregation='CV-splits-nit-10',
+											  randnetw=randnetw_flag,
+											  )
 
 		
 		#### Scatter: comp1 vs comp2 predictivity across models (Figure 8B) ####
@@ -304,7 +359,8 @@ if concat_over_models:  # assemble plots across models
 												  aggregation=agg_flag,
 												  value_of_interest=val_flag,
 												  sort_by=sort_flag,
-												  add_savestr=f'')
+												  add_savestr=f'',
+												  box_aspect=0.8)
 
 		# SCATTER ACROSS MODELS (SEED1 VS SEED2) #
 		if plot_scatter_across_models:
@@ -374,7 +430,8 @@ if concat_over_models:  # assemble plots across models
 													  aggregation=agg_flag,
 													  value_of_interest=val_flag,
 													  sort_by=sort_flag,
-													  add_savestr=f'_word-clean-models{add_savestr}')
+													  add_savestr=f'_word-clean-models{add_savestr}',
+													  box_aspect=1)
 
 				# Run according stats
 				for val_flag in ['median_r2_test_c', ]:
@@ -401,17 +458,17 @@ if concat_over_models:  # assemble plots across models
 				save_str = f'_{len(source_models)}-models'
 
 			for val_flag in ['median_r2_test_c']:
-				for non_primary_flag in ['Anterior', 'Lateral', 'Posterior']: # ['Anterior', 'Lateral', 'Posterior']
+				for non_primary_flag in ['Posterior']: # ['Anterior', 'Lateral', 'Posterior'] # For other combs, run with "Posterior" and then 'Lateral','Posterior'
 					for cond_flag in ['roi_label_general']:
 						for collapse_flag in ['median']: # How we collapsed over the relative position value for each subject (median is the default)
-							for randnetw_flag in ['False',]: # 'True', 'False'
+							for randnetw_flag in ['True',]: # 'True', 'False'
 								scatter_anat_roi_across_models(source_models=source_models,
 															   target=target,
 															   save=SAVEDIR_CENTRALIZED,
 															   randnetw=randnetw_flag,
 															   condition_col=cond_flag,
 															   collapse_over_val_layer=collapse_flag,
-															   primary_rois=['Primary', ], # 'Primary',
+															   primary_rois=['Lateral', ], # 'Primary',# For other combs, run with "Lateral" and then "Anterior"
 															   non_primary_rois=[non_primary_flag],
 															   annotate=False,
 															   save_str=save_str,
@@ -542,14 +599,31 @@ if not concat_over_models:
 				val_flags = ['median_r2_test_c']
 
 			print(f'Aggregating data for {source_model} model')
-			for collapse_flag in ['median']:
-				for val_flag in val_flags:
-					obtain_spectemp_val_CV_splits_nit(roi=None,
-													  target=target,
-													  df_meta_roi=df_meta_roi,
-													  collapse_over_splits=collapse_flag,
-													  value_of_interest=val_flag,
-													  nit=10)
+
+			if best_layer_cv_nit:
+				for collapse_flag in ['median']:
+					for val_flag in val_flags:
+						obtain_spectemp_val_CV_splits_nit(roi=None,
+														  target=target,
+														  df_meta_roi=df_meta_roi,
+														  collapse_over_splits=collapse_flag,
+														  value_of_interest=val_flag,
+														  nit=10)
+
+			if pred_across_layers:
+
+				# Plot predictivity across the one layer, all voxels (for getting the output file for consistency with all other models)
+				plot_score_across_layers(output=output,
+										 output_randnetw=output_randnetw,
+										 source_model=source_model,
+										 target=target,
+										 ylim=[0, 1],
+										 roi=None,
+										 save=PLOTDIR,
+										 value_of_interest='median_r2_test_c', )
+
+
+
 		else: # Move on to all other possible analyses for models
 
 			######### FIGURE OUT WHETHER WE HAVE NEURAL OR COMPONENT TARGET DATA ########
@@ -719,21 +793,25 @@ if not concat_over_models:
 						SURFDIR = False
 
 					# Not used in paper, but can come in handy
-					val_flags = ['kell_r_reliability', 'roi_label_general', 'pearson_r_reliability', 'shared_by']
+					val_flags = ['shared_by'] # ['kell_r_reliability', 'roi_label_general', 'pearson_r_reliability', 'shared_by']
 
-					# Transform values
+					# Transform values and assign their correct names
 					for val_flag in val_flags:
 						# Transformations
 						if val_flag.endswith('reliability'):
 							val_flag_to_plot = f'{val_flag}*10'
 						elif val_flag == 'roi_label_general':
 							val_flag_to_plot = 'roi_label_general_int'
+						elif val_flag == 'median_r2_test_c':
+							selected_layer = 'layer3'
+							val_flag_to_plot = f'median_r2_test_c*10+1_{selected_layer}' # Offset to avoid 0 values in KNN interpolation
 						else:
 							val_flag_to_plot = val_flag
 
 						df_plot_direct = direct_plot_val_surface(output=output,
 																 df_meta_roi=df_meta_roi,
-																 val=val_flag, )
+																 val=val_flag,
+																 selected_layer='layer3')
 
 						# Make sure we take the median across shared coordinates across subjects!
 						df_plot_direct_median = create_avg_subject_surface(df_plot=df_plot_direct,
@@ -744,7 +822,7 @@ if not concat_over_models:
 																		   save=PLOTSURFDIR,
 																		   target=target,
 																		   randnetw='False',
-																		   plot_val_of_interest=val_flag_to_plot, )
+																		   plot_val_of_interest=val_flag, )
 
 						# Dump to mat file
 						dump_for_surface_writing_direct(df_plot_direct=df_plot_direct_median,

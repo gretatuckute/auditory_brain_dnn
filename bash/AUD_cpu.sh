@@ -1,9 +1,9 @@
 #!/bin/bash
-#SBATCH --job-name=inhouse-20230509
-#SBATCH --time=00:10:00
+#SBATCH --job-name=inhouse-20230531
+#SBATCH --time=15:00:00
 #SBACTH --ntasks=1
-#SBATCH --output="out/inhouse-20230509-%j.out"
-#SBATCH --mem=1G
+#SBATCH --output="out/inhouse-20230531-%j.out"
+#SBATCH --mem=2G
 #SBATCH -p evlab
 
 source /mindhive/mcdermott/u/gretatu/anaconda/etc/profile.d/conda.sh

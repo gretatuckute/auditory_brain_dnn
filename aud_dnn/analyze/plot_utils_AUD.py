@@ -23,12 +23,9 @@ import scipy.stats as stats
 import statsmodels.stats.descriptivestats as ds
 import sys
 user = getpass.getuser()
-if user == 'gretatu':
-    # Go one directory up to import resources
-    sys.path.append(str(Path(os.getcwd()).parent))
-    from resources import *
-else:
-    from aud_dnn.resources import *
+# Go one directory up to import resources
+sys.path.append(str(Path(os.getcwd()).parent))
+from resources import *
 now = datetime.datetime.now()
 datetag = now.strftime("%Y%m%d-%H%M")
 
@@ -39,6 +36,7 @@ random.seed(0)
 DATADIR = (Path(os.getcwd()) / '..' / '..' / 'data').resolve()
 if user == 'gt':
     ROOT = f'/Users/{user}/bur/'
+    # ROOT = f'/Users/gt/Documents/GitHub/auditory_brain_dnn/' # For running locally, to-do make nice
 else:
     print(f' ------------- Running on openmind as {user} -----------')
     ROOT = f'/mindhive/mcdermott/u/{user}/auditory_brain_dnn/'
@@ -1976,7 +1974,8 @@ def barplot_across_models(source_models,
                           sort_by=True,
                           yerr_type='within_subject_sem',
                           add_savestr='',
-                          alpha=1):
+                          alpha=1,
+                          box_aspect=0.8):
     """
     Plot median variance explained across models for voxels in a given ROI or all ROIs.
     The score is loaded using CV-splits-nit-10 (default) layer selection procedure (can be changed if the user
@@ -2189,7 +2188,7 @@ def barplot_across_models(source_models,
         xmax = np.unique((bar_placement[-1] + np.diff(bar_placement) / 2))
 
         fig, ax = plt.subplots(figsize=(6, 7.5))
-        ax.set_box_aspect(1)
+        ax.set_box_aspect(box_aspect) # 0.8 for all barplots, 1 for clean speech
         ax.hlines(xmin=xmin, xmax=xmax,
                   y=df_spectemp[f'{value_of_interest}_mean'].values, color='darkgrey',
                   zorder=2)
@@ -2582,7 +2581,7 @@ def load_scatter_anat_roi_best_layer(target,
                                     save_str='',
                                     value_of_interest='median_r2_test_c',
                                     layer_value_of_interest='rel_pos',
-                                    layers_to_exclude=None,
+                                    layers_to_exclude='',
                                      RESULTDIR_ROOT='/om2/user/gretatu/results/AUD/20210915_median_across_splits_correction/PLOTS_ACROSS_MODELS/',
                                      ):
     """
@@ -2594,12 +2593,8 @@ def load_scatter_anat_roi_best_layer(target,
         layers_to_exclude was None none in trained, but 'input_after_preproc' for permuted.
 
     """
-    
-    if layers_to_exclude:
-        layers_exclusion_savestr = f'_layer-exclude-{"-".join(layers_to_exclude)}' # suffix with this
-        # layers_exclusion_savestr = f'_layer-exclude-{layers_to_exclude}' # suffix with this
-    else:
-        layers_exclusion_savestr = '' # otherwise no suffix
+    # We didn't exclude any layers, so the file is suffixed with layer-exclude-.csv
+    layers_exclusion_savestr = f'_layer-exclude-{"-".join(layers_to_exclude)}' # suffix with this
 
     load_str = f'across-models_scatter{d_annotate[annotate]}{save_str}_' \
                f'{yerr_type}_{condition_col}_' \
@@ -2685,38 +2680,38 @@ def scatter_components_across_models(source_models,
     bar_placement = np.arange(0, 6 / 2, 0.5)
     
     # Plot across all models and components
-    plt.figure(figsize=(9, 5))
-    plt.scatter(np.repeat(bar_placement, len(source_models)),
-                [lowfreq_r2, highfreq_r2, envsounds_r2, pitch_r2, speech_r2, music_r2], c=color_order * 6, s=50)
-    # plot spectemp separately
-    if include_spectemp:
-        plt.scatter(bar_placement, [df_spectemp[value_of_interest].values], c='grey', s=50)
-        plt.plot(bar_placement, df_spectemp[value_of_interest].values, alpha=alpha_dot, c='grey', ls='--')
-    for i in range(len(source_models)):
-        plt.plot(bar_placement,
-                 [lowfreq_r2[i], highfreq_r2[i], envsounds_r2[i], pitch_r2[i], speech_r2[i], music_r2[i]],
-                 c=color_order[i], alpha=0.3)
-    plt.ylim([0, 1])
-    plt.ylabel(f'Median $R^2$')
-    plt.xticks(bar_placement, ['lowfreq', 'highfreq', 'envsounds', 'pitch', 'speech', 'music'])
-    plt.title(f'Predictivity of components across all models {d_randnetw[randnetw]}')
-    classes = source_models
-    classes_polished_name = [d_model_names[x] for x in classes]
-    class_colours = color_order
-    recs = []
-    for i in range(0, len(class_colours)):
-        recs.append(mpatches.Rectangle((0, 0), 1, 1, fc=class_colours[i]))
-    plt.legend(recs, classes_polished_name, bbox_to_anchor=(1.05, 1.1))
-    plt.tight_layout()
-    if save:
-        save_str = f'across-models_scatter_{aggregation}_{target}{d_randnetw[randnetw]}{save_str}_{value_of_interest}'
-        plt.savefig(join(save, f'{save_str}.svg'), dpi=180)
-        plt.savefig(join(save, f'{save_str}.png'), dpi=180)
-    plt.show()
+    # plt.figure(figsize=(9, 5))
+    # plt.scatter(np.repeat(bar_placement, len(source_models)),
+    #             [lowfreq_r2, highfreq_r2, envsounds_r2, pitch_r2, speech_r2, music_r2], c=color_order * 6, s=50)
+    # # plot spectemp separately
+    # if include_spectemp:
+    #     plt.scatter(bar_placement, [df_spectemp[value_of_interest].values], c='grey', s=50)
+    #     plt.plot(bar_placement, df_spectemp[value_of_interest].values, alpha=alpha_dot, c='grey', ls='--')
+    # for i in range(len(source_models)):
+    #     plt.plot(bar_placement,
+    #              [lowfreq_r2[i], highfreq_r2[i], envsounds_r2[i], pitch_r2[i], speech_r2[i], music_r2[i]],
+    #              c=color_order[i], alpha=0.3)
+    # plt.ylim([0, 1])
+    # plt.ylabel(f'Median $R^2$')
+    # plt.xticks(bar_placement, ['lowfreq', 'highfreq', 'envsounds', 'pitch', 'speech', 'music'])
+    # plt.title(f'Predictivity of components across all models {d_randnetw[randnetw]}')
+    # classes = source_models
+    # classes_polished_name = [d_model_names[x] for x in classes]
+    # class_colours = color_order
+    # recs = []
+    # for i in range(0, len(class_colours)):
+    #     recs.append(mpatches.Rectangle((0, 0), 1, 1, fc=class_colours[i]))
+    # plt.legend(recs, classes_polished_name, bbox_to_anchor=(1.05, 1.1))
+    # plt.tight_layout()
+    # if save:
+    #     save_str = f'across-models_scatter_{aggregation}_{target}{d_randnetw[randnetw]}{save_str}_{value_of_interest}'
+    #     plt.savefig(join(save, f'{save_str}.svg'), dpi=180)
+    #     plt.savefig(join(save, f'{save_str}.png'), dpi=180)
+    # plt.show()
     
     ## 2D scatter plot ##
-    for comp1 in ['lowfreq', 'highfreq', 'envsounds', 'pitch', 'speech', 'music']:
-        for comp2 in ['pitch', 'speech', 'music']:
+    for comp1 in ['music']: # ['lowfreq', 'highfreq', 'envsounds', 'pitch', 'speech', 'music']
+        for comp2 in ['pitch', 'speech']:
             if comp1 == comp2:
                 continue
             
@@ -2935,7 +2930,8 @@ def barplot_components_across_models(source_models,
                                      add_savestr='',
                                      alpha=1,
                                      ylim=[0,1],
-                                     add_in_spacing_bar=True):
+                                     add_in_spacing_bar=True,
+                                     box_aspect=0.8):
     """Load the best layer per component csv files and make a plot across all models, one for each component.
 
     :param source_models:
@@ -3004,7 +3000,7 @@ def barplot_components_across_models(source_models,
         color_order = [d_model_colors[x] for x in df_comp.source_model]
         r2 = df_comp[value_of_interest].values
         sem = df_comp[yerr_type].values
-        ax[i].set_box_aspect(1)
+        ax[i].set_box_aspect(box_aspect)
         if include_spectemp:
             ax[i].hlines(xmin=xmin, xmax=xmax, y=df_spectemp_comp[f'{value_of_interest}'].values, color='darkgrey',zorder=2)
             ax[i].fill_between(
@@ -3105,6 +3101,10 @@ def scatter_components_across_models_seed(source_models,
 
         df_models1 = df_comp[df_comp['source_model'].isin(models1)]
         df_models2 = df_comp[df_comp['source_model'].isin(models2)]
+        # Remove "Seed2" from source_model in df_models2 and assert
+        if 'Seed2' in df_models2.source_model.values[0]:
+            source_models2_no_seed2 = [x.replace('Seed2', '') for x in df_models2.source_model.values]
+            assert (df_models1.source_model.values == source_models2_no_seed2).all(), 'models1 and models2 should have the same order'
 
         # plot specs
         color_order_models1 = [d_model_colors[x] for x in df_models1.source_model.values]
@@ -3137,6 +3137,19 @@ def scatter_components_across_models_seed(source_models,
 
             # Make ticks bigger
             ax[i].tick_params(axis='both', which='major', labelsize=15)
+
+        # Also plot correlation r between models1 and models2
+        r, p = stats.pearsonr(df_models1[f'{value_of_interest}'].values,
+                              df_models2[f'{value_of_interest}'].values)
+        r2 = r ** 2
+        # Plot in lower right
+        ax[i].text(0.95, 0.05, f'$R^2$={r2:.2f}, p={p:.2f}', horizontalalignment='right', verticalalignment='bottom',
+                   fontsize=15, transform=ax[i].transAxes)
+
+        # Store these r, r2 and p values in df_grouped
+        df_grouped.loc[df_grouped['comp'] == comp, 'r'] = r
+        df_grouped.loc[df_grouped['comp'] == comp, 'r2'] = r2
+        df_grouped.loc[df_grouped['comp'] == comp, 'p'] = p
 
     # Add legend
     legend_elements = [Line2D([0], [0], marker='o', color='w', label=x, markerfacecolor=mcolors.to_rgba(d_model_colors[x]),
@@ -3204,8 +3217,8 @@ def modelwise_scores_across_targets(source_models,
                                     aggregation='CV-splits-nit-10',
                                     value_of_interest='median_r2_test_c',
                                     randnetw='False',
-                                    target1_loadstr_suffix='__performance_sorted_20220311',
-                                    target2_loadstr_suffix='_performance_sorted_20220311',
+                                    target1_loadstr_suffix='_performance_sorted',
+                                    target2_loadstr_suffix='_performance_sorted',
                                     save=False,
                                     add_savestr='',
                                     ylim=(0.2,0.8)):
@@ -3376,8 +3389,13 @@ def layerwise_scores_across_targets(source_models,
         df_model_layer_target1 = df_model_layer_target1.drop(columns=nans.index)
         df_model_layer_target2 = df_model_layer_target2.drop(columns=nans.index)
     
+    # Find discrepancy in layers, find models not in both
+    if df_model_layer_target1.columns.tolist() != df_model_layer_target2.columns.tolist():
+        diff = list(set(df_model_layer_target1.columns.tolist()) - set(df_model_layer_target2.columns.tolist()))
+        print(f'Found discrepancy in layers between {target1} and {target2}: {diff}')
+        assert len(df_model_layer_target1.columns) == len(df_model_layer_target2.columns)
+
     # get num layers (columns)
-    assert len(df_model_layer_target1.columns) == len(df_model_layer_target2.columns)
     n_layers = len(df_model_layer_target1.columns)
     
     # Now we have subj x layer (unique to each model). Let's compute within-subject SEM
@@ -3501,10 +3519,14 @@ def add_int_to_meta_col(df_meta_roi,
 #### SURFACE PLOTTING FUNCTIONS ####
 def direct_plot_val_surface(output,
                             df_meta_roi,
-                            val='kell_r_reliability',):
+                            val='kell_r_reliability',
+                            selected_layer=None,
+                            ):
     """takes an output df and packages it in a df where the val of interest directly will be used as the value to
         plot on the surface.
         Ultimately just creates a df with index voxel id and a column with the plotting value of interest.
+
+    If we plot median r2 test, we need a selected layer.
         
 
     :return: df with index as voxel id and "layer_pos" column as the argmax layer as a str, and
@@ -3513,23 +3535,36 @@ def direct_plot_val_surface(output,
             The column "rel_pos" is zero indexed, i.e. 0 is the first layer, and if the model has 11 layers,
             then 10 is the top layer.
     """
-    
+    if val in output.columns and val in df_meta_roi.columns:
+        # Check whether meta aligns with the output df
+        arbitrary_test_layer = output.source_layer.unique()[0]
+        assert (output.query(f'source_layer == "{arbitrary_test_layer}"')[val].values == df_meta_roi[val].values).all()
+    else:
+        print(f'{val} not in output df. Skipping check between output and df meta roi.')
+
     # Various transformations to get the value of interest to e.g. int
     if val == 'roi_label_general':
         # Transform from str to int
         df_meta_roi = add_int_to_meta_col(df_meta_roi=df_meta_roi,
                                           col_name=val)
-    if val == 'kell_r_reliability' or val == 'pearson_r_reliability':
+    elif val == 'kell_r_reliability' or val == 'pearson_r_reliability':
         # Multiply by 10
         df_meta_roi[f'{val}*10'] = df_meta_roi[val] * 10
-        
-    
-    if val in output.columns:
-        # Check whether meta aligns with the output df
-        arbitrary_test_layer = output.source_layer.unique()[0]
-        assert (output.query(f'source_layer == "{arbitrary_test_layer}"')[val] == df_meta_roi[val]).all()
+
+    elif val == 'median_r2_test_c':
+        print(f'Using selected layer {selected_layer} to get median r2 test c.')
+
+        # Check voxel_id aligns with the output df
+        assert (output.query(f'source_layer == "{selected_layer}"').voxel_id.values == df_meta_roi.voxel_id.values).all()
+
+        # Add in the median r2 test c and multiply by 10 and +1  to offset from zero
+        df_meta_roi['median_r2_test_c'] = (output.query(f'source_layer == "{selected_layer}"').median_r2_test_c.values * 10) + 1
+
+    elif val == 'shared_by':
+        df_meta_roi['shared_by'] = df_meta_roi['shared_by'].astype(int)
+
     else:
-        print(f'{val} not in output df. Skipping check between output and df meta roi.')
+        raise ValueError(f'{val} is not supported yet.')
         
     # Create df with voxel id and value of interest
     df_plot_direct = df_meta_roi.set_index('voxel_id').copy()
@@ -4076,8 +4111,8 @@ def create_avg_subject_surface(df_plot,
         meta_unique_coords_save['source_model'] = source_model
         meta_unique_coords_save['target'] = target
         meta_unique_coords_save['randnetw'] = randnetw
-        meta_unique_coords_save['val_of_interest'] = val_of_interest
-        meta_unique_coords_save['plot_val_of_interest'] = plot_val_of_interest
+        meta_unique_coords_save['val_of_interest'] = val_of_interest # The original name of the value, pre transformations
+        meta_unique_coords_save['plot_val_of_interest'] = plot_val_of_interest # The name of the value, post transformations
         meta_unique_coords_save['datetag'] = datetag
         meta_unique_coords_save.to_csv(join(save, f'surf_coords_full_{source_model}_'
                                                   f'{target}_'
@@ -4402,13 +4437,16 @@ def compare_CV_splits_nit(source_models,
 
     Intended for use with components (where we don't have individual subjects to bootstrap over).
     """
+    source_models_copy = copy.deepcopy(source_models)
+    models1_copy = copy.deepcopy(models1)
+    models2_copy = copy.deepcopy(models2)
     if include_spectemp:
-        source_models.append('spectemp')
-        models1.append('spectemp')
-        models2.append('spectemp')
+        source_models_copy.append('spectemp')
+        models1_copy.append('spectemp')
+        models2_copy.append('spectemp')
         
     df_lst = []
-    for source_model in source_models:
+    for source_model in source_models_copy:
         if target == 'NH2015comp': # saved with comp specific name
             load_str = f'best-layer-{aggregation}_per-comp_{source_model}{d_randnetw[randnetw]}_{target}_{value_of_interest}_stats.csv'
         else:
@@ -4421,8 +4459,8 @@ def compare_CV_splits_nit(source_models,
     df_all = pd.concat(df_lst)
     
     lst_df_stat = []
-    for model1 in tqdm(models1):
-        for model2 in models2:
+    for model1 in tqdm(models1_copy):
+        for model2 in models2_copy:
             if model1 == model2:
                 continue
                 

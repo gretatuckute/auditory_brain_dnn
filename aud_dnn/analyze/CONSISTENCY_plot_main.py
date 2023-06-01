@@ -29,7 +29,7 @@ roi = None
 regr = True
 rsa = True
 modelwise_scatter = False # Compare modelwise between datasets and methods
-layerwise_scatter = True # Compare layerwise between datasets and methods
+layerwise_scatter = False # Compare layerwise between datasets and methods
 best_layer_scatter = True # Compare best layer Fig 5 values between methods
 
 save = False
@@ -82,7 +82,7 @@ if modelwise_scatter:
 									  randnetw='False',
 									  agg_method='mean',
 									  save=False,
-									  RESULTDIR_ROOT=join(DATADIR, 'RSA'))
+									  RESULTDIR_ROOT=join(RESULTDIR_ROOT, 'RSA'))
 	
 	df_across_models_rsa_randnetw = package_RSA_best_layer_scores(source_models=[source_model for source_model in source_models if source_model != 'spectemp'],
 														 value_of_interest=val_of_interest,
@@ -92,7 +92,7 @@ if modelwise_scatter:
 														 randnetw='True',
 														 agg_method='mean',
 														 save=False,
-														 RESULTDIR_ROOT=join(DATADIR, 'RSA'))
+														 RESULTDIR_ROOT=join(RESULTDIR_ROOT, 'RSA'))
 		
 		
 	if regr and rsa: # Compare model-wise scores
@@ -134,10 +134,11 @@ if modelwise_scatter:
 		df_across_models_regr_rsa_p = df_across_models_regr_rsa.corr(method=lambda x, y: pearsonr(x, y)[1]) - np.eye(*df_across_models_regr_rsa_r.shape)
 		
 		# Save as csvs!
-		df_across_models_regr_rsa.to_csv(f'{STATSDIR_CENTRALIZED}/df_across_models_regr_rsa_{datetag}.csv')
-		df_across_models_regr_rsa_r.to_csv(f'{STATSDIR_CENTRALIZED}/df_across_models_regr_rsa_r_{datetag}.csv')
-		df_across_models_regr_rsa_r2.to_csv(f'{STATSDIR_CENTRALIZED}/df_across_models_regr_rsa_r2_{datetag}.csv')
-		df_across_models_regr_rsa_p.to_csv(f'{STATSDIR_CENTRALIZED}/df_across_models_regr_rsa_p_{datetag}.csv')
+		if save:
+			df_across_models_regr_rsa.to_csv(f'{STATSDIR_CENTRALIZED}/df_across_models_regr_rsa_{datetag}.csv')
+			df_across_models_regr_rsa_r.to_csv(f'{STATSDIR_CENTRALIZED}/df_across_models_regr_rsa_r_{datetag}.csv')
+			df_across_models_regr_rsa_r2.to_csv(f'{STATSDIR_CENTRALIZED}/df_across_models_regr_rsa_r2_{datetag}.csv')
+			df_across_models_regr_rsa_p.to_csv(f'{STATSDIR_CENTRALIZED}/df_across_models_regr_rsa_p_{datetag}.csv')
 		
 		# test what happens with nan: it just drops that index, manually:
 		# np.corrcoef(regr_NH2015.query('source_model != "spectemp"')[[f'{val_of_interest_regr}_NH2015']].values.ravel(),
@@ -148,6 +149,7 @@ if modelwise_scatter:
 if layerwise_scatter:
 	if regr:
 		###### LOAD NEURAL PREDICTIVITY ACROSS LAYERS ######
+		# We don't include spectemp for permuted.
 		
 		# ##### REGRESSION #####
 		val_of_interest = 'median_r2_test_c'
@@ -236,7 +238,7 @@ if layerwise_scatter:
 			randnetw='False',
 			value_of_interest=val_of_interest,
 			agg_method=agg_method,
-			RESULTDIR_ROOT=join(DATADIR, 'RSA')) # Copied over Jenelle's results to my datadir
+			RESULTDIR_ROOT=join(RESULTDIR_ROOT, 'RSA')) # Copied over Jenelle's results to my datadir
 		
 		d_across_models_rsa_NH2015_randnetw, d_across_layers_rsa_NH2015_randnetw = load_rsa_scores_across_layers_across_models(
 			source_models=[source_model for source_model in source_models if source_model != 'spectemp'],
@@ -245,7 +247,7 @@ if layerwise_scatter:
 			randnetw='True',
 			value_of_interest=val_of_interest,
 			agg_method=agg_method,
-			RESULTDIR_ROOT=join(DATADIR, 'RSA')) # Copied over Jenelle's results to my datadir
+			RESULTDIR_ROOT=join(RESULTDIR_ROOT, 'RSA')) # Copied over Jenelle's results to my datadir
 			
 		
 		## B2021 ##
@@ -256,7 +258,7 @@ if layerwise_scatter:
 			randnetw='False',
 			value_of_interest=val_of_interest,
 			agg_method=agg_method,
-			RESULTDIR_ROOT=join(DATADIR, 'RSA')) # Copied over Jenelle's results to my datadir
+			RESULTDIR_ROOT=join(RESULTDIR_ROOT, 'RSA')) # Copied over Jenelle's results to my datadir
 		
 		d_across_models_rsa_B2021_randnetw, d_across_layers_rsa_B2021_randnetw = load_rsa_scores_across_layers_across_models(
 			source_models=[source_model for source_model in source_models if source_model != 'spectemp'],
@@ -265,7 +267,7 @@ if layerwise_scatter:
 			randnetw='True',
 			value_of_interest=val_of_interest,
 			agg_method=agg_method,
-			RESULTDIR_ROOT=join(DATADIR, 'RSA')) # Copied over Jenelle's results to my datadir
+			RESULTDIR_ROOT=join(RESULTDIR_ROOT, 'RSA')) # Copied over Jenelle's results to my datadir
 		
 		# RSA: SCATTER OF THE LAYERWISE SCORES ACROSS MODELS, NH2015 VS B2021
 		
