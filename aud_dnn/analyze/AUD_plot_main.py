@@ -30,8 +30,8 @@ if concat_over_models:
 	# Shared for neural and components
 	plot_barplot_across_models = False # Figure 2 for neural, Figure 5 for components; barplot of performance across models
 	plot_scatter_across_models = False # Figure 2, Seed1 vs Seed2 scatter for neural
-	plot_word_clean_models = True # Figure 8 for neural and components; barplot of performance for word models vs clean models
-	plot_speaker_clean_models = False # Figure 8 for neural and components; barplot of performance for speaker models vs clean models
+	plot_scatter_across_models_clean = False # For components, seed1 vs seed2 scatter for clean models
+	plot_word_speaker_clean_models = True # Figure 8 for neural; barplot of performance for word/speaker models vs clean models (SI for components)
 
 	# Neural specific
 	plot_anat_roi_scatter = False # Figure 7 neural; scatter of performance across models for anatomical ROIs
@@ -158,6 +158,35 @@ if concat_over_models:  # assemble plots across models
 												 xlim=ylim)
 
 
+		### Scatterplot of Seed1 vs Seed2 ###
+		if plot_scatter_across_models_clean:
+			source_models = ['Kell2018word', 'Kell2018wordClean', 'Kell2018speaker', 'Kell2018speakerClean',
+							 'ResNet50word', 'ResNet50wordClean', 'ResNet50speaker', 'ResNet50speakerClean',
+							 'Kell2018wordSeed2', 'Kell2018wordCleanSeed2', 'Kell2018speakerSeed2', 'Kell2018speakerCleanSeed2',
+							 'ResNet50wordSeed2', 'ResNet50wordCleanSeed2', 'ResNet50speakerSeed2', 'ResNet50speakerCleanSeed2']
+			add_savestr = f'_seed1-vs-seed2-clean'
+
+			for randnetw_flag in ['False', 'True']: # 'False', 'True'
+				if randnetw_flag == 'False':
+					ylim = [0.4, 1]
+				else:
+					ylim = [0, 1]
+
+				scatter_components_across_models_seed(source_models=source_models,
+												 target=target,
+												 randnetw=randnetw_flag,
+												 models1=['Kell2018word', 'Kell2018wordClean', 'Kell2018speaker', 'Kell2018speakerClean',
+														  'ResNet50word', 'ResNet50wordClean', 'ResNet50speaker', 'ResNet50speakerClean'],
+												 models2=['Kell2018wordSeed2', 'Kell2018wordCleanSeed2', 'Kell2018speakerSeed2', 'Kell2018speakerCleanSeed2',
+														'ResNet50wordSeed2', 'ResNet50wordCleanSeed2', 'ResNet50speakerSeed2', 'ResNet50speakerCleanSeed2'],
+												 value_of_interest='median_r2_test',
+												 yerr_type='median_r2_test_sem_over_it',
+												 save=SAVEDIR_CENTRALIZED,
+												 add_savestr=add_savestr,
+												 ylim=ylim,
+												 xlim=ylim)
+
+
 
 		### For plotting in-house models barplot (Figure 8A) ###
 		if plot_barplot_across_inhouse_models:
@@ -182,53 +211,15 @@ if concat_over_models:  # assemble plots across models
 													 ylim=[0.2,1],
 													 box_aspect=0.8) # 1?
 
-		### For plotting in-house models barplot (Figure 9A) ###
-		if plot_word_clean_models:
+		### For plotting in-house models on clean word/speaker networks (SI) ###
+		if plot_word_speaker_clean_models:
 			source_model_lst = [['Kell2018word', 'Kell2018wordClean',
-							 'ResNet50word', 'ResNet50wordClean'],
+							 'ResNet50word', 'ResNet50wordClean',
+								 'Kell2018speaker', 'Kell2018speakerClean',
+								 'ResNet50speaker', 'ResNet50speakerClean'],
 							 ['Kell2018wordSeed2', 'Kell2018wordCleanSeed2',
-							 'ResNet50wordSeed2', 'ResNet50wordCleanSeed2']]
-
-			#### Best layer component predictions across models (independently selected layer) ####
-			for source_models in source_model_lst:
-				# if all end with 'Seed2' then add savestr
-				if all([x.endswith('Seed2') for x in source_models]):
-					add_savestr = f'_seed2'
-				else:
-					add_savestr = f'_seed1'
-
-				for sort_flag in [source_models]: #'performance'
-					# Remember to make source_models align with sort_flag
-					for randnetw_flag in ['False','True']: # 'False', 'True'
-						barplot_components_across_models(source_models=source_models,
-														 target=target,
-														 randnetw=randnetw_flag,
-														 value_of_interest='median_r2_test',
-														 yerr_type='median_r2_test_sem_over_it',
-														 save=SAVEDIR_CENTRALIZED,
-														 include_spectemp=True,
-														 sort_by=sort_flag,
-														 add_in_spacing_bar=False,
-														 ylim=[0, 1],
-														 add_savestr=f'_word-clean-models{add_savestr}',
-														 box_aspect=1)
-
-						# Run associated stats
-						compare_CV_splits_nit(source_models=sort_flag,
-											  target=target,
-											  save=save,
-											  save_str=f'_word-clean-models{add_savestr}',
-											  models1=sort_flag,
-											  models2=sort_flag,
-											  aggregation='CV-splits-nit-10',
-											  randnetw=randnetw_flag,
-											  )
-
-		### For plotting in-house models barplot (Figure 9A) ###
-		if plot_speaker_clean_models:
-			source_model_lst = [['Kell2018speaker', 'Kell2018speakerClean',
-							 'ResNet50speaker', 'ResNet50speakerClean'],
-							 ['Kell2018speakerSeed2', 'Kell2018speakerCleanSeed2',
+							 'ResNet50wordSeed2', 'ResNet50wordCleanSeed2',
+							 'Kell2018speakerSeed2', 'Kell2018speakerCleanSeed2',
 							 'ResNet50speakerSeed2', 'ResNet50speakerCleanSeed2']]
 
 			#### Best layer component predictions across models (independently selected layer) ####
@@ -242,7 +233,7 @@ if concat_over_models:  # assemble plots across models
 				for sort_flag in [source_models]: #'performance'
 					# Remember to make source_models align with sort_flag
 					for randnetw_flag in ['False','True']: # 'False', 'True'
-						barplot_components_across_models(source_models=source_models,
+						barplot_components_across_models_clean(source_models=source_models,
 														 target=target,
 														 randnetw=randnetw_flag,
 														 value_of_interest='median_r2_test',
@@ -250,16 +241,15 @@ if concat_over_models:  # assemble plots across models
 														 save=SAVEDIR_CENTRALIZED,
 														 include_spectemp=True,
 														 sort_by=sort_flag,
-														 add_in_spacing_bar=False,
 														 ylim=[0, 1],
-														 add_savestr=f'_speaker-clean-models{add_savestr}',
+														 add_savestr=f'_word-clean-models{add_savestr}',
 														 box_aspect=1)
 
 						# Run associated stats
 						compare_CV_splits_nit(source_models=sort_flag,
 											  target=target,
 											  save=save,
-											  save_str=f'_speaker-clean-models{add_savestr}',
+											  save_str=f'_word-speaker-clean-models{add_savestr}',
 											  models1=sort_flag,
 											  models2=sort_flag,
 											  aggregation='CV-splits-nit-10',
