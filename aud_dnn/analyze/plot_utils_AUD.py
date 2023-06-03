@@ -3046,6 +3046,127 @@ def barplot_components_across_models(source_models,
     plt.show()
 
 
+def barplot_components_across_models_clean(source_models,
+                                     target,
+                                     randnetw='False',
+                                     value_of_interest='median_r2_test',
+                                     yerr_type='median_r2_test_sem_over_it',
+                                     sort_by='performance',
+                                     aggregation='CV-splits-nit-10',
+                                     save=None,
+                                     components=['lowfreq', 'highfreq', 'envsounds', 'pitch', 'speech', 'music'],
+                                     include_spectemp=True,
+                                     add_savestr='',
+                                     alpha=1,
+                                     ylim=[0, 1],
+                                     box_aspect=1):
+    """Load the best layer per component csv files and make a plot across all models, one for each component.
+    Intended for use with clean speech (word/speaker) networks because we want to group together the first two bars and
+    the last two bars.
+
+    :param source_models:
+    :param target:
+    :param value_of_interest:
+    :param yerr_type: If ''median_r2_test_sem_over_it', uses SEM over the layer selection procedure.
+    :param ylim: for 2D scatter plots.
+    """
+
+    # Obtain best layer r2 test scores for the components!
+    df_lst = []
+    for source_model in source_models:
+        df = pd.read_csv(
+            join(RESULTDIR_ROOT, source_model, 'outputs',
+                 f'best-layer-{aggregation}_'
+                 f'per-comp_{source_model}{d_randnetw[randnetw]}_'
+                 f'{target}_{value_of_interest}.csv')).rename(
+            columns={'Unnamed: 0': 'comp'})
+        df_lst.append(df)
+    df_all = pd.concat(df_lst)
+
+    # Obtain spectemp val
+    if include_spectemp:
+        if aggregation.startswith('CV-splits-nit'):  # also obtain spectemp value based on random splits
+            df_spectemp = pd.read_csv(join(RESULTDIR_ROOT, 'spectemp', 'outputs',
+                                           f'best-layer-CV-splits-nit-{int(aggregation.split("-")[-1])}'
+                                           f'_per-comp_spectemp_{target}_{value_of_interest}.csv'))
+        else:
+            df_spectemp = obtain_NH2015comp_spectemp_val(target=target, value_of_interest=value_of_interest, )
+
+    # Group first two bars and last two bars together
+    offset = 0.35
+    bar_placement = [0, 0.35, 0.7+offset, 1.05+offset, 1.4+offset*2, 1.75+offset*2, 2.1+offset*3, 2.45+offset*3]
+
+    # Get xmin and xmax which should be +- 0.25 of the min and max of bar_placement
+    xmin = np.min(bar_placement) - 0.25
+    xmax = np.max(bar_placement) + 0.25
+
+    fig, ax = plt.subplots(nrows=1, ncols=6, figsize=(28, 8))
+    for i, comp in enumerate(components):
+        # Get lists for every component
+        df_comp = df_all[df_all.comp == comp]
+
+        # Sort
+        if sort_by == 'performance':
+            sort_str = '_performance_sorted'
+            df_comp = df_comp.sort_values(by=value_of_interest, ascending=False)
+        if type(sort_by) == list:
+            sort_str = '_manually_sorted'
+            df_comp = df_comp.set_index('source_model', inplace=False, drop=False)
+            df_comp = df_comp.reindex(sort_by)
+        if include_spectemp:
+            df_spectemp_comp = df_spectemp[df_spectemp.comp == comp]
+        color_order = [d_model_colors[x] for x in df_comp.source_model]
+        r2 = df_comp[value_of_interest].values
+        sem = df_comp[yerr_type].values
+        ax[i].set_box_aspect(box_aspect)
+        if include_spectemp:
+            ax[i].hlines(xmin=xmin, xmax=xmax, y=df_spectemp_comp[f'{value_of_interest}'].values, color='darkgrey',
+                         zorder=2)
+            ax[i].fill_between(
+                [(bar_placement[0] - np.diff(bar_placement) / 2)[0],
+                 (bar_placement[-1] + np.diff(bar_placement) / 2)[0]],
+                df_spectemp_comp[f'{value_of_interest}'].values - df_spectemp_comp[f'{yerr_type}'].values,
+                df_spectemp_comp[f'{value_of_interest}'].values + df_spectemp_comp[f'{yerr_type}'].values,
+                color='gainsboro')
+        ax[i].bar(bar_placement,
+                  r2,
+                  yerr=sem,
+                  width=0.3, alpha=alpha, color=color_order, zorder=3)
+        ax[i].set_title(f'Component number {i + 1}, "{comp}"', size='medium')
+        ax[i].set_ylim(ylim)
+        ax[i].set_xticks(bar_placement)
+        ax[i].set_xticklabels([d_model_names[x] for x in df_comp.source_model], rotation=80,
+                              fontsize=13,
+                              ha='right', rotation_mode='anchor')
+        ax[i].set_ylabel(d_value_of_interest[value_of_interest], fontsize=15)
+        # Make yticks larger
+        ax[i].tick_params(axis='y', labelsize=15)
+    plt.suptitle(
+        f'{d_value_of_interest[value_of_interest]} across models {sort_str[1:]}\n{target} {d_randnetw[randnetw][1:]}')
+    plt.tight_layout(pad=1.8)
+    if save:
+        save_str = f'across-models_barplot_components_{target}{d_randnetw[randnetw]}_' \
+                   f'{aggregation}_{yerr_type}_' \
+                   f'{value_of_interest}{sort_str}{add_savestr}'
+        plt.savefig(join(save, f'{save_str}.svg'), dpi=180)
+        plt.savefig(join(save, f'{save_str}.png'), dpi=180)
+
+        # save csv and log more info
+        # Append df_spectemp to df_all
+        df_all_w_spectemp = pd.concat([df_all, df_spectemp])
+        df_all_w_spectemp['target'] = target
+        df_all_w_spectemp['randnetw'] = randnetw
+        df_all_w_spectemp['aggregation'] = aggregation
+        df_all_w_spectemp['yerr_type'] = yerr_type
+        df_all_w_spectemp['value_of_interest'] = value_of_interest
+        df_all_w_spectemp['sort_by'] = [sort_by] * len(df_all_w_spectemp)
+        df_all_w_spectemp['add_savestr'] = add_savestr
+        df_all_w_spectemp['n_models'] = len(df_all_w_spectemp)
+        df_all_w_spectemp.to_csv(join(save, f'{save_str}.csv'))
+
+    plt.show()
+
+
 def scatter_components_across_models_seed(source_models,
                             models1,
                             models2,
