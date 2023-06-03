@@ -67,7 +67,9 @@ FIG2_SEED_PAIRS = [['Kell2018word', 'Kell2018wordSeed2'],
 
 # Word trained models with and without background
 CLEAN_SPEECH_LIST = ['Kell2018word','Kell2018wordClean',
-                     'ResNet50word', 'ResNet50wordClean']
+                     'ResNet50word', 'ResNet50wordClean',
+                     'Kell2018speaker', 'Kell2018speakerClean',
+                     'ResNet50speaker', 'ResNet50speakerClean']
 
 # Models included in the best-layer scatter plot
 FIG5_MODEL_LIST = ['Kell2018word', 'Kell2018speaker',
@@ -952,7 +954,8 @@ def plot_ordered_cross_val_RSA(rsa_analysis_dict,
                                alpha=1, 
                                extra_title_str='', 
                                save_fig_path=None, 
-                               use_165_sounds_for_fMRI_ceiling=False):
+                               use_165_sounds_for_fMRI_ceiling=False,
+                               bar_placement=None):
     """
     Plots each model from the RSA analysis as a bar plot, ordered by their scores
     or by the specified model_ordering. 
@@ -976,19 +979,16 @@ def plot_ordered_cross_val_RSA(rsa_analysis_dict,
         df_grouped = df_grouped.reindex(model_ordering)
 
     # plot specs
-    bar_placement = np.arange(0, len(df_grouped) / 2, 0.5)
-    color_order = [d_model_colors[x] for x in df_grouped.source_model]
-
-    # plot specs
-    bar_placement = np.arange(0, len(df_grouped) / 2, 0.5)
+    if bar_placement is None:
+        bar_placement = np.arange(0, len(df_grouped) / 2, 0.5)
     color_order = [d_model_colors[x] for x in df_grouped.source_model]
     model_legend = [d_model_names[x] for x in df_grouped.source_model]
 
     title_str = extra_title_str + 'Human-Model RSA'
 
     # Obtain xmin and xmax for spectemp line
-    xmin = np.unique((bar_placement[0] - np.diff(bar_placement) / 2))
-    xmax = np.unique((bar_placement[-1] + np.diff(bar_placement) / 2))
+    xmin = bar_placement[0] - np.diff(bar_placement)[0] / 2
+    xmax = bar_placement[-1] + np.diff(bar_placement)[-1] / 2
 
     fig, ax = plt.subplots(figsize=(6, 7.5))
     ax.set_box_aspect(0.8)
@@ -1240,7 +1240,8 @@ def make_paper_plots(save_fig_path='rsa_plots'):
     Makes all of the RSA plots used for the paper. 
     """
     # All model bar plot
-    make_all_voxel_rsa_bar_plots(save_fig_path=save_fig_path)
+    make_all_voxel_rsa_bar_plots(save_fig_path=save_fig_path,
+                                 extra_title='ALL_MODELS_')
 
     # Figure 2 bar plot, 19 models in main analysis
     make_all_voxel_rsa_bar_plots(save_fig_path=save_fig_path,
@@ -1254,10 +1255,17 @@ def make_paper_plots(save_fig_path='rsa_plots'):
                                )
 
     # Figure ? clean speech bar plot
+    offset=0.35
     make_all_voxel_rsa_bar_plots(save_fig_path=save_fig_path,
                                  model_list=CLEAN_SPEECH_LIST + ['spectemp'],
                                  model_order=CLEAN_SPEECH_LIST,
-                                 extra_title='FIG9_Clean_Speech_')
+                                 extra_title='FIG9_Clean_Speech_',
+                                 bar_placement=np.array([0,
+                                                0.35,0.7+offset,
+                                                1.05+offset,1.4+2*offset,
+                                                1.75+2*offset,2.1+3*offset,
+                                                2.45+3*offset])
+                                               )
 
     # Figure 5 schematic (and supplement)
     make_neural_roi_rdms(save_fig_path=save_fig_path)
@@ -1268,7 +1276,8 @@ def make_paper_plots(save_fig_path='rsa_plots'):
                                       extra_title='FIG5_BestLayerModels_')
 
     # Figure 5, but including all models
-    make_best_layer_roi_scatter_plots(save_fig_path)
+    make_best_layer_roi_scatter_plots(save_fig_path,
+                                      extra_title='ALL_MODELS_')
 
 
 def make_neural_roi_rdms(save_fig_path):
@@ -1361,7 +1370,8 @@ def make_best_layer_roi_scatter_plots(save_fig_path, model_list=None,
                                  extra_title_str=extra_title + dataset + '_Permuted: ',
                                  save_fig_path=save_fig_path)
 
-    with open(os.path.join(save_fig_path, 'best_layer_rsa_analysis_dict.pckl'), 'wb') as f:
+    save_pckl_path = f'{save_fig_path}/{extra_title.replace(":", "_").replace(" ", "")}best_layer_rsa_analysis_dict.pckl'
+    with open(os.path.join(save_pckl_path), 'wb') as f:
         pickle.dump({'rsa_analysis_dict_all_rois': rsa_analysis_dict_all_rois,
                      'rsa_analysis_dict_all_rois_permuted': rsa_analysis_dict_all_rois_permuted},
                     f)
@@ -1450,9 +1460,10 @@ def make_all_voxel_rsa_bar_plots(save_fig_path,
                                  overwrite=False,
                                  extra_title='',
                                  model_list=None,
-                                 model_order=None):
+                                 model_order=None,
+                                 bar_placement=None):
     """
-    Get the plots for the RSA across all models (Figure 2)
+    Get the plots for the RSA across all models
     """
     all_dataset_rsa_dict = {}
     for dataset in ['B2021', 'NH2015']:
@@ -1470,7 +1481,8 @@ def make_all_voxel_rsa_bar_plots(save_fig_path,
                                                     model_ordering=model_order,
                                                     use_165_sounds_for_fMRI_ceiling=False,
                                                     extra_title_str=extra_title + dataset + '_Trained: ',
-                                                    save_fig_path=save_fig_path)
+                                                    save_fig_path=save_fig_path,
+                                                    bar_placement=bar_placement)
 
         rsa_analysis_dict_permuted = rsa_cross_validated_all_models(randnetw='True',
                                                                     roi_name=None,
@@ -1485,11 +1497,13 @@ def make_all_voxel_rsa_bar_plots(save_fig_path,
                                        model_ordering=model_ordering,
                                        use_165_sounds_for_fMRI_ceiling=False,
                                        extra_title_str=extra_title + dataset + '_Permuted: ',
-                                       save_fig_path=save_fig_path)
+                                       save_fig_path=save_fig_path,
+                                       bar_placement=bar_placement)
 
         all_dataset_rsa_dict[dataset]['permuted'] = rsa_analysis_dict_permuted
 
-    with open(os.path.join(save_fig_path, 'all_dataset_rsa_dict.pckl'), 'wb') as f:
+    save_pckl_path = f'{save_fig_path}/{extra_title.replace(":", "_").replace(" ", "")}all_dataset_rsa.pckl'
+    with open(os.path.join(save_pckl_path), 'wb') as f:
         pickle.dump(all_dataset_rsa_dict, f)
 
 
