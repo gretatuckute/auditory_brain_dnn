@@ -3,7 +3,7 @@ model="$1"
 target="$2"
 echo $model
 echo $target
-randnetw="True"
+randnetw="False"
 overwrite=0
 resultdir='/mindhive/mcdermott/u/gretatu/auditory_brain_dnn/results/'
 if [ "$model" = "Kell2018" ]; then
@@ -181,7 +181,7 @@ for model in $models ; do
           else
             echo "FILE DOES NOT EXIST: $file_to_look_for"
             echo "RUNNING ......."
-            sbatch AUD_cpu.sh $model $layer $flag $target
+#            sbatch AUD_cpu.sh $model $layer $flag $target
           fi
         fi
       done
