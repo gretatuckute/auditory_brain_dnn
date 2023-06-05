@@ -63,13 +63,9 @@ if user != 'gt':
 # 				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
 # 				'AST',  'wav2vec', 'VGGish', 'S2T',  'sepformer']
 
-# # Models below spectemp baseline (n=4)
-# source_models = [  'DCASE2020', 'DS2',  'ZeroSpeech2020', 'metricGAN']
-
 # In-house models (n=10)
 # source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
 # 				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask', ]
-# source_models = ['ResNet50multitask', 'spectemp', 'Kell2018multitask']
 
 # All inhouse models with music as well (which only has seed 1)
 # source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',

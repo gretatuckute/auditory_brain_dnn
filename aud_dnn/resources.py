@@ -1,5 +1,53 @@
 ##### Related to source DNN models #####
 
+# Sets of models used in the paper:
+
+# Core set of models, n=20 (for Figure 2 and Figure 5)
+FIG_2_5_MODEL_LIST = ['Kell2018word', 'Kell2018speaker',
+                      'Kell2018music', 'Kell2018audioset',
+                      'Kell2018multitask',
+				      'ResNet50word', 'ResNet50speaker',
+                      'ResNet50music', 'ResNet50audioset',
+                      'ResNet50multitask',
+				      'AST', 'wav2vec', 'DCASE2020',
+                      'DS2', 'VGGish', 'ZeroSpeech2020',
+                      'S2T', 'metricGAN', 'sepformer',
+                      'spectemp']
+
+# Models above spectemp baseline (n=15) (for Figure 7)
+FIG_7_MODEL_LIST = ['Kell2018word', 'Kell2018speaker',
+                    'Kell2018music', 'Kell2018audioset',
+                    'Kell2018multitask',
+				    'ResNet50word', 'ResNet50speaker',
+                    'ResNet50music', 'ResNet50audioset',
+                    'ResNet50multitask',
+				    'AST', 'wav2vec',
+                    'VGGish', 'S2T', 'sepformer']
+
+# In-house models (n=10) (for Figure 9)
+FIG_9_MODEL_LIST = ['Kell2018word', 'Kell2018speaker',
+                    'Kell2018music', 'Kell2018audioset',
+                    'Kell2018multitask',
+ 				    'ResNet50word', 'ResNet50speaker',
+                    'ResNet50music', 'ResNet50audioset',
+                    'ResNet50multitask', ]
+
+# All unique models (n=24) (including clean speech networks from Figure 8; for use in ED SI Figure). All seed1.
+ALL_MODEL_LIST = ['Kell2018word', 'Kell2018speaker',
+                      'Kell2018music', 'Kell2018audioset',
+                      'Kell2018multitask',
+				      'ResNet50word', 'ResNet50speaker',
+                      'ResNet50music', 'ResNet50audioset',
+                      'ResNet50multitask',
+				      'AST', 'wav2vec', 'DCASE2020',
+                      'DS2', 'VGGish', 'ZeroSpeech2020',
+                      'S2T', 'metricGAN', 'sepformer',
+                      'spectemp',
+                       'Kell2018wordClean', 'Kell2018speakerClean',
+                       'ResNet50wordClean', 'ResNet50speakerClean',]
+
+
+
 # Dictionary with key as the source DNN model name and value as a list of the model layers names in correct order.
 # Layers included in this dictionary will be loaded in the final analyses compilations.
 d_layer_reindex = {
@@ -754,46 +802,16 @@ d_value_of_interest = {'median_r2_test': 'Median $R^2$',
                        'median_r2_train': 'Median $R^2$ train',
                        'r2_test': 'Median $R^2$',
                        'rel_pos': 'Relative layer position',
-                       'rel_layer_pos': 'Relative best layer',
-                       'dim_demean-True': 'ED (trained model, demean=True)',
-                       'dim_demean-False': 'ED (trained model, demean=False)',
-                       'dim_randnetw_demean-True': 'ED (random network, demean=True)',
-                       'dim_randnetw_demean-False': 'ED (random network, demean=False)', }
+                       'rel_layer_pos': 'Relative best layer', }
 
-d_dim_labels = {  # Not demeaned
-    'dim_demean-False': 'Effective dimensionality (trained model, NOT demeaned)',
-    'dim': 'Effective dimensionality (trained model, NOT demeaned)',
-    # Two naming conventions -- one with True/False, other one with simply the preprocessing step
-    'dim_randnetw_demean-False': 'Effective dimensionality (permuted network, NOT demeaned)',
-    'dim_randnetw': 'Effective dimensionality (permuted network, NOT demeaned)',
+d_dim_labels = {
+    # PCA covariance
+    'dim_pca': 'Effective dimensionality (trained model)',
+    'dim_randnetw_pca': 'Effective dimensionality (permuted network)',
 
-    # Normal demeaned
-    'dim_demean-True': 'Effective dimensionality (trained model, demeaned)',
-    'dim_demean': 'Effective dimensionality (trained model, demeaned)',
-    'dim_randnetw_demean-True': 'Effective dimensionality (permuted network, demeaned)',
-    'dim_randnetw_demean': 'Effective dimensionality (permuted network, demeaned)',
-
-    # PCA cov (only start using ONE naming convention)
-    'dim_pca_cov': 'Effective dimensionality (trained model, PCA cov)',
-    'dim_randnetw_pca_cov': 'Effective dimensionality (permuted network, PCA cov)',
-
-    # PCA corr
-    'dim_pca_corr': 'Effective dimensionality (trained model, PCA corr)',
-    'dim_randnetw_pca_corr': 'Effective dimensionality (permuted network, PCA corr)',
-
-    # Z-scored
-    'dim_zscore-True': 'Effective dimensionality (trained model, z-scored)',
-    'dim_randnetw_zscore-True': 'Effective dimensionality (permuted network, z-scored)',
-    'dim_zscore': 'Effective dimensionality (trained model, z-scored)',
-    'dim_randnetw_zscore': 'Effective dimensionality (permuted network, z-scored)',
-
-    # Z-scored, PCA cov
-    'dim_zscore_pca_cov': 'Effective dimensionality (trained model, z-scored, PCA cov)',
-    'dim_randnetw_zscore_pca_cov': 'Effective dimensionality (permuted network, z-scored, PCA cov)',
-
-    # Z-scored, PCA corr
-    'dim_zscore_pca_corr': 'Effective dimensionality (trained model, z-scored, PCA corr)',
-    'dim_randnetw_zscore_pca_corr': 'Effective dimensionality (permuted network, z-scored, PCA corr)',
+    # Z-scored, PCA covariance
+    'dim_zscore_pca': 'Effective dimensionality (trained model)',
+    'dim_randnetw_zscore_pca': 'Effective dimensionality (permuted network)',
 
     # Value of interest labels
     'median_r2_test_c_agg-mean': 'Neural noise-corrected $R^2$ (trained model)',

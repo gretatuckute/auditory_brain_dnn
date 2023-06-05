@@ -34,9 +34,14 @@ random.seed(0)
 
 #### Paths ####
 DATADIR = (Path(os.getcwd()) / '..' / '..' / 'data').resolve()
+run_locally = True
 if user == 'gt':
-    ROOT = f'/Users/{user}/bur/'
-    # ROOT = f'/Users/gt/Documents/GitHub/auditory_brain_dnn/' # For running locally, to-do make nice
+    if run_locally:
+        print(f' ------------- Running locally as {user} -----------')
+        ROOT = f'/Users/{user}/Documents/GitHub/auditory_brain_dnn/'
+    else:
+        print(f' ------------- Running as {user} using SFTP -----------')
+        ROOT = f'/Users/{user}/bur/'
 else:
     print(f' ------------- Running on openmind as {user} -----------')
     ROOT = f'/mindhive/mcdermott/u/{user}/auditory_brain_dnn/'
@@ -1283,7 +1288,7 @@ def load_score_across_layers_across_models(source_models,
         df_model_mean_yerr['value_of_interest'] = value_of_interest
         df_model_mean_yerr['randnetw'] = randnetw
         df_model_mean_yerr['agg_method'] = agg_method
-        
+        df_model_mean_yerr['datetag'] = datetag
         
         if save: # store each model's dataframe to a csv for logging purposes
             df_model_mean_yerr.to_csv(join(RESULTDIR_MODEL, f'across-layers-aggregated-{agg_method}_'
@@ -3355,6 +3360,7 @@ def modelwise_scores_across_targets(source_models,
                                     randnetw='False',
                                     target1_loadstr_suffix='_performance_sorted',
                                     target2_loadstr_suffix='_performance_sorted',
+                                    RESULTDIR_ROOT='/Users/gt/Documents/GitHub/auditory_brain_dnn/results/',
                                     save=False,
                                     add_savestr='',
                                     ylim=(0.2,0.8)):
@@ -3371,12 +3377,16 @@ def modelwise_scores_across_targets(source_models,
         saved using an additional save_str)
     :param target2_loadstr_suffix: str, suffix of the loadstr for target2 (if the compiled across-models csv/plots were
         saved using an additional save_str)
+    :param RESULTDIR_ROOT: str, result directory.
+        We want to load from RESULTDIR_ROOT/PLOTS_across-models/ where the across-models csv/plots are saved
+        (which holds the compiled across-models csv/plots)
     :return:
     """
     print('OBS, if using these plots (which we are currently NOT), check errorbars -- these error bars are computed'
           ' based on n=20 models which we might not use here')
     
-    df_target1 = pd.read_csv(join(SAVEDIR_CENTRALIZED,
+    df_target1 = pd.read_csv(join(RESULTDIR_ROOT,
+                                  'PLOTS_across-models',
                               f'across-models_roi-{roi}_'
                               f'{target1}{d_randnetw[randnetw]}_'
                               f'{aggregation}_within_subject_sem_'
@@ -3386,7 +3396,8 @@ def modelwise_scores_across_targets(source_models,
     df_target1['loadstr_suffix'] = target1_loadstr_suffix
     df_target1 = df_target1.query('source_model in @source_models')
     
-    df_target2 = pd.read_csv(join(SAVEDIR_CENTRALIZED,
+    df_target2 = pd.read_csv(join(RESULTDIR_ROOT,
+                                  'PLOTS_across-models',
                                f'across-models_roi-{roi}_'
                                f'{target2}{d_randnetw[randnetw]}_'
                                f'{aggregation}_within_subject_sem_'
@@ -3594,20 +3605,33 @@ def layerwise_scores_across_targets(source_models,
         # ax.set_xticks(np.arange(ylim[0] * 10, (ylim[1] + 0.2) * 10, 2) / 10)
     if plot_identity:
         add_identity(ax, color='grey', ls='--', alpha=0.4)
-    ax.tick_params(axis='x', labelsize=14)
-    ax.tick_params(axis='y', labelsize=14)
+    ax.tick_params(axis='x', labelsize=16)
+    ax.tick_params(axis='y', labelsize=16)
+    if ylim is not None:
+        if ylim[1] == 1:
+            # If max ylim is 1, add ticks for 0, 0.2, 0.4, 0.6, 0.8, 1 on both x and  y axis
+            ax.set_xticks(np.arange(0, 1.2, 0.2))
+            ax.set_yticks(np.arange(0, 1.2, 0.2))
+        if ylim[1] == 0.8:
+            # set 0, 0.2, 0.4, 0.6, 0.8 on both x and y axis
+            ax.set_xticks(np.arange(0, 0.9, 0.2))
+            ax.set_yticks(np.arange(0, 0.9, 0.2))
     ax.set_xlabel(f'{target1} {value_of_interest}', size=11)
     ax.set_ylabel(f'{target2} {value_of_interest}', size=11)
     ax.set_title(f'{target2} vs. {target1} {d_randnetw[randnetw][1:]} '
                  f'{value_of_interest}.\nPearson r2={r2:.3f}, p={p:.3e}',
                  size='medium')
     ax.set_aspect('equal')
+    # add r2 in bottom right corner
+    ax.text(0.95, 0.02, f'$R^2$={r2:.3f}', horizontalalignment='right', verticalalignment='bottom',
+            transform=ax.transAxes, size=16)
     # Legend according to scatter colors
     class_colours = color_order_unique
     recs = []
     for i in range(0, len(class_colours)):
         recs.append(mpatches.Rectangle((0, 0), 1, 1, fc=class_colours[i]))
-    fig.legend(recs, color_order_unique_names, bbox_to_anchor=(1.0, 1.))
+    fig.legend(recs, color_order_unique_names, bbox_to_anchor=(1.0, 1.),
+               fontsize=9)
     if save:
         save_str = f'across-layers-n={n_layers}-models_' \
                    f'{target1}-vs-{target2}' \
@@ -3624,8 +3648,9 @@ def layerwise_scores_across_targets(source_models,
         df_grouped['r'] = r
         df_grouped['r2'] = r2
         df_grouped['p-val'] = p
+        df_grouped['datetag'] = datetag
         df_grouped.to_csv(join(save, f'{save_str}.csv'))
-        
+    plt.tight_layout(pad=3)
     fig.show()
 
 def add_int_to_meta_col(df_meta_roi,

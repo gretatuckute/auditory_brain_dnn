@@ -14,7 +14,11 @@ import getpass
 import sys
 from os.path import join
 
-from aud_dnn.resources import d_layer_reindex, d_randnetw
+# Import core paths from the plot_utils_AUD.py file
+from plot_utils_AUD import user, DATADIR, RESULTDIR_ROOT, \
+						    SAVEDIR_CENTRALIZED, STATSDIR_CENTRALIZED
+from aud_dnn.resources import d_layer_reindex, d_layer_names, d_randnetw, d_model_colors, \
+	d_model_names, d_dim_labels, d_roi_colors, FIG_2_5_MODEL_LIST, FIG_7_MODEL_LIST, ALL_MODEL_LIST
 from plot_utils_AUD_RSA import load_rsa_scores_across_layers_across_models, \
 	package_RSA_best_layer_scores
 from plot_utils_AUD import load_score_across_layers_across_models, \
@@ -23,47 +27,39 @@ from plot_utils_AUD import load_score_across_layers_across_models, \
 
 import rsa_matrix_calculation_all_models
 
-
 now = datetime.datetime.now()
 datetag = now.strftime("%Y%m%d")
 
-#### Paths ####
-DATADIR = (Path(os.getcwd()) / '..' / 'data').resolve()
-user = getpass.getuser()
-# Set paths according to user
-if user == 'gt':
-    ROOT = f'/Users/gt/bur/'
-elif user == 'gretatu':
-    print(f' ------------- Running on openmind as {user} -----------')
-    ROOT = f'/mindhive/mcdermott/u/gretatu/auditory_brain_dnn/'
-else:
-	raise ValueError(f'Unknown user {user}. Specify paths manually.')
 
-SAVEDIR_CENTRALIZED = f'{ROOT}/results/PLOTS_across-models/'  # make sure that ind. comp. are named in the title
-STATSDIR_CENTRALIZED = f'{ROOT}/results/STATS_across-models/'
-RESULTDIR_ROOT = (Path(f'{ROOT}/results')).resolve()
-# RESULTDIR_ROOT = '/Users/gt/Documents/GitHub/auditory_brain_dnn/results/' # LOCAL
-
-def compile_dim_data(randnetw,
+def compile_dim_data(source_models,
+					 randnetw,
 					 fname_dim,
-					 str_suffix,):
+					 str_suffix,
+					 EDDIR):
 	"""
 	Function for compiling dim data across models into a dict with key = model and value a df corresponding to the dim val
 
 	:param randnetw (str): whether to use random network or not
-	:param demean_dim (str): whether to demean dim or not
+	:param fname_dim (str): name of the dim file
+	:param str_suffix (str): suffix to add to the dim file name
+	:param EDDIR (str): path to the dim file
 	:return:
 	"""
 	
 	print(f'Loading {fname_dim} and using str suffix: {str_suffix}')
 	
-	with open(os.path.join(DATADIR, 'source_models_dim', fname_dim), 'rb') as f:
+	with open(os.path.join(EDDIR, fname_dim), 'rb') as f:
 		dim_dict = pickle.load(f)
 	
 	d_across_models_dim = {}
+
+	# Iterate through d_layer_reindex to get the layers for each model in source_models
+
 	for model, layers in d_layer_reindex.items():
-		if (model in ['Kell2018init', 'ResNet50init', 'wav2vecpower',
-					  'spectemp']) and randnetw == 'True':  # These models don't have random activations savdim.
+		if model not in source_models:
+			continue
+
+		if randnetw == 'True' and model in ['spectemp']:
 			continue
 		
 		# Compile the dim values for each model into a dataframe
@@ -85,70 +81,6 @@ def compile_dim_data(randnetw,
 	return d_across_models_dim
 
 
-# def compile_dim_data(randnetw,
-# 					demean_dim,
-# 					 std_divide_dim,):
-# 	"""
-# 	Function for compiling dim data across models into a dict with key = model and value a df corresponding to the dim val
-#
-# 	:param randnetw (str): whether to use random network or not
-# 	:param demean_dim (str): whether to demean dim or not
-# 	:return:
-# 	"""
-#
-# 	if randnetw == 'False':
-# 		if demean_dim == 'True':
-# 			if std_divide_dim == 'True':
-# 				fname_dim = 'all_trained_models_mean_subtract_std_divide_pca_effective_dimensionality_165_sounds.pckl'
-# 				str_suffix = '_zscore-True'
-# 			else:
-# 				fname_dim = 'all_trained_models_mean_subtract_pca_effective_dimensionality_165_sounds.pckl'
-# 				str_suffix = '_demean-True'
-# 		else:
-# 			fname_dim = 'all_trained_models_effective_dimensionality_165_sounds.pckl'
-# 			str_suffix = '_demean-False'
-#
-# 	elif randnetw == 'True':
-# 		if demean_dim == 'True':
-# 			if std_divide_dim == 'True':
-# 				fname_dim = 'all_random_models_mean_subtract_std_divide_pca_effective_dimensionality_165_sounds.pckl'
-# 				str_suffix = '_randnetw_zscore-True'
-# 			else:
-# 				fname_dim = 'all_random_models_mean_subtract_pca_effective_dimensionality_165_sounds.pckl'
-# 				str_suffix = '_randnetw_demean-True'
-# 		else:
-# 			fname_dim = 'all_random_models_effective_dimensionality_165_sounds.pckl'
-# 			str_suffix = '_randnetw_demean-False'
-# 	else:
-# 		raise ValueError('randnetw must be either False or True')
-#
-# 	print(f'Loading {fname_dim}')
-#
-# 	with open(os.path.join(DATADIR, 'source_models_dim', fname_dim), 'rb') as f:
-# 		dim_dict = pickle.load(f)
-#
-# 	d_across_models_dim = {}
-# 	for model, layers in d_layer_reindex.items():
-# 		if (model in ['Kell2018init', 'ResNet50init', 'wav2vecpower',
-# 					  'spectemp']) and randnetw == 'True':  # These models don't have random activations savdim.
-# 			continue
-#
-# 		# Compile the dim values for each model into a dataframe
-# 		dim_dict_model = dim_dict[model]
-#
-# 		# Load the version with key=layer to ensure correct ordering
-# 		dim_dict_model_layer = {}
-# 		for layer in layers:
-# 			dim_dict_model_layer[layer] = dim_dict_model[layer].detach().numpy().ravel()
-#
-# 		# Package with keys = rows (layers) and columns = dim val
-# 		df_dim = pd.DataFrame.from_dict(dim_dict_model_layer, orient='index').rename(columns={0: f'dim{str_suffix}'})
-#
-# 		d_across_models_dim[model] = df_dim
-#
-# 	return d_across_models_dim
-
-
 def compile_dim_and_neural_data(source_models,
 								target,
 								d_across_models_dim,
@@ -159,7 +91,7 @@ def compile_dim_and_neural_data(source_models,
 								drop_nans=False,
 								roi=None,
 								save=False,
-								add_savestr=''):
+								add_savestr='_pca'):
 	"""
 	Compile the dim values and neural values across models into one big dataframe
 
@@ -181,11 +113,9 @@ def compile_dim_and_neural_data(source_models,
 			columns={'index': 'source_layer'})
 		
 		if source_model == 'spectemp':
-			# spectemo has no randnetw, so fill with nan
-			df_dim_randnetw_demean = df_dim_demean.copy(deep=True).rename(columns={'dim_demean-True': 'dim_randnetw_demean-True'})
-			df_dim_randnetw_demean['dim_randnetw_demean-True'] = np.nan
-		# so take the trained version and sub that into the randnetw df
-			# df_dim_randnetw_demean = df_dim_demean.copy(deep=True).rename(columns={'dim_demean-True': 'dim_randnetw_demean-True'})
+			# spectemp has no randnetw dimensionality, so fill with nan
+			df_dim_randnetw_demean = df_dim_demean.copy(deep=True).rename(columns={f'dim{add_savestr}': f'dim_randnetw{add_savestr}'})
+			df_dim_randnetw_demean[f'dim_randnetw{add_savestr}'] = np.nan
 		else:
 			df_dim_randnetw_demean = d_across_models_dim_randnetw[source_model].reset_index(drop=False).rename(
 				columns={'index': 'source_layer'})
@@ -328,12 +258,16 @@ def layerwise_scatter_dim_neural(df_across_models,
 			   alpha=1,
 			   c=color_order, )
 	# Make x axis log scale
-	ax.set_xscale('log')
+	# ax.set_xscale('log')
 	ax.set_xlabel(d_dim_labels[x_val], fontsize=20)
 	ax.set_ylabel(d_dim_labels[y_val], fontsize=20)
 	ax.set_title(
 		f'Across all models (n={len(df_across_models.source_model.unique())}) for {target}, r2={r2:.3f}, p={p:.3e}'
 		f'\n{d_dim_labels[y_val]} vs. {d_dim_labels[x_val]}')
+
+	# Plot r2 value in lower right corner
+	ax.text(0.95, 0.02, f'$R^2$={r2:.3f}', horizontalalignment='right', verticalalignment='bottom',
+			transform=ax.transAxes, size=20)
 	
 	# Legend according to scatter colors
 	class_colours = color_order_unique
@@ -383,6 +317,8 @@ def argmax_layer_scatter_dim_neural(df_across_models,
 								 add_savestr=''):
 	""""
 	Plot the dim and neural scores for each layer in one big scatter plot.
+	Takes the argmax best layer for each model (not indepedently selected).
+	Not used in paper.
 	
 	Args:
 		df_across_models: dataframe with dim and neural scores across models
@@ -412,8 +348,8 @@ def argmax_layer_scatter_dim_neural(df_across_models,
 	color_order = [d_model_colors[model] for model in df_across_models_argmax_layer['source_model']]
 	color_order_names = [d_model_names[model] for model in df_across_models_argmax_layer['source_model']]
 	
-	x_y_val_combos = [(f'dim{d_randnetw[randnetw]}_demean-False', f'median_r2_test_c_agg-mean{d_randnetw[randnetw]}'),
-					  (f'dim{d_randnetw[randnetw]}_demean-True', f'median_r2_test_c_agg-mean{d_randnetw[randnetw]}'),]
+	x_y_val_combos = [(f'dim{d_randnetw[randnetw]}_pca', f'median_r2_test_c_agg-mean{d_randnetw[randnetw]}'),
+					  (f'dim{d_randnetw[randnetw]}_pca', f'median_r2_test_c_agg-mean{d_randnetw[randnetw]}'),]
 	
 	for (x_val, y_val) in x_y_val_combos:
 	
@@ -468,12 +404,12 @@ def argmax_layer_scatter_dim_neural(df_across_models,
 
 def dim_across_layers(df_across_models,
 					  source_models,
-					  demean_dim='True',
 					  alpha=1,
 					  alpha_randnetw=0.3,
 					  label_rotation=45,
 					  ylim=None,
 					  save=False,
+					  str_suffix='_pca',
 					  add_savestr=''):
 	"""
 	Plot dim values across layers for each model in source_models.
@@ -484,24 +420,24 @@ def dim_across_layers(df_across_models,
 		df_model = df_across_models.copy(deep=True).query(f'source_model == "{source_model}"')
 
 		layer_reindex = d_layer_reindex[source_model]
-		layer_legend = d_layer_legend[source_model]
-		
-		title_str = f'{d_model_names[source_model]}, ED (demean={demean_dim})'
+		layer_legend = [d_layer_names[source_model][layer] for layer in layer_reindex]
+
+		title_str = f'{d_model_names[source_model]}, ED)'
 		
 		# Plot
 		fig, ax = plt.subplots(figsize=(7, 5))
 		ax.set_box_aspect(0.6)
-		plt.errorbar(np.arange(len(layer_reindex)), df_model[f'dim_demean-{demean_dim}'],
+		plt.errorbar(np.arange(len(layer_reindex)), df_model[f'dim{str_suffix}'],
 					 alpha=alpha, lw=2,
 					 color=d_roi_colors['none'])
 		
-		plt.errorbar(np.arange(len(layer_reindex)), df_model[f'dim_randnetw_demean-{demean_dim}'],
+		plt.errorbar(np.arange(len(layer_reindex)), df_model[f'dim_randnetw{str_suffix}'],
 					 alpha=alpha_randnetw, lw=2,
 					 color=d_roi_colors['none'],
 					 label='Permuted network')
 		
 		plt.xticks(np.arange(len(layer_legend)), layer_legend, rotation=label_rotation)
-		plt.ylabel(d_dim_labels[f'dim_demean-{demean_dim}'], fontsize=15)
+		plt.ylabel(d_dim_labels[f'dim{str_suffix}'], fontsize=15)
 		if ylim is not None:
 			plt.ylim(ylim)
 		plt.title(title_str)
@@ -511,7 +447,7 @@ def dim_across_layers(df_across_models,
 		plt.setp(ax.get_yticklabels(), fontsize=13)
 		plt.tight_layout(h_pad=1.6)
 		if save:
-			savestr = f'dim_across_layers_demean-{demean_dim}_' \
+			savestr = f'dim_across_layers{str_suffix}_' \
 					   f'source_model-{source_model}_' \
 					   f'same_ylim={ylim}{add_savestr}'
 			fig.savefig(join(save, f'{savestr}.png'), dpi=180, bbox_inches='tight')
@@ -536,7 +472,7 @@ def loop_across_best_layer_regr_rsa(source_models,
 
 	"""
 	
-	# Obtain specs for randnetw False and True
+	# Obtain specs for loading of best layer values
 	if randnetw == 'False':
 		save_str = '_good-models'
 		permuted_flag = False
@@ -577,7 +513,7 @@ def loop_across_best_layer_regr_rsa(source_models,
 												   layer_value_of_interest='rel_pos',
 												   layers_to_exclude=layer_exclude_flag,
 												   RESULTDIR_ROOT=join(RESULTDIR_ROOT,
-																	   'PLOTS_across-models'))  # '/om2/user/gretatu/results/AUD/20210915_median_across_splits_correction/PLOTS_ACROSS_MODELS/'
+																	   'PLOTS_across-models'))
 		
 		# Rename to add in the names of the primary and non-primary ROIs as well as suffix with _regr
 		df_regr = df_regr.rename(columns={'Unnamed: 0': 'source_model',
@@ -672,60 +608,3 @@ def loop_across_best_layer_regr_rsa(source_models,
 								  columns={f'{primary_flag}_mean_rsa': 'mean_best_layer_rsa'})])
 	
 	return df_regr_final, df_rsa_final
-
-
-
-########### Drafted stuff ##########
-
-
-# ##### OBTAIN THE DIFFERENCE IN DEMEANED ED VALUES BETWEEN TRAINED AND RANDNETW #####
-# df_across_models['ED_demean-True_DIV_dim_randnetw_demean-True'] = df_across_models['ED_demean-True'] / df_across_models['ED_randnetw_demean-True']
-#
-# # For neural data
-# df_across_models['median_r2_test_c_agg-mean_DIV_median_r2_test_c_agg-mean_randnetw'] = df_across_models['median_r2_test_c_agg-mean'] / df_across_models['median_r2_test_c_agg-mean_randnetw']
-#
-# # Plot as scatter
-# fig, ax = plt.subplots(figsize=(9,9))
-# ax.scatter(df_across_models['ED_demean-True_DIV_dim_randnetw_demean-True'], df_across_models['median_r2_test_c_agg-mean_DIV_median_r2_test_c_agg-mean_randnetw'])
-# ax.set_ylim(-1,15)
-# ax.set_xlim(-1,25)
-# ax.set_xlabel('ED_demean-True_DIV_dim_randnetw_demean-True')
-# ax.set_ylabel('median_r2_test_c_agg-mean_DIV_median_r2_test_c_agg-mean_randnetw')
-# if save:
-# 	plt.savefig(f'dim_vs_neural_across_models_ratios.png')
-# plt.show()
-
-
-
-
-#
-# # ##### PLOT OVERALL SCORE ACROSS LAYERS PER MODEL #####
-# # for source_model in df_across_models.source_model.unique():
-# # 	df_per_model = df_across_models[df_across_models['source_model'] == source_model]
-# #
-# # 	for (x_val, y_val) in x_y_val_combos:
-# #
-# # 		save_str = f'per_model={source_model}_' \
-# # 					   f'{y_val}_vs_{x_val}_' \
-# # 					   f'target={target}'
-# #
-# # 		# Compute r and p values
-# # 		r, p = pearsonr(df_per_model[x_val], df_per_model[y_val])
-# #
-# # 		# Plot scatter
-# # 		fig, ax = plt.subplots(figsize=(10,10))
-# # 		# color according to source_model
-# # 		ax.scatter(df_per_model[x_val], df_per_model[y_val],
-# # 				   s=80,
-# # 				   alpha=1,
-# # 				   c='black')
-# # 		ax.set_xlabel(d_dim_labels[x_val], fontsize=15)
-# # 		ax.set_ylabel(d_dim_labels[y_val], fontsize=15)
-# # 		ax.set_title(f'Source model {d_model_names[source_model]} for {target}, r={r:.3f}, p={p:.3e}'
-# # 					 f'\n{d_dim_labels[y_val]} vs.\n{d_dim_labels[x_val]}')
-# # 		fig.tight_layout(pad=4)
-# # 		if save:
-# # 			fig.savefig(f'{save_str}.png')
-# # 		plt.show()
-#
-#
