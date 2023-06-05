@@ -70,6 +70,15 @@ CLEAN_SPEECH_LIST = ['Kell2018word','Kell2018wordClean',
                      'ResNet50word', 'ResNet50wordClean',
                      'Kell2018speaker', 'Kell2018speakerClean',
                      'ResNet50speaker', 'ResNet50speakerClean']
+CLEAN_SPEECH_LIST_2SEEDS = [['Kell2018word', 'Kell2018wordSeed2'],
+                            ['Kell2018wordClean', 'Kell2018wordCleanSeed2'],
+                   ['Kell2018speaker', 'Kell2018speakerSeed2'],
+                   ['Kell2018speakerClean', 'Kell2018speakerCleanSeed2'],
+                   ['ResNet50word', 'ResNet50wordSeed2'],
+                   ['ResNet50wordClean', 'ResNet50wordCleanSeed2'],
+                   ['ResNet50speaker', 'ResNet50speakerSeed2'],
+                   ['ResNet50speakerClean', 'ResNet50speakerCleanSeed2']]
+               
 
 # Models included in the best-layer scatter plot
 FIG5_MODEL_LIST = ['Kell2018word', 'Kell2018speaker',
@@ -1255,6 +1264,10 @@ def make_paper_plots(save_fig_path='rsa_plots'):
                                )
 
     # Figure ? clean speech bar plot
+    make_model_vs_model_scatter(save_fig_path, ax_lims_trained=None,
+                                model_pairs=CLEAN_SPEECH_LIST_2SEEDS,
+                                extra_title='FIG9_Clean_Speech_',
+                               )
     offset=0.35
     make_all_voxel_rsa_bar_plots(save_fig_path=save_fig_path,
                                  model_list=CLEAN_SPEECH_LIST + ['spectemp'],
@@ -1380,6 +1393,7 @@ def make_model_vs_model_scatter(save_fig_path,
                                 model_pairs,
                                 overwrite=False,
                                 extra_title='',
+                                ax_lims_trained=[0.35,0.55],
                                 xlabel='Seed 1',
                                 ylabel='Seed 2',
                                ):
@@ -1407,7 +1421,7 @@ def make_model_vs_model_scatter(save_fig_path,
                                           save_fig_path=save_fig_path,
                                           use_165_sounds_for_fMRI_ceiling=False,
                                           extra_title_str=extra_title + dataset + '_Trained: ',
-                                          ax_lims=[0.35,0.55],
+                                          ax_lims=ax_lims_trained,
                                           xlabel=xlabel,
                                           ylabel=ylabel)
 
