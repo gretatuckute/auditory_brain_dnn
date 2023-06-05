@@ -11,7 +11,7 @@ SURFDIR = f'{DATADIR}/fsavg_surf/'
 
 ### Settings for which plots to make ###
 save = True # Whether to save any plots/csvs
-concat_over_models = False
+concat_over_models = True
 
 # If concat_over_models = False, we load each individual model and perform the analysis on that
 if not concat_over_models:
