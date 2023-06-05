@@ -11,7 +11,7 @@ SURFDIR = f'{DATADIR}/fsavg_surf/'
 
 ### Settings for which plots to make ###
 save = True # Whether to save any plots/csvs
-concat_over_models = False
+concat_over_models = True
 
 # If concat_over_models = False, we load each individual model and perform the analysis on that
 if not concat_over_models:
@@ -30,8 +30,8 @@ if concat_over_models:
 	# Shared for neural and components
 	plot_barplot_across_models = False # Figure 2 for neural, Figure 5 for components; barplot of performance across models
 	plot_scatter_across_models = False # Figure 2, Seed1 vs Seed2 scatter for neural
-	plot_scatter_across_models_clean = True # For components, seed1 vs seed2 scatter for clean models
-	plot_word_speaker_clean_models = False # Figure 8 for neural; barplot of performance for word/speaker models vs clean models (SI for components)
+	plot_scatter_across_models_clean = False # For components, seed1 vs seed2 scatter for clean models
+	plot_word_speaker_clean_models = True # Figure 8 for neural; barplot of performance for word/speaker models vs clean models (SI for components)
 
 	# Neural specific
 	plot_anat_roi_scatter = False # Figure 7 neural; scatter of performance across models for anatomical ROIs
@@ -242,7 +242,7 @@ if concat_over_models:  # assemble plots across models
 														 include_spectemp=True,
 														 sort_by=sort_flag,
 														 ylim=[0, 1],
-														 add_savestr=f'_word-clean-models{add_savestr}',
+														 add_savestr=f'_word-clean-models{add_savestr}', # todo if rerun: append -speaker
 														 box_aspect=1)
 
 						# Run associated stats
@@ -392,12 +392,61 @@ if concat_over_models:  # assemble plots across models
 													  aggregation='CV-splits-nit-10',
 													  randnetw=randnetw_flag, )
 
-		# PERFORMANCE OF CLEAN SPEECH NETWORKS (2 SEEDS)
-		if plot_word_clean_models:
+		# # PERFORMANCE OF CLEAN SPEECH NETWORKS (2 SEEDS)
+		# if plot_word_clean_models:
+		# 	source_model_lst = [['Kell2018word', 'Kell2018wordClean',
+		# 					 'ResNet50word', 'ResNet50wordClean'],
+		# 					 ['Kell2018wordSeed2', 'Kell2018wordCleanSeed2',
+		# 					 'ResNet50wordSeed2', 'ResNet50wordCleanSeed2']]
+		#
+		# 	for source_models in source_model_lst:
+		#
+		# 		# if all the models end with Seed2, create add_savestr = '_seed2'
+		# 		if all([model.endswith('Seed2') for model in source_models]):
+		# 			add_savestr = '_seed2'
+		# 		else:
+		# 			add_savestr = '_seed1'
+		#
+		# 		for sort_flag in [source_models]: # 'performance' NH2015_all_models_performance_order B2021_all_models_performance_order
+		# 			for val_flag in ['median_r2_test_c', ]:
+		# 				for agg_flag in ['CV-splits-nit-10']:
+		# 					for randnetw_flag in ['False', 'True' ]: # 'False', 'True'
+		#
+		# 						barplot_across_models(source_models=source_models,
+		# 											  target=target,
+		# 											  roi=None,
+		# 											  save=SAVEDIR_CENTRALIZED,
+		# 											  randnetw=randnetw_flag,
+		# 											  aggregation=agg_flag,
+		# 											  value_of_interest=val_flag,
+		# 											  sort_by=sort_flag,
+		# 											  add_savestr=f'_word-clean-models{add_savestr}',
+		# 											  box_aspect=1)
+		#
+		# 		# Run according stats
+		# 		for val_flag in ['median_r2_test_c', ]:
+		# 			for randnetw_flag in ['False', 'True' ]: # 'False', 'True'
+		# 				compare_models_subject_bootstrap(source_models=source_models,
+		# 												 target=target,
+		# 												 save=save,
+		# 												 value_of_interest=val_flag,
+		# 												 save_str=f'_word-clean-models_subject-bootstrap{add_savestr}',
+		# 												 models1=source_models, # just compile everything in this csv
+		# 												 models2=source_models,
+		# 												 aggregation='CV-splits-nit-10',
+		# 												 randnetw=randnetw_flag,
+		# 												 include_spectemp=False)
+
+		# PERFORMANCE OF CLEAN SPEECH (WORD AND SPEAKER) NETWORKS (2 SEEDS)
+		if plot_word_speaker_clean_models:
 			source_model_lst = [['Kell2018word', 'Kell2018wordClean',
-							 'ResNet50word', 'ResNet50wordClean'],
+							 'ResNet50word', 'ResNet50wordClean',
+								 'Kell2018speaker', 'Kell2018speakerClean',
+								 'ResNet50speaker', 'ResNet50speakerClean'],
 							 ['Kell2018wordSeed2', 'Kell2018wordCleanSeed2',
-							 'ResNet50wordSeed2', 'ResNet50wordCleanSeed2']]
+							 'ResNet50wordSeed2', 'ResNet50wordCleanSeed2',
+							 'Kell2018speakerSeed2', 'Kell2018speakerCleanSeed2',
+							 'ResNet50speakerSeed2', 'ResNet50speakerCleanSeed2']]
 
 			for source_models in source_model_lst:
 
@@ -420,8 +469,9 @@ if concat_over_models:  # assemble plots across models
 													  aggregation=agg_flag,
 													  value_of_interest=val_flag,
 													  sort_by=sort_flag,
-													  add_savestr=f'_word-clean-models{add_savestr}',
-													  box_aspect=1)
+													  add_savestr=f'_word-speaker-clean-models{add_savestr}',
+													  box_aspect=0.8,
+													  grouped_bars=True)
 
 				# Run according stats
 				for val_flag in ['median_r2_test_c', ]:
@@ -430,12 +480,13 @@ if concat_over_models:  # assemble plots across models
 														 target=target,
 														 save=save,
 														 value_of_interest=val_flag,
-														 save_str=f'_word-clean-models_subject-bootstrap{add_savestr}',
+														 save_str=f'_word-speaker-clean-models_subject-bootstrap{add_savestr}',
 														 models1=source_models, # just compile everything in this csv
 														 models2=source_models,
 														 aggregation='CV-splits-nit-10',
 														 randnetw=randnetw_flag,
 														 include_spectemp=False)
+
 
 
 		# ANATOMICAL SCATTER PLOTS

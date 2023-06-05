@@ -1975,12 +1975,15 @@ def barplot_across_models(source_models,
                           yerr_type='within_subject_sem',
                           add_savestr='',
                           alpha=1,
-                          box_aspect=0.8):
+                          box_aspect=0.8,
+                          grouped_bars=False):
     """
     Plot median variance explained across models for voxels in a given ROI or all ROIs.
     The score is loaded using CV-splits-nit-10 (default) layer selection procedure (can be changed if the user
     stored csv files with other layer selection procedures).
-    
+
+    If grouped_bars is True, then the bars are grouped two and two (assumes 8 source models for the clean speech networks.
+
     :param source_models:
     :param roi:
     :param value_of_interest:
@@ -2174,7 +2177,13 @@ def barplot_across_models(source_models,
             df_grouped = df_grouped.reindex(sort_by)
         
         # plot specs
-        bar_placement = np.arange(0, len(df_grouped) / 2, 0.5)
+        if grouped_bars:
+            # Group first two bars and last two bars together
+            offset = 0.35
+            bar_placement = [0, 0.35, 0.7 + offset, 1.05 + offset, 1.4 + offset * 2, 1.75 + offset * 2,
+                             2.1 + offset * 3, 2.45 + offset * 3]
+        else:
+            bar_placement = np.arange(0, len(df_grouped) / 2, 0.5)
         color_order = [d_model_colors[x] for x in df_grouped.index.values]
         model_legend = [d_model_names[x] for x in df_grouped.index.values]
         
@@ -2184,8 +2193,14 @@ def barplot_across_models(source_models,
             title_str = f'{d_value_of_interest[value_of_interest]} across models\nAll voxels, {target} {d_randnetw[randnetw][1:]} ({aggregation})'
         
         # Obtain xmin and xmax for spectemp line
-        xmin = np.unique((bar_placement[0] - np.diff(bar_placement) / 2))
-        xmax = np.unique((bar_placement[-1] + np.diff(bar_placement) / 2))
+        if grouped_bars:
+            # Get xmin and xmax which should be +- 0.25 of the min and max of bar_placement
+            xmin = np.min(bar_placement) - 0.25
+            xmax = np.max(bar_placement) + 0.25
+        else:
+            xmin = np.unique((bar_placement[0] - np.diff(bar_placement) / 2))
+            xmax = np.unique((bar_placement[-1] + np.diff(bar_placement) / 2))
+
 
         fig, ax = plt.subplots(figsize=(6, 7.5))
         ax.set_box_aspect(box_aspect) # 0.8 for all barplots, 1 for clean speech
