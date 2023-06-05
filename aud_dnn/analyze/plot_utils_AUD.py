@@ -2342,8 +2342,8 @@ def scatter_across_models(source_models,
     assert all([x in df_grouped['source_model'].values for x in models1]), 'models1 should be a subset of source_models'
     assert all([x in df_grouped['source_model'].values for x in models2]), 'models2 should be a subset of source_models'
 
-    df_models1 = df_grouped[df_grouped['source_model'].isin(models1)]
-    df_models2 = df_grouped[df_grouped['source_model'].isin(models2)]
+    df_models1 = df_grouped[df_grouped['source_model'].isin(models1)].reindex(models1)
+    df_models2 = df_grouped[df_grouped['source_model'].isin(models2)].reindex(models2)
 
     # plot specs
     color_order_models1 = [d_model_colors[x] for x in df_models1.index.values]

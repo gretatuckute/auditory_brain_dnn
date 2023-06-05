@@ -29,9 +29,9 @@ if not concat_over_models:
 if concat_over_models:
 	# Shared for neural and components
 	plot_barplot_across_models = False # Figure 2 for neural, Figure 5 for components; barplot of performance across models
-	plot_scatter_across_models = False # Figure 2, Seed1 vs Seed2 scatter for neural
+	plot_scatter_across_models = True # Figure 2, Seed1 vs Seed2 scatter for neural
 	plot_scatter_across_models_clean = False # For components, seed1 vs seed2 scatter for clean models
-	plot_word_speaker_clean_models = True # Figure 8 for neural; barplot of performance for word/speaker models vs clean models (SI for components)
+	plot_word_speaker_clean_models = False # Figure 8 for neural; barplot of performance for word/speaker models vs clean models (SI for components)
 
 	# Neural specific
 	plot_anat_roi_scatter = False # Figure 7 neural; scatter of performance across models for anatomical ROIs
@@ -59,9 +59,9 @@ if user != 'gt':
 # source_models = [ 'ResNet50audioset',   'ResNet50multitask',
 # 				'AST',  'wav2vec', 'DCASE2020', 'DS2',  'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer', 'spectemp']
 # Models above spectemp baseline (n=15)
-source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-				'AST',  'wav2vec', 'VGGish', 'S2T',  'sepformer']
+# source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
+# 				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
+# 				'AST',  'wav2vec', 'VGGish', 'S2T',  'sepformer']
 
 # # Models below spectemp baseline (n=4)
 # source_models = [  'DCASE2020', 'DS2',  'ZeroSpeech2020', 'metricGAN']
@@ -94,11 +94,13 @@ source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell201
 # All clean word models
 # source_models = ['Kell2018wordClean', 'Kell2018wordCleanSeed2',
 # 				 'ResNet50wordClean', 'ResNet50wordCleanSeed2']
-# source_models = ['Kell2018word', 'Kell2018wordClean', 'Kell2018wordSeed2', 'Kell2018wordCleanSeed2',
-# 				 'ResNet50word', 'ResNet50wordClean', 'ResNet50wordSeed2', 'ResNet50wordCleanSeed2']
+source_models = ['Kell2018word', 'Kell2018wordClean', 'Kell2018wordSeed2', 'Kell2018wordCleanSeed2',
+				 'ResNet50word', 'ResNet50wordClean', 'ResNet50wordSeed2', 'ResNet50wordCleanSeed2',
+				 'Kell2018speaker', 'Kell2018speakerClean', 'Kell2018speakerSeed2', 'Kell2018speakerCleanSeed2',
+				 'ResNet50speaker', 'ResNet50speakerClean', 'ResNet50speakerSeed2', 'ResNet50speakerCleanSeed2',]
 # Clean speaker models
-source_models = ['Kell2018speakerClean', 'Kell2018speakerCleanSeed2',
-				 'ResNet50speakerClean', 'ResNet50speakerCleanSeed2']
+# source_models = ['Kell2018speakerClean', 'Kell2018speakerCleanSeed2',
+# 				 'ResNet50speakerClean', 'ResNet50speakerCleanSeed2']
 
 
 print(f'---------- Target: {target} ----------')
@@ -357,16 +359,16 @@ if concat_over_models:  # assemble plots across models
 
 			for randnetw_flag in ['False', 'True']:
 				if randnetw_flag == 'False':
-					ylim = [0.6,0.8]
-					xlim = [0.6,0.8]
+					ylim = [0.4,0.8]
+					xlim = [0.4,0.8]
 				else:
 					ylim = [0.0,0.6]
 					xlim = [0.0,0.6]
 				scatter_across_models(source_models=source_models,
-									  models1=['Kell2018word', 'Kell2018speaker', 'Kell2018audioset', 'Kell2018multitask',
-											   'ResNet50word', 'ResNet50speaker', 'ResNet50audioset',   'ResNet50multitask',],
-									  models2=['Kell2018wordSeed2', 'Kell2018speakerSeed2', 'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
-											   'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',],
+									  models1=['Kell2018word', 'Kell2018wordClean', 'ResNet50word', 'ResNet50wordClean',
+											   'Kell2018speaker', 'Kell2018speakerClean', 'ResNet50speaker', 'ResNet50speakerClean'], # ['Kell2018word', 'Kell2018speaker', 'Kell2018audioset', 'Kell2018multitask', 'ResNet50word', 'ResNet50speaker', 'ResNet50audioset',   'ResNet50multitask',]
+									  models2=['Kell2018wordSeed2', 'Kell2018wordCleanSeed2','ResNet50wordSeed2', 'ResNet50wordCleanSeed2',
+											   'Kell2018speakerSeed2', 'Kell2018speakerCleanSeed2', 'ResNet50speakerSeed2', 'ResNet50speakerCleanSeed2'], #['Kell2018wordSeed2', 'Kell2018speakerSeed2', 'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2','ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',],
 									  target=target,
 									  save=SAVEDIR_CENTRALIZED,
 									  randnetw=randnetw_flag,
