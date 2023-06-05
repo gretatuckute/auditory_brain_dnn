@@ -19,9 +19,6 @@ if user != 'gt':
 	sys.stdout = open(join(RESULTDIR_ROOT, 'logs', f'out-{date}.log'), 'a+')
 
 ### Settings ###
-source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-				'AST',  'wav2vec', 'DCASE2020', 'DS2', 'VGGish',  'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer', 'spectemp']
 
 agg_method = 'mean'  # across subjects
 roi = None
@@ -30,9 +27,9 @@ regr = True
 rsa = True
 modelwise_scatter = False # Compare modelwise between datasets and methods
 layerwise_scatter = False # Compare layerwise between datasets and methods
-best_layer_scatter = True # Compare best layer Fig 5 values between methods
+best_layer_scatter = True # Compare best layer Fig 7 values between methods
 
-save = False
+save = True
 if not save:
 	SAVEDIR_CENTRALIZED = False
 
@@ -41,7 +38,8 @@ if modelwise_scatter:
 		# ##### REGRESSION #####
 		val_of_interest = 'median_r2_test_c'
 		
-		# SCATTER OF THE BARPLOT VALUES (CV SPLITS NIT 10) ACROSS MODELS, NH2015 VS B2021
+		# SCATTER OF THE BARPLOT VALUES (FIGURE 2; CV SPLITS NIT 10) ACROSS MODELS, NH2015 VS B2021
+		source_models = FIG_2_5_MODEL_LIST
 
 		for ylim in [((-0.015,1)), None]:
 
@@ -50,6 +48,7 @@ if modelwise_scatter:
 																	target1='NH2015', target2='B2021',
 																	target1_loadstr_suffix='_performance_sorted',
 																	target2_loadstr_suffix='_performance_sorted',
+																	RESULTDIR_ROOT=RESULTDIR_ROOT,
 																	roi=roi,
 																	aggregation='CV-splits-nit-10',
 																	add_savestr='_all-models',
@@ -62,6 +61,7 @@ if modelwise_scatter:
 																			target1='NH2015', target2='B2021',
 																			target1_loadstr_suffix='_performance_sorted',
 																			target2_loadstr_suffix='_performance_sorted',
+																			RESULTDIR_ROOT=RESULTDIR_ROOT,
 																			roi=roi,
 																			aggregation='CV-splits-nit-10',
 																			add_savestr='_all-models',
@@ -139,17 +139,14 @@ if modelwise_scatter:
 			df_across_models_regr_rsa_r.to_csv(f'{STATSDIR_CENTRALIZED}/df_across_models_regr_rsa_r_{datetag}.csv')
 			df_across_models_regr_rsa_r2.to_csv(f'{STATSDIR_CENTRALIZED}/df_across_models_regr_rsa_r2_{datetag}.csv')
 			df_across_models_regr_rsa_p.to_csv(f'{STATSDIR_CENTRALIZED}/df_across_models_regr_rsa_p_{datetag}.csv')
-		
-		# test what happens with nan: it just drops that index, manually:
-		# np.corrcoef(regr_NH2015.query('source_model != "spectemp"')[[f'{val_of_interest_regr}_NH2015']].values.ravel(),
-		# 			regr_B2021_randnetw.query('source_model != "spectemp"')[
-		# 				[f'{val_of_interest_regr}_B2021_randnetw']].values.ravel())
 	
 
 if layerwise_scatter:
 	if regr:
 		###### LOAD NEURAL PREDICTIVITY ACROSS LAYERS ######
 		# We don't include spectemp for permuted.
+
+		source_models = ALL_MODEL_LIST
 		
 		# ##### REGRESSION #####
 		val_of_interest = 'median_r2_test_c'
@@ -238,7 +235,7 @@ if layerwise_scatter:
 			randnetw='False',
 			value_of_interest=val_of_interest,
 			agg_method=agg_method,
-			RESULTDIR_ROOT=join(RESULTDIR_ROOT, 'RSA')) # Copied over Jenelle's results to my datadir
+			RESULTDIR_ROOT=join(RESULTDIR_ROOT, 'RSA')) # Copied over Jenelle's results to overall resultdir
 		
 		d_across_models_rsa_NH2015_randnetw, d_across_layers_rsa_NH2015_randnetw = load_rsa_scores_across_layers_across_models(
 			source_models=[source_model for source_model in source_models if source_model != 'spectemp'],
@@ -247,7 +244,7 @@ if layerwise_scatter:
 			randnetw='True',
 			value_of_interest=val_of_interest,
 			agg_method=agg_method,
-			RESULTDIR_ROOT=join(RESULTDIR_ROOT, 'RSA')) # Copied over Jenelle's results to my datadir
+			RESULTDIR_ROOT=join(RESULTDIR_ROOT, 'RSA'))
 			
 		
 		## B2021 ##
@@ -258,7 +255,7 @@ if layerwise_scatter:
 			randnetw='False',
 			value_of_interest=val_of_interest,
 			agg_method=agg_method,
-			RESULTDIR_ROOT=join(RESULTDIR_ROOT, 'RSA')) # Copied over Jenelle's results to my datadir
+			RESULTDIR_ROOT=join(RESULTDIR_ROOT, 'RSA'))
 		
 		d_across_models_rsa_B2021_randnetw, d_across_layers_rsa_B2021_randnetw = load_rsa_scores_across_layers_across_models(
 			source_models=[source_model for source_model in source_models if source_model != 'spectemp'],
@@ -267,7 +264,7 @@ if layerwise_scatter:
 			randnetw='True',
 			value_of_interest=val_of_interest,
 			agg_method=agg_method,
-			RESULTDIR_ROOT=join(RESULTDIR_ROOT, 'RSA')) # Copied over Jenelle's results to my datadir
+			RESULTDIR_ROOT=join(RESULTDIR_ROOT, 'RSA'))
 		
 		# RSA: SCATTER OF THE LAYERWISE SCORES ACROSS MODELS, NH2015 VS B2021
 		
@@ -366,9 +363,7 @@ if best_layer_scatter:
 	###### FOR COMPARING THE BEST LAYER IN ANATOMICAL ROIS AS OBTAINED BY REGRESSION OR RSA #######
 	
 	#### Settings ####
-	source_models = ['Kell2018word', 'Kell2018speaker', 'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-					 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset', 'ResNet50multitask',
-					 'AST', 'wav2vec', 'VGGish', 'S2T', 'sepformer']
+	source_models = FIG_7_MODEL_LIST
 	
 	df_lst = []
 	for target in ['NH2015', 'B2021']:
