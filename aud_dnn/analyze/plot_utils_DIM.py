@@ -23,7 +23,7 @@ from plot_utils_AUD_RSA import load_rsa_scores_across_layers_across_models, \
 	package_RSA_best_layer_scores
 from plot_utils_AUD import load_score_across_layers_across_models, \
 	modelwise_scores_across_targets, layerwise_scores_across_targets,\
-	load_scatter_anat_roi_best_layer
+	load_scatter_anat_roi_best_layer, permuted_vs_trained_scatter
 
 import rsa_matrix_calculation_all_models
 
@@ -259,15 +259,15 @@ def layerwise_scatter_dim_neural(df_across_models,
 			   c=color_order, )
 	# Make x axis log scale
 	# ax.set_xscale('log')
-	ax.set_xlabel(d_dim_labels[x_val], fontsize=20)
-	ax.set_ylabel(d_dim_labels[y_val], fontsize=20)
+	ax.set_xlabel(d_dim_labels[x_val], fontsize=26)
+	ax.set_ylabel(d_dim_labels[y_val], fontsize=26)
 	ax.set_title(
 		f'Across all models (n={len(df_across_models.source_model.unique())}) for {target}, r2={r2:.3f}, p={p:.3e}'
 		f'\n{d_dim_labels[y_val]} vs. {d_dim_labels[x_val]}')
 
 	# Plot r2 value in lower right corner
 	ax.text(0.95, 0.02, f'$R^2$={r2:.3f}', horizontalalignment='right', verticalalignment='bottom',
-			transform=ax.transAxes, size=20)
+			transform=ax.transAxes, size=24)
 	
 	# Legend according to scatter colors
 	class_colours = color_order_unique

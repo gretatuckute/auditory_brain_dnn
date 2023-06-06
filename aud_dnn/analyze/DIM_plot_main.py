@@ -17,8 +17,8 @@ if user != 'gt':
 ### Settings ###
 source_models = ALL_MODEL_LIST
 
-method = 'rsa' # "regr" or "rsa"
-target = 'NH2015' # 'NH2015' or 'B2021'
+method = 'regr' # "regr" or "rsa"
+target = 'B2021' # 'NH2015' or 'B2021'
 if method == 'regr':
 	val_of_interest = 'median_r2_test_c'
 elif method == 'rsa':
@@ -32,8 +32,8 @@ if save:
 else:
 	save = False
 
-layerwise_scatter = True
-layerwise_scatter_within_architecture = False # Reviewer comment
+layerwise_scatter = False
+layerwise_scatter_within_architecture = True # Reviewer comment
 corr_heatmap = False # sanity check, not used in paper
 argmax_layer_scatter = False # sanity check, not used in paper
 dim_vs_layer = False # sanity check, not used in paper

@@ -3504,11 +3504,16 @@ def permuted_vs_trained_scatter(df_across_models_regr,
     ax.scatter(df_across_models_regr_trained[f'{val_of_interest}'],  # mean across participants
                df_across_models_regr_permuted[f'{val_of_interest}'],
                c=model_colors)
-    ax.set_xlabel('Trained model')
-    ax.set_ylabel('Permuted model')
+    ax.set_xlabel('Trained model', fontsize=14)
+    ax.set_ylabel('Permuted model', fontsize=14)
     ax.set_title(f'{target}')
     ax.set_xlim(lim)
     ax.set_ylim(lim)
+    # Make ticks larger
+    ax.tick_params(axis='x', labelsize=14)
+    ax.tick_params(axis='y', labelsize=14)
+    # Only add 5 ticks
+    ax.locator_params(nbins=5)
     # Add identity line
     add_identity(ax, color='grey', ls='--', alpha=0.4)
     # Add legend
@@ -3524,11 +3529,11 @@ def permuted_vs_trained_scatter(df_across_models_regr,
                           df_across_models_regr_permuted[f'{val_of_interest}'])
     r2 = r ** 2
     # Add in upper left corner
-    ax.text(0.05, 0.88, f'$R^2$={r2:.3f}\np={p:.3f}', transform=ax.transAxes)
+    ax.text(0.05, 0.88, f'$R^2$={r2:.3f}\np={p:.3f}', transform=ax.transAxes, fontsize=13)
     plt.tight_layout(pad=3)
     if save:
         plt.savefig(join(save, f'permuted-vs-trained-scatter_' \
-                               f'{target}_{val_of_interest}.png'), dpi=180)
+                               f'{target}_{val_of_interest}.svg'), dpi=180)
     plt.show()
 
 
