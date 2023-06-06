@@ -25,9 +25,9 @@ roi = None
 
 regr = True
 rsa = True
-modelwise_scatter = False # Compare modelwise between datasets and methods
+modelwise_scatter = True # Compare modelwise between datasets and methods
 layerwise_scatter = False # Compare layerwise between datasets and methods
-best_layer_scatter = True # Compare best layer Fig 7 values between methods
+best_layer_scatter = False # Compare best layer Fig 7 values between methods
 
 save = True
 if not save:
@@ -54,8 +54,8 @@ if modelwise_scatter:
 																	add_savestr='_all-models',
 																	ylim=ylim,
 																	randnetw='False',
-																	save=SAVEDIR_CENTRALIZED)
-			
+																	save=False)
+
 			df_across_models_regr_randnetw = modelwise_scores_across_targets(source_models=[source_model for source_model in source_models if source_model != 'spectemp'],
 																			value_of_interest=val_of_interest,
 																			target1='NH2015', target2='B2021',
@@ -67,8 +67,17 @@ if modelwise_scatter:
 																			add_savestr='_all-models',
 																			ylim=ylim,
 																			randnetw='True',
-																			save=SAVEDIR_CENTRALIZED)
-			
+																			save=False)
+
+		# LOOK INTO THE CORRELATION BETWEEN TRAINED AND PERMUTED MODELS
+		for target in ['NH2015', 'B2021']:
+			permuted_vs_trained_scatter(df_across_models_regr=df_across_models_regr,
+										df_across_models_regr_randnetw=df_across_models_regr_randnetw,
+										target=target,
+										val_of_interest=f'{val_of_interest}_mean',
+										save=SAVEDIR_CENTRALIZED)
+
+
 	
 	if rsa:
 		##### RSA #####

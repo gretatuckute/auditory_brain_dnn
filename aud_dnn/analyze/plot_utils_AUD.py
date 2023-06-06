@@ -3474,6 +3474,64 @@ def modelwise_scores_across_targets(source_models,
     return df_merged
 
 
+def permuted_vs_trained_scatter(df_across_models_regr,
+                                df_across_models_regr_randnetw,
+                                target,
+                                val_of_interest='median_r2_test_c_mean',
+                                lim=[0, 0.8],
+                                save=False):
+    """
+    Plot modelwise scores for permuted vs. trained models.
+
+    Args
+        df_across_models_regr: pd.DataFrame with rows for each model, and a column with the modelwise scores in val_of_interest
+        (we exclude the spectemp model because it cannot be permuted)
+        df_across_models_regr_randnetw: pd.DataFrame with rows for each model, and a column with the modelwise scores in val_of_interest
+
+    """
+    # First, get the trained model scores and drop source_model = spectemp
+    df_across_models_regr_trained = df_across_models_regr.query('target == @target and source_model != "spectemp"')
+    # Then, get the permuted model scores
+    df_across_models_regr_permuted = df_across_models_regr_randnetw.query('target == @target')
+
+    # Assert that they are sorted in the same way
+    assert all(df_across_models_regr_trained['source_model'] == df_across_models_regr_permuted['source_model'])
+
+    model_colors = [d_model_colors[source_model] for source_model in df_across_models_regr_trained['source_model']]
+
+    # Plot scatter
+    fig, ax = plt.subplots(figsize=(5, 5))
+    ax.scatter(df_across_models_regr_trained[f'{val_of_interest}'],  # mean across participants
+               df_across_models_regr_permuted[f'{val_of_interest}'],
+               c=model_colors)
+    ax.set_xlabel('Trained model')
+    ax.set_ylabel('Permuted model')
+    ax.set_title(f'{target}')
+    ax.set_xlim(lim)
+    ax.set_ylim(lim)
+    # Add identity line
+    add_identity(ax, color='grey', ls='--', alpha=0.4)
+    # Add legend
+    classes_polished_name = [d_model_names[x] for x in df_across_models_regr_trained.source_model.values]
+    class_colours = [d_model_colors[x] for x in df_across_models_regr_trained.source_model.values]
+    recs = []
+    for i in range(0, len(class_colours)):
+        recs.append(mpatches.Rectangle((0, 0), 1, 1, fc=class_colours[i]))
+    # Add legend outside of plot
+    fig.legend(recs, classes_polished_name, bbox_to_anchor=(1.33, 1.), fontsize=8)
+    # Add R2
+    r, p = stats.pearsonr(df_across_models_regr_trained[f'{val_of_interest}'],
+                          df_across_models_regr_permuted[f'{val_of_interest}'])
+    r2 = r ** 2
+    # Add in upper left corner
+    ax.text(0.05, 0.88, f'$R^2$={r2:.3f}\np={p:.3f}', transform=ax.transAxes)
+    plt.tight_layout(pad=3)
+    if save:
+        plt.savefig(join(save, f'permuted-vs-trained-scatter_' \
+                               f'{target}_{val_of_interest}.png'), dpi=180)
+    plt.show()
+
+
 def layerwise_scores_across_targets(source_models,
                                     target1,
                                     target2,
