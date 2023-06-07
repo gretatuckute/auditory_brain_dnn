@@ -13,6 +13,27 @@ SURFDIR = f'{DATADIR}/fsavg_surf/'
 save = True # Whether to save any plots/csvs
 concat_over_models = True
 
+"""
+The high-level structure of this script is as follows:
+
+We can either analyze responses for each single model across layers, or aggregate results across different models.
+This is controlled by the flag concat_over_models. 
+
+If concat_over_models = False, we load each individual model and its 
+corresponding permuted model counterpart, and perform the analyses based on the flags specified below under "if not concat_over_models".
+These flags will store results under each model's directory under /results/, in a subfolder named /outputs/.
+
+If concat_over_models = True, we load all models and perform the analyses based on the flags specified below under "if concat_over_models".
+These flags will store results under /results/PLOTS_across-models/.
+
+Two key parameters are:
+- target: The neural data or components, i.e. possible options are: 'NH2015', 'B2021', or 'NH2015comp'.
+- source_models: The names of the models to load. For example, if the model name is "AST", we will look for the files
+  under /results/AST/.
+
+"""
+
+
 # If concat_over_models = False, we load each individual model and perform the analysis on that
 if not concat_over_models:
 	# Shared for neural and components
@@ -23,7 +44,7 @@ if not concat_over_models:
 	best_layer_anat_ROI = True # Basis for Figure 7 for neural; best layer for each anatomical ROI
 	run_surf_argmax = False # Basis for Figure 6 for neural, dump argmax surface position to .mat file
 	run_surf_argmax_merge_datsets = False # Basis for Figure 6 for neural, merge NH2015 and B2021 datasets to find argmax surface position across both datasets
-	run_surf_direct_val = False # plotting arbitrary values on the surface (not used in paper)
+	run_surf_direct_val = False # plotting arbitrary values on the surface (SI 6)
 
 
 if concat_over_models:
@@ -44,7 +65,7 @@ if concat_over_models:
 	plot_scatter_comp_vs_comp = False # Figure 9B) for components (in-house models)
 	plot_scatter_pred_vs_actual = False # Figure 4, scatter for components
 
-
+# Specify target
 target = 'B2021'
 
 # Logging
@@ -52,52 +73,11 @@ date = datetime.datetime.now().strftime("%m%d%Y-%T")
 if user != 'gt':
 	sys.stdout = open(join(RESULTDIR_ROOT, 'logs', f'out-{date}.log'), 'a+')
 
+# Specify source models
 # All models (n=19)
-# source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-# 				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-# 				'AST',  'wav2vec', 'DCASE2020', 'DS2',  'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer']# 'spectemp']
-# source_models = [ 'ResNet50audioset',   'ResNet50multitask',
-# 				'AST',  'wav2vec', 'DCASE2020', 'DS2',  'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer', 'spectemp']
-# Models above spectemp baseline (n=15)
-# source_models = [  'Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-# 				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-# 				'AST',  'wav2vec', 'VGGish', 'S2T',  'sepformer']
-
-# In-house models (n=10)
-# source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-# 				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask', ]
-
-# All inhouse models with music as well (which only has seed 1)
-# source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
-# 				'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
-# 				 'Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
-# 				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
-
-# All inhouse models that have both seed 1 and seed 2 (ie exclusing music)
-# source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018audioset', 'Kell2018multitask',
-# 				'ResNet50word', 'ResNet50speaker', 'ResNet50audioset',  'ResNet50multitask',
-# 				 'Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
-# 				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2', 'ResNet50multitaskSeed2',]
-
-# Just seed 2 models
-# source_models = ['Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
-# 				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
-# Seed 2 models with music
-# source_models = ['Kell2018wordSeed2', 'Kell2018speakerSeed2',  'Kell2018music', 'Kell2018audiosetSeed2', 'Kell2018multitaskSeed2',
-# 				'ResNet50wordSeed2', 'ResNet50speakerSeed2', 'ResNet50music', 'ResNet50audiosetSeed2',  'ResNet50multitaskSeed2',]
-# source_models = ['Kell2018word','Kell2018wordClean',
-# 				 'ResNet50word', 'ResNet50wordClean']
-# All clean word models
-# source_models = ['Kell2018wordClean', 'Kell2018wordCleanSeed2',
-# 				 'ResNet50wordClean', 'ResNet50wordCleanSeed2']
-source_models = ['Kell2018word', 'Kell2018wordClean', 'Kell2018wordSeed2', 'Kell2018wordCleanSeed2',
-				 'ResNet50word', 'ResNet50wordClean', 'ResNet50wordSeed2', 'ResNet50wordCleanSeed2',
-				 'Kell2018speaker', 'Kell2018speakerClean', 'Kell2018speakerSeed2', 'Kell2018speakerCleanSeed2',
-				 'ResNet50speaker', 'ResNet50speakerClean', 'ResNet50speakerSeed2', 'ResNet50speakerCleanSeed2',]
-# Clean speaker models
-# source_models = ['Kell2018speakerClean', 'Kell2018speakerCleanSeed2',
-# 				 'ResNet50speakerClean', 'ResNet50speakerCleanSeed2']
-
+source_models = ['Kell2018word', 'Kell2018speaker',  'Kell2018music', 'Kell2018audioset', 'Kell2018multitask',
+				 'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',
+				'AST',  'wav2vec', 'DCASE2020', 'DS2',  'VGGish', 'ZeroSpeech2020', 'S2T', 'metricGAN', 'sepformer'] # 'spectemp']
 
 print(f'---------- Target: {target} ----------')
 
@@ -321,15 +301,6 @@ if concat_over_models:  # assemble plots across models
 													generate_scatter_plot=True,
 													obtain_partial_corr=True,)
 
-
-		#### Analyze best layer (not independently selected, just the argmax layer) ####
-		# for randnetw_flag in [ 'True']:
-		# 	scatter_comp_best_layer_across_models(source_models=source_models, target=target,
-		# 									 randnetw=randnetw_flag, aggregation='argmax',
-		# 									 save=SAVEDIR_CENTRALIZED, save_str='_inhouse-models_symbols', ylim=[-0.02,1.02],
-		# 									 value_of_interest='rel_pos',
-		# 									 )
-
 	
 	elif target in ['NH2015', 'B2021']: # neural data, either Nh2015 or B2021
 
@@ -389,51 +360,6 @@ if concat_over_models:  # assemble plots across models
 															'ResNet50word', 'ResNet50speaker', 'ResNet50music', 'ResNet50audioset',   'ResNet50multitask',],
 													  aggregation='CV-splits-nit-10',
 													  randnetw=randnetw_flag, )
-
-		# # PERFORMANCE OF CLEAN SPEECH NETWORKS (2 SEEDS)
-		# if plot_word_clean_models:
-		# 	source_model_lst = [['Kell2018word', 'Kell2018wordClean',
-		# 					 'ResNet50word', 'ResNet50wordClean'],
-		# 					 ['Kell2018wordSeed2', 'Kell2018wordCleanSeed2',
-		# 					 'ResNet50wordSeed2', 'ResNet50wordCleanSeed2']]
-		#
-		# 	for source_models in source_model_lst:
-		#
-		# 		# if all the models end with Seed2, create add_savestr = '_seed2'
-		# 		if all([model.endswith('Seed2') for model in source_models]):
-		# 			add_savestr = '_seed2'
-		# 		else:
-		# 			add_savestr = '_seed1'
-		#
-		# 		for sort_flag in [source_models]: # 'performance' NH2015_all_models_performance_order B2021_all_models_performance_order
-		# 			for val_flag in ['median_r2_test_c', ]:
-		# 				for agg_flag in ['CV-splits-nit-10']:
-		# 					for randnetw_flag in ['False', 'True' ]: # 'False', 'True'
-		#
-		# 						barplot_across_models(source_models=source_models,
-		# 											  target=target,
-		# 											  roi=None,
-		# 											  save=SAVEDIR_CENTRALIZED,
-		# 											  randnetw=randnetw_flag,
-		# 											  aggregation=agg_flag,
-		# 											  value_of_interest=val_flag,
-		# 											  sort_by=sort_flag,
-		# 											  add_savestr=f'_word-clean-models{add_savestr}',
-		# 											  box_aspect=1)
-		#
-		# 		# Run according stats
-		# 		for val_flag in ['median_r2_test_c', ]:
-		# 			for randnetw_flag in ['False', 'True' ]: # 'False', 'True'
-		# 				compare_models_subject_bootstrap(source_models=source_models,
-		# 												 target=target,
-		# 												 save=save,
-		# 												 value_of_interest=val_flag,
-		# 												 save_str=f'_word-clean-models_subject-bootstrap{add_savestr}',
-		# 												 models1=source_models, # just compile everything in this csv
-		# 												 models2=source_models,
-		# 												 aggregation='CV-splits-nit-10',
-		# 												 randnetw=randnetw_flag,
-		# 												 include_spectemp=False)
 
 		# PERFORMANCE OF CLEAN SPEECH (WORD AND SPEAKER) NETWORKS (2 SEEDS)
 		if plot_word_speaker_clean_models:
@@ -514,10 +440,6 @@ if concat_over_models:  # assemble plots across models
 															   value_of_interest=val_flag,
 															   stats=True)
 
-		
-		## LOAD SCORE ACROSS LAYERS (FOR DIMENSIONALITY ANALYSIS -- migrated to DIM_plot_main)
-		# load_score_across_layers_across_models(source_models=source_models,
-		# 									   RESULTDIR_ROOT=RESULTDIR_ROOT,)
 
 		# GENERATE A MEDIAN SURFACE OF ARGMAX LAYER POSITION ACROSS MODELS
 		if median_surface_across_models:
@@ -605,11 +527,6 @@ if not concat_over_models:
 													  truncate=None,
 													  randnetw='False')
 		output_folders_paths = [join(RESULTDIR, x) for x in output_folders]
-		
-		# Concatenate ds for B2021 (IF NOT DONE YET)
-		# concat_ds_B2021(source_model=source_model, output_folders_paths=output_folders_paths,
-		# 				df_roi_meta=df_meta_roi, randnetw=randnetw)
-		# assert_output_ds_match(output_folders_paths=output_folders_paths)
 		
 		# Ensure that r2 test corrected does exceed 1
 		output['median_r2_test_c'] = output['median_r2_test_c'].clip(upper=1)
@@ -975,15 +892,6 @@ if not concat_over_models:
 														 save=PLOTDIR)
 						else:
 							raise ValueError()
-
-				# # Per component, find the best layer and obtain the associated r2 test score (stores the 'best-layer-argmax_per-comp_{source_model}_NH2015comp_{value_of_interest}.csv')
-				# # Trained and permuted:
-				# for randnetw_flag in ['False','True']:
-				# 	obtain_best_layer_per_comp(source_model=source_model, target=target, randnetw=randnetw_flag,
-				# 							   value_of_interest='median_r2_test', sem_of_interest='sem_r2_test', )
-				# 	obtain_best_layer_per_comp(source_model=source_model, target=target, randnetw=randnetw_flag,
-				# 							   value_of_interest='median_r2_train', sem_of_interest='sem_r2_train', )
-				#
 
 			else:
 				raise ValueError('Target not available')
