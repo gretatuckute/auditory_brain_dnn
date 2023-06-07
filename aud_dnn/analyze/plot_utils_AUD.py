@@ -63,84 +63,6 @@ def get_identifier(id_str):
     randemb = id_str.split('RANDEMB-')[1].split('_')[0]
     return mapping, target, source_model, randnetw, randemb
 
-def concat_ds_B2021(source_model, output_folders_paths, df_roi_meta, df_str='ds.pkl', randnetw='False'):
-    """
-    Concatenate the [vox; CV splits] dataframes for B2021 across 4 chunks of the data.
-    :param output_folders_paths:
-    :param df_str:
-    :return:
-    """
-    print(f'Concatenating {df_str} results from {len(output_folders_paths)} folders')
-    
-    # Load ds files
-    for i, f in tqdm(enumerate(output_folders_paths)):
-        
-        # Obtain layer name
-        layer = f.split('/')[-1].split('SOURCE-')[1].split('_RAND')[0].split('-')[1:]
-        if len(layer) == 1:
-            source_layer = layer[0]
-        else:
-            source_layer = '-'.join(layer)
-        
-        # Lists for storing the dataframes that we want to fetch for the ds dataframes (store for each layer, and clear for each layer)
-        lst_r_prior_zero = []
-        lst_r_test = []
-        lst_r2_test = []
-        lst_r2_test_c = []
-        lst_r2_train = []
-        
-        df_chunks = [i for i in os.listdir(f) if i.startswith(df_str[:-4] + '_')]
-        if len(df_chunks) != 4:  # Assert that all chunks are there
-            print(f'OBS: Missing chunks!')
-            raise ValueError(f'Missing chunks for {df_str}!')
-        
-        # If all chunks are there, then:
-        for df_str_chunk in df_chunks:
-            df_chunk = pd.read_pickle(join(f, df_str_chunk))
-
-            lst_r_prior_zero.append(pd.DataFrame(df_chunk['r_prior_zero'].values, index=df_chunk.vox_idx_coord.values)) # index according to the voxel id
-            lst_r_test.append(pd.DataFrame(df_chunk['r_test'].values, index=df_chunk.vox_idx_coord.values))
-            lst_r2_test.append(pd.DataFrame(df_chunk['r2_test'].values, index=df_chunk.vox_idx_coord.values))
-            lst_r2_test_c.append(pd.DataFrame(df_chunk['r2_test_c'].values, index=df_chunk.vox_idx_coord.values))
-            lst_r2_train.append(pd.DataFrame(df_chunk['r2_train'].values, index=df_chunk.vox_idx_coord.values))
-    
-        # Concatenate the dataframes
-        df_r_prior_zero = pd.concat(lst_r_prior_zero, axis=0)
-        df_r_test = pd.concat(lst_r_test, axis=0)
-        df_r2_test = pd.concat(lst_r2_test, axis=0)
-        df_r2_test_c = pd.concat(lst_r2_test_c, axis=0)
-        df_r2_train = pd.concat(lst_r2_train, axis=0)
-        
-        # Assert that indices of all the df's are the same (i.e. the same voxels)
-        assert df_r_prior_zero.index.equals(df_r_test.index)
-        assert df_r_prior_zero.index.equals(df_r2_test.index)
-        assert df_r_prior_zero.index.equals(df_r2_test_c.index)
-        
-        # And that it matches df_roi_meta
-        assert df_r_prior_zero.index.equals(df_roi_meta.index)
-        
-        # Generate the xr dataset object
-        n_vox = len(df_r_prior_zero.index)
-        ds = xr.Dataset(
-            {"r_prior_zero": (("vox_idx", "splits"), df_r_prior_zero),
-             "r_test": (("vox_idx", "split_idx"), df_r_test),
-             "r2_test": (("vox_idx", "split_idx"), df_r2_test),
-             "r2_test_c": (("vox_idx", "splits"), df_r2_test_c),
-             "r2_train": (("vox_idx", "split_idx"), df_r2_train),
-             },
-            coords={
-                "vox_idx_coord": df_r_prior_zero.index,
-                "split_idx_coord": np.arange(10),
-                "source_model": ("vox_idx_coord", [source_model]*n_vox),
-                "source_layer": ("vox_idx_coord", [source_layer]*n_vox),
-                "randemb": ("vox_idx_coord", ['False']*n_vox),
-                "randnetw": ("vox_idx_coord", [randnetw]*n_vox)},)
-        
-        # Save the xr dataset object
-        pickle.dump(ds, open(join(f, 'ds.pkl'), 'wb'))
-        print(f'Saved ds.pkl to {f}')
-
-
 def concat_dfs_modelwise(RESULTDIR,
                          mapping,
                          df_str,
@@ -210,27 +132,9 @@ def concat_dfs_modelwise(RESULTDIR,
     # get pkl files
     dfs_lst = []
     for i, f in tqdm(enumerate(files_after_reindex_sorted)):
-        # try:
-        #     if target == 'B2021':  # and not (RESULTDIR / f / df_str).exists():  # compile the outputs
-        #         df_chunks = [i for i in os.listdir(RESULTDIR / f) if i.startswith(df_str[:-4] + '_')]
-        #         if len(df_chunks) != 4:  # Assert that all chunks are there
-        #             print(f'OBS: Missing chunks!')
-        #             raise ValueError('Missing chunks!')
-        #
-        #         dfs_chunk_lst = []
-        #         for df_str_chunk in df_chunks:
-        #             df_chunk = pd.read_pickle(RESULTDIR / f / df_str_chunk)
-        #             dfs_chunk_lst.append(df_chunk)
-        #
-        #         df = pd.concat(dfs_chunk_lst, axis=0)
-        #         df.to_pickle(RESULTDIR / f / df_str)
-        #     else:
             df = pd.read_pickle(RESULTDIR / f / df_str)
             
             dfs_lst.append(df)
-        # except:
-        #     print(f'\n{df_str} not available for {f}')
-        #     raise ValueError(f'Missing output {df_str}')
     
     dfs_merge = pd.concat(dfs_lst)
     print(f'Len of final df: {len(dfs_merge)}')
@@ -339,61 +243,6 @@ def inv_ROI_overlap(output):
                                       output.music.values, output.speech.values]), axis=0)
     
     print(f'{np.sum(any_roi_array)} voxels are in any ROI (one or more)')
-
-
-def select_r2_test_based_on_r2_train(output, source_model, roi=None):
-    """
-    Select r2 test for the layer that has highest r2 train value
-    """
-    
-    if roi:  # extract roi voxels for a specific roi or all rois at once (any roi)
-        output = output.loc[output[roi] == 1]
-    
-    train = voxwise_best_layer(output, source_model, val_of_interest='median_r2_train')
-    test = voxwise_best_layer(output, source_model, val_of_interest='median_r2_test_c_no_nan')
-    test_old = voxwise_best_layer(output, source_model, val_of_interest='median_r2_test_c')
-    
-    assert (train.index.values == test.index.values).all()
-    
-    pivot_test_vals_old = get_vox_by_layer_pivot(output, source_model, val_of_interest='median_r2_test_c')
-    pivot_test_vals = get_vox_by_layer_pivot(output, source_model, val_of_interest='median_r2_test_c_no_nan')
-    
-    ## Test difference between different metrics, e.g. prior to filling with nan in r2 test c
-    for col in pivot_test_vals.columns.values:
-        print(f'{col}, corr: {np.corrcoef(pivot_test_vals_old[col].values, pivot_test_vals[col].values)[1, 0]:.4} &'
-              f' mean abs diff {np.mean(abs(pivot_test_vals_old[col].values - pivot_test_vals[col].values)):.4}')
-    
-    assert (train.index.values == pivot_test_vals.index.values).all()
-    
-    # TWO ways of selecting the r2 test correc vals based on the indices found using r2 train:
-    # 1
-    val_at_best_train_idx1 = np.choose((train.rel_pos.values), pivot_test_vals.values.T)
-    
-    # 2
-    val_at_best_train_idx2 = []
-    for row_idx, col_idx in enumerate(train.rel_pos.values):
-        val_at_best_train_idx2.append(pivot_test_vals.values[row_idx, col_idx])
-    
-    assert (val_at_best_train_idx1 == val_at_best_train_idx2).all()
-    
-    ## Get mean ##
-    val_at_best_train_idx1.mean()
-    np.asarray(val_at_best_train_idx2).mean()
-    
-    # sanity check, use the test r2 correc indices to select (should be the same as taking the max over axis=1)
-    np.choose((test.rel_pos.values), pivot_test_vals.values.T).mean()
-    
-    # check how correlated the train and test best layer positions are:
-    plt.plot(train.rel_pos.values, color='blue')
-    plt.plot(test.rel_pos.values, color='red')
-    plt.xlim([300, 500])
-    plt.show()
-    
-    np.corrcoef(train.rel_pos.values, test.rel_pos.values)
-    
-    # check how correlated r2 test c and r2 train are:
-    np.corrcoef(output.median_r2_test_c_no_nan.values, output.median_r2_train.values)  # obs, across all layers!
-
 
 def select_r2_test_CV_splits_nit(output_folders_paths,
                                  df_meta_roi,
@@ -564,227 +413,6 @@ def select_r2_test_CV_splits_nit(output_folders_paths,
         if store_for_stats:
             df_best_layer_r_values_grouped_store.to_csv(join(save, save_str.replace('.csv', '_stats.csv')))
             print(f'Saved {save}/{save_str.replace(".csv", "_stats.csv")}')
-
-
-def select_r2_test_based_on_LOSO(output, source_model, roi=None, value_of_interest='median_r2_test_c'):
-    """
-    Select r2 test based on a leave-one-subject-out approach (LOSO), from Kell et al., 2018 methods:
-    For a given subject and a given ROI, we computed the median variance explained by each network layer across the voxels
-    in each of the other seven subject’s ROI. We then took the average of this value across those subjects, yielding the
-    mean variance explained by each layer for that ROI from the other subjects. We selected the layer that was most
-    predictive in these seven subjects and measured the variance explained in the left-out subject. This cross validation
-    across subjects avoided issues of non-independence. We iterated over subjects and ROIs and report the mean across subjects.
-    
-    Append 'pos' which is the position of the layer in the source model (always +1, so that the lowest layer is 1)
-    
-    """
-    layer_reindex = d_layer_reindex[source_model]
-    layer_legend = [d_layer_names[source_model][i] for i in layer_reindex]
-    num_layers = len(layer_reindex)
-    min_possible_layer = 1  # for MATLAB, and to align with "pos"
-    max_possible_layer = num_layers  # for MATLAB and to align with "pos"
-    
-    if roi:  # extract roi voxels for a specific roi or all rois at once (any roi)
-        output = output.loc[output[roi] == 1]
-    
-    pivot_test = output.pivot_table(index='subj_idx', columns='source_layer', values=value_of_interest,
-                                    aggfunc='median')
-    # same as doing:
-    # output.groupby(['subj_idx', 'source_layer']).median().pivot_table(index='subj_idx', columns='source_layer', values='median_r2_test_c_no_nan')
-    try:  # reindex columns
-        pivot_test = pivot_test[layer_reindex]  # if all cols match precisely
-    except:
-        pdb.set_trace()
-        l_layer_reindex = [i for i in layer_reindex if i in pivot_test.columns.values]
-        print(
-            f'\nNot all layers available for making a subject by layer pivot table for ROI LOSO, using available ones:\n {l_layer_reindex}')
-        raise ValueError(f'Not all layers available for making a subject by layer pivot table for ROI LOSO')
-        pivot_test = pivot_test[l_layer_reindex]
-    
-    # Do cross-validation
-    subjects = pivot_test.index.values
-    
-    selected_layer_pos = []
-    selected_pos = []
-    selected_rel_pos = []
-    selected_best_scores = []
-    selected_layer_legend = []
-    
-    for s in subjects:
-        df_remaining_subjects = pivot_test.drop(s)
-        
-        # take the mean across subjects and find the best layer based on these seven subjects:
-        best_layer_idx = df_remaining_subjects.mean().argmax() # Python indexing
-        pos = best_layer_idx + 1
-        
-        best_layer_name = df_remaining_subjects.columns[best_layer_idx]
-        
-        # print(
-        # 	f'The best layer is {best_layer_name} with layer index {best_layer_idx}, obtaining an aggregated score of {df_remaining_subjects.mean().max():.3}')
-        #
-        # find r2 test corrected in the held out subject using this layer
-        df_heldout_subject = pivot_test.loc[pivot_test.index == s]
-        
-        # take the r2 score for the held out subject for best layer (based on the seven remaining subjects)
-        selected_best_scores.append(df_heldout_subject[best_layer_name].values.item())
-        selected_layer_pos.append(best_layer_name)
-        selected_layer_legend.append(layer_legend[best_layer_idx])
-        selected_pos.append(pos) # always + 1
-        selected_rel_pos.append(np.divide((np.subtract(pos, min_possible_layer)),(max_possible_layer - min_possible_layer)))
-    
-    if len(np.unique(selected_layer_pos)) != 1:
-        print(f'Best layer was NOT the same across subjects! The layers were: {selected_layer_pos}')
-    
-    # Package into a df
-    df_scores = pd.DataFrame({'subj_idx': subjects,
-                              f'{value_of_interest}': selected_best_scores,
-                              'selected_layer_pos': selected_layer_pos,
-                              'selected_layer_legend': selected_layer_legend,
-                              'selected_pos': selected_pos,
-                              'selected_rel_pos': selected_rel_pos,
-                             'roi': roi,
-                              'source_model': source_model},
-                             index=subjects)
-
-    return df_scores
-
-
-def plot_LOSO_best_layer_bars(output, source_model, target, roi='all', save=False, value_of_interest='median_r2_test_c',
-                              randnetw='False',
-                              ylim=[0, 1]):
-    """
-    Make barplot of ROI constrained voxels or all voxels for the best layer selected by LOSO.
-    The mean across the LOSO selected scores, and SEM (across subjects) is plotted.
-    
-    :param output: output df
-    :param source_model: str
-    :param roi: str or None
-    :return:
-    """
-    print(f'\nFUNC: plot_LOSO_best_layer_bars \nMODEL: {source_model}, value_of_interest: {value_of_interest}, randnetw: {randnetw}\n')
-
-    if roi == 'all':
-        rois = ['tonotopic', 'pitch', 'music', 'speech']
-        xlabels = ['Tonotopic', 'Pitch', 'Music', 'Speech']
-        bar_placement = [0, 0.5, 1, 1.5]
-        
-        df_scores_tonotopic = select_r2_test_based_on_LOSO(output, source_model, roi='tonotopic', value_of_interest=value_of_interest)
-        df_scores_pitch = select_r2_test_based_on_LOSO(output, source_model, roi='pitch', value_of_interest=value_of_interest)
-        df_scores_music = select_r2_test_based_on_LOSO(output, source_model, roi='music', value_of_interest=value_of_interest)
-        df_scores_speech = select_r2_test_based_on_LOSO(output, source_model, roi='speech', value_of_interest=value_of_interest)
-        
-        fig, ax = plt.subplots(figsize=(3, 4))
-        plt.title(f'{source_model}{d_randnetw[randnetw]}\n{target}', size='small')
-        ax.bar(bar_placement,
-               [df_scores_tonotopic[value_of_interest].mean(), df_scores_pitch[value_of_interest].mean(),
-                df_scores_music[value_of_interest].mean(), df_scores_speech[value_of_interest].mean()],
-               yerr=[df_scores_tonotopic[value_of_interest].sem(), df_scores_pitch[value_of_interest].sem(),
-                    df_scores_music[value_of_interest].sem(), df_scores_speech[value_of_interest].sem()],
-               width=0.2, color=d_roi_colors[roi])
-        plt.xticks(bar_placement, xlabels)
-        plt.ylabel(d_value_of_interest[value_of_interest])
-        plt.ylim(ylim)
-        plt.tight_layout()
-        if save:
-            plt.savefig(join(save, f'best-layer_LOSO_roi-{roi}_{source_model}{d_randnetw[randnetw]}_{target}_{value_of_interest}.png'))
-            plt.savefig(join(SAVEDIR_CENTRALIZED, f'best-layer_LOSO_roi-{roi}_{source_model}{d_randnetw[randnetw]}_{target}_{value_of_interest}.png'))
-            
-            # compile csv across rois
-            df_all_rois = pd.concat([df_scores_tonotopic, df_scores_pitch, df_scores_music, df_scores_speech])
-            df_all_rois['target'] = target
-            df_all_rois['randnetw'] = randnetw
-            df_all_rois.to_csv(join(save, f'best-layer_LOSO_roi-{roi}_{source_model}{d_randnetw[randnetw]}_{target}_{value_of_interest}.csv'))
-        plt.show()
-    
-    elif roi == 'any_roi':
-        xlabels = ['Any ROI voxels']
-        bar_placement = [0]
-        
-        df_scores_any = select_r2_test_based_on_LOSO(output, source_model, roi=roi, value_of_interest=value_of_interest)
-        
-        fig, ax = plt.subplots(figsize=(3, 4))
-        plt.title(f'{source_model}{d_randnetw[randnetw]}\n{target}', size='small')
-        ax.bar(bar_placement,
-               [df_scores_any[value_of_interest].mean()],
-               yerr=[df_scores_any[value_of_interest].sem()],
-               width=0.2, color=d_roi_colors[roi])
-        plt.xticks(bar_placement, xlabels)
-        plt.ylabel(d_value_of_interest[value_of_interest])
-        plt.ylim(ylim)
-        plt.tight_layout()
-        if save:  # store csv of the LOSO scores
-            # plt.savefig(join(save, f'best-layer_LOSO_roi-any_{source_model}{d_randnetw[randnetw]}_{target}_{value_of_interest}.png'))
-            # plt.savefig(join(SAVEDIR_CENTRALIZED, f'best-layer_LOSO_roi-any_{source_model}{d_randnetw[randnetw]}_{target}_{value_of_interest}.png'))
-            
-            df_scores_any['target'] = target
-            df_scores_any['randnetw'] = randnetw
-            
-            df_scores_any.to_csv(join(save, f'best-layer_LOSO_roi-any_{source_model}{d_randnetw[randnetw]}_{target}_{value_of_interest}.csv'))
-        
-        plt.show()
-    
-    else:
-        xlabels = ['All voxels']
-        bar_placement = [0]
-        
-        df_scores = select_r2_test_based_on_LOSO(output, source_model, roi=roi, value_of_interest=value_of_interest)
-        
-        fig, ax = plt.subplots(figsize=(3, 4))
-        plt.title(f'{source_model}{d_randnetw[randnetw]}\n{target}', size='small')
-        ax.bar(bar_placement,
-               [df_scores[value_of_interest].mean()],
-               yerr=[df_scores[value_of_interest].sem()],
-               width=0.2, color=d_roi_colors['none'])
-        plt.xticks(bar_placement, xlabels)
-        plt.ylabel(d_value_of_interest[value_of_interest])
-        plt.ylim(ylim)
-        plt.tight_layout()
-        if save:  # store csv of the LOSO scores
-            # plt.savefig(join(save, f'best-layer_LOSO_roi-{roi}_{source_model}{d_randnetw[randnetw]}_{target}_{value_of_interest}.png'))
-            # plt.savefig(join(SAVEDIR_CENTRALIZED, f'best-layer_LOSO_roi-{roi}_{source_model}{d_randnetw[randnetw]}_{target}_{value_of_interest}.png'))
-
-            df_scores['target'] = target
-            df_scores['randnetw'] = randnetw
-
-            df_scores.to_csv(join(save, f'best-layer_LOSO_roi-{roi}_{source_model}{d_randnetw[randnetw]}_{target}_{value_of_interest}.csv'))
-        plt.show()
-
-
-def best_pred_per_vox(output, source_model, method='best_chance', randnetw='False'):
-    """takes an output df.
-    
-    If method == 'best_chance':
-        For each single voxels (for a given model, across all layers), finds the best (highest r2 corrected, median across CV splits)
-        across layers, and uses that as the aggregated statistic. In other words, each voxel is provided its "best" chance.
-    if method == 'best_overall_layer':
-        Finds the preferred layer for the largest number of voxels, and takes the r2 corrected for that layer across all voxels,
-        independent of whether that particular voxel had that layer as the argmax.
-    
-    """
-    output2 = output.loc[output['randemb'] == 'False']
-    source_model_check = output2['source_model'].unique()
-    assert (len(source_model_check) == 1)
-    
-    p2 = get_vox_by_layer_pivot(output, source_model, val_of_interest='median_r2_test_c')
-    
-    # use mean for aggregating over voxels
-    if method == 'best_chance':
-        agg_pred = p2.max(axis=1).mean()
-    elif method == 'best_overall_layer':
-        try:
-            unique, counts = np.unique(p2.idxmax(axis=1), return_counts=True)
-        except:
-            assert (p2.isna().sum().sum() == 0)  # todo
-            print(f'WARNING! NaNs in the output dataframe! Number of NaNs: {p2.isna().sum().sum()}')
-            p2 = p2.fillna(0)
-            unique, counts = np.unique(p2.idxmax(axis=1), return_counts=True)
-        count = dict(zip(unique, counts))
-        max_pref_layer = max(count.items(), key=operator.itemgetter(1))[0]  # get the most preferred layer across voxels
-        agg_pred = p2[max_pref_layer].mean()
-        print(f'Best layer is {max_pref_layer}')
-        print(count)
-    
-    return agg_pred
 
 
 def get_subject_pivot(output,
@@ -1300,85 +928,7 @@ def load_score_across_layers_across_models(source_models,
     return d_across_models, d_df_across_models
         
 
-
-def plot_score_across_layers_per_subject(output,
-                                        output_randnetw=None,
-                                        source_model='',
-                                        target='target',
-                                        roi=None,
-                                        subj_idx_lst=[1],
-                                        ylim=[0, 1],
-                                        save=False,
-                                        alpha=1,
-                                        alpha_randnetw=0.3,
-                                        label_rotation=45,
-                                        value_of_interest='median_r2_test_c',
-                                        decrease_vox_num=987):
-    """
-    Plot median variance explained across layers for each subject.
-    """
-    
-    layer_reindex = d_layer_reindex[source_model]
-    layer_legend = [d_layer_names[source_model][l] for l in layer_reindex]
-    
-    output = output[output.subj_idx.isin(subj_idx_lst)]
-    if decrease_vox_num: # extract a certain number of voxels per subj
-        temp = []
-        for s in output.source_layer.unique():
-            dec = output.query(f'`source_layer` == "{s}"').iloc[:decrease_vox_num]
-            temp.append(dec)
-        
-        output = pd.concat(temp)
-    
-    piv, yerr = get_subject_pivot(output, source_model, roi=roi, value_of_interest=value_of_interest)
-    if output_randnetw is not None:
-        output_randnetw = output_randnetw[output_randnetw.subj_idx.isin(subj_idx_lst)]
-        piv_randnetw, yerr_randnetw = get_subject_pivot(output=output_randnetw, source_model=source_model, roi=roi,
-                                                        value_of_interest=value_of_interest)
-    # Plot specs
-    title_str = f'{source_model}, {target}, all voxels from subj {subj_idx_lst}'#\nDecrease vox num: {decrease_vox_num}'
-    
-    plt.figure(figsize=(7, 5))
-    plt.errorbar(np.arange(len(layer_reindex)), piv.mean().values, yerr=yerr, alpha=alpha, lw=2,
-                 color=d_roi_colors['none'])
-    if output_randnetw is not None:
-        plt.errorbar(np.arange(len(layer_reindex)), piv_randnetw.mean().values, yerr=yerr_randnetw,
-                     alpha=alpha_randnetw, lw=2, color=d_roi_colors['none'],
-                     label='Permuted network')
-    plt.xticks(np.arange(len(layer_legend)), layer_legend, rotation=label_rotation)
-    plt.ylabel(d_value_of_interest[value_of_interest])
-    plt.ylim(ylim)
-    plt.title(title_str)
-    plt.tight_layout(h_pad=1.2)
-    plt.legend(frameon=False)
-    if save:
-        if decrease_vox_num:
-            png_str = f'across-layers_per-subj-{subj_idx_lst}_decreasevoxnum-{decrease_vox_num}_roi-{roi}_{source_model}_{target}_{value_of_interest}.png'
-            csv_str = f'across-layers_per-subj-{subj_idx_lst}_decreasevoxnum-{decrease_vox_num}_roi-{roi}_{source_model}_{target}_{value_of_interest}.csv'
-        else:
-            png_str = f'across-layers_per-subj-{subj_idx_lst}_roi-{roi}_{source_model}_{target}_{value_of_interest}.png'
-            csv_str = f'across-layers_per-subj-{subj_idx_lst}_roi-{roi}_{source_model}_{target}_{value_of_interest}.csv'
-
-        plt.savefig(join(SAVEDIR_CENTRALIZED, png_str), dpi=180)
-        
-        # save csv
-        piv_save = piv.copy()
-        df_yerr = pd.DataFrame([yerr], columns=piv_save.columns, index=['yerr'])  # append yerr to the pivot table that is plotted
-        piv_save = piv_save.append(df_yerr)
-        piv_save.to_csv(join(save, csv_str))
-        
-        if output_randnetw is not None:
-            # save csv randnetw
-            piv_save = piv_randnetw.copy(deep=True)
-            df_yerr = pd.DataFrame([yerr_randnetw], columns=piv_save.columns,
-                                   index=['yerr'])  # append yerr to the pivot table that is plotted
-            piv_save = piv_save.append(df_yerr)
-            piv_save.to_csv(join(save, csv_str))
-    
-    plt.show()
-
 #### PLOTTING COMPONENT RESPONSES ####
-
 def plot_comp_across_layers(output,
                             source_model,
                             output_randnetw=None,
@@ -1533,79 +1083,6 @@ def obtain_best_layer_per_comp(source_model, target, randnetw='False', value_of_
     if save:
         df_all_comp.to_csv(
             join(RESULTDIR_ROOT, source_model, 'outputs', f'best-layer-argmax_per-comp_{source_model}{d_randnetw[randnetw]}_{target}_{value_of_interest}.csv'))
-
-
-def select_r2_test_CV_splits_train_test(source_model,
-                                        target,
-                                        randnetw='False',
-                                        value_of_interest='median_r2_test',
-                                        sem_of_interest='sem_r2_test',
-                                        save=True,
-                                        mapping='Ridge',
-                                        randemb='False',
-                                        alphalimit='50',):
-    """Load the across-layers data for components (csv with rows as layers and columns as components).
-    Requires plot_comp_across_layers to be run first.
-
-    Select the best layer based on r2 train, and get the r2 test for that layer. Independent procedure.
-    
-    
-    randnetw is 'True' or 'False'. If 'True', load the across-layers data for randnetw components.
-    """
-    
-    # Load best-layer-argmax_per-comp for r2 train
-    df_train = pd.read_csv(join(RESULTDIR_ROOT, source_model, 'outputs',
-             f'best-layer-argmax_per-comp_{source_model}{d_randnetw[randnetw]}_{target}_median_r2_train.csv')).rename(
-        columns={'Unnamed: 0': 'comp'})
-    
-    # Load across-layers comp data for r2 test
-    df_test = pd.read_csv(join(RESULTDIR_ROOT, source_model, 'outputs',
-             f'across-layers_{source_model}{d_randnetw[randnetw]}_{target}_{value_of_interest}.csv')).rename(
-        columns={'Unnamed: 0': 'layer'})
-    
-    
-    # Find best layer for each component based on r2 train
-    lst_per_comp_best_layer = []
-    for comp in ['lowfreq', 'highfreq', 'envsounds', 'pitch', 'speech', 'music']:
-        df_train_comp = df_train[df_train['comp'] == comp]
-        
-        # Use the layer_pos string to select the layer based on df_test across layers
-        df_test_comp = df_test[df_test['layer'] == df_train_comp['layer_pos'].iloc[0]]
-        col_of_interest_r2_test = f'{comp}_{value_of_interest}'
-        col_of_interest_r2_sem = f'{comp}_{sem_of_interest}' # across CV splits
-        
-        
-        # Store info on which layer was used based on r2 train (that is denoted in the df_test_comp, i.e. that IS
-        # the layer that was selected by r2 train)
-        # Package into a one-row df (per component)
-        d = {'comp':comp,
-            f'{value_of_interest}': df_test_comp[col_of_interest_r2_test].values,
-             f'{sem_of_interest}': df_test_comp[col_of_interest_r2_sem].values,
-             'layer_pos': df_test_comp['layer_pos'].values,
-             'pos': df_test_comp['pos'].values,
-             'rel_pos': df_test_comp['rel_pos'].values,
-             'layer_legend': df_test_comp['layer_legend'].values}
-        
-        df_comp_best_layer = pd.DataFrame(d)
-        lst_per_comp_best_layer.append(df_comp_best_layer)
-    
-    df_all_comp = pd.concat(lst_per_comp_best_layer)
-    df_all_comp['randnetw'] = randnetw
-    df_all_comp['source_model'] = source_model
-
-    # Add output folder name
-    df_all_comp['output_folder'] = [f'{RESULTDIR_ROOT}/{source_model}/AUD-MAPPING-{mapping}_TARGET-{target}_SOURCE-{source_model}-' \
-                                    f'{x[1].layer_pos}_RANDEMB-{randemb}_RANDNETW-{randnetw}_ALPHALIMIT-{alphalimit}' for x in df_all_comp.iterrows()]
-    
-    # Assert that the selected layers match df_train
-    assert (df_all_comp['layer_pos'].values == df_train['layer_pos'].values).all()
-    assert(df_all_comp[value_of_interest].values != df_train['median_r2_train'].values).all() # assert that values from df_test
-    # (in the selected df_all_comp) are NOT the ones from df_train
-    
-    if save:
-        df_all_comp.to_csv(
-            join(RESULTDIR_ROOT, source_model, 'outputs',
-                 f'best-layer-CV-splits-train-test_per-comp_{source_model}{d_randnetw[randnetw]}_{target}_{value_of_interest}.csv'))
 
 
 def scatter_NH2015comp_resp_vs_pred(source_model,
@@ -1964,8 +1441,6 @@ def obtain_output_folders_for_any_comp_model(target,
     
     return df
 
-    
-    
 
 
 #### ACROSS MODELS FUNCTIONS ####
@@ -2627,7 +2102,6 @@ def load_scatter_anat_roi_best_layer(target,
     df = pd.read_csv(join(RESULTDIR_ROOT,
                           f'{load_str}.csv'))
 
-    
     return df
     
 
@@ -2700,34 +2174,34 @@ def scatter_components_across_models(source_models,
     bar_placement = np.arange(0, 6 / 2, 0.5)
     
     # Plot across all models and components
-    # plt.figure(figsize=(9, 5))
-    # plt.scatter(np.repeat(bar_placement, len(source_models)),
-    #             [lowfreq_r2, highfreq_r2, envsounds_r2, pitch_r2, speech_r2, music_r2], c=color_order * 6, s=50)
-    # # plot spectemp separately
-    # if include_spectemp:
-    #     plt.scatter(bar_placement, [df_spectemp[value_of_interest].values], c='grey', s=50)
-    #     plt.plot(bar_placement, df_spectemp[value_of_interest].values, alpha=alpha_dot, c='grey', ls='--')
-    # for i in range(len(source_models)):
-    #     plt.plot(bar_placement,
-    #              [lowfreq_r2[i], highfreq_r2[i], envsounds_r2[i], pitch_r2[i], speech_r2[i], music_r2[i]],
-    #              c=color_order[i], alpha=0.3)
-    # plt.ylim([0, 1])
-    # plt.ylabel(f'Median $R^2$')
-    # plt.xticks(bar_placement, ['lowfreq', 'highfreq', 'envsounds', 'pitch', 'speech', 'music'])
-    # plt.title(f'Predictivity of components across all models {d_randnetw[randnetw]}')
-    # classes = source_models
-    # classes_polished_name = [d_model_names[x] for x in classes]
-    # class_colours = color_order
-    # recs = []
-    # for i in range(0, len(class_colours)):
-    #     recs.append(mpatches.Rectangle((0, 0), 1, 1, fc=class_colours[i]))
-    # plt.legend(recs, classes_polished_name, bbox_to_anchor=(1.05, 1.1))
-    # plt.tight_layout()
-    # if save:
-    #     save_str = f'across-models_scatter_{aggregation}_{target}{d_randnetw[randnetw]}{save_str}_{value_of_interest}'
-    #     plt.savefig(join(save, f'{save_str}.svg'), dpi=180)
-    #     plt.savefig(join(save, f'{save_str}.png'), dpi=180)
-    # plt.show()
+    plt.figure(figsize=(9, 5))
+    plt.scatter(np.repeat(bar_placement, len(source_models)),
+                [lowfreq_r2, highfreq_r2, envsounds_r2, pitch_r2, speech_r2, music_r2], c=color_order * 6, s=50)
+    # plot spectemp separately
+    if include_spectemp:
+        plt.scatter(bar_placement, [df_spectemp[value_of_interest].values], c='grey', s=50)
+        plt.plot(bar_placement, df_spectemp[value_of_interest].values, alpha=alpha_dot, c='grey', ls='--')
+    for i in range(len(source_models)):
+        plt.plot(bar_placement,
+                 [lowfreq_r2[i], highfreq_r2[i], envsounds_r2[i], pitch_r2[i], speech_r2[i], music_r2[i]],
+                 c=color_order[i], alpha=0.3)
+    plt.ylim([0, 1])
+    plt.ylabel(f'Median $R^2$')
+    plt.xticks(bar_placement, ['lowfreq', 'highfreq', 'envsounds', 'pitch', 'speech', 'music'])
+    plt.title(f'Predictivity of components across all models {d_randnetw[randnetw]}')
+    classes = source_models
+    classes_polished_name = [d_model_names[x] for x in classes]
+    class_colours = color_order
+    recs = []
+    for i in range(0, len(class_colours)):
+        recs.append(mpatches.Rectangle((0, 0), 1, 1, fc=class_colours[i]))
+    plt.legend(recs, classes_polished_name, bbox_to_anchor=(1.05, 1.1))
+    plt.tight_layout()
+    if save:
+        save_str = f'across-models_scatter_{aggregation}_{target}{d_randnetw[randnetw]}{save_str}_{value_of_interest}'
+        plt.savefig(join(save, f'{save_str}.svg'), dpi=180)
+        plt.savefig(join(save, f'{save_str}.png'), dpi=180)
+    plt.show()
     
     ## 2D scatter plot ##
     for comp1 in ['music']: # ['lowfreq', 'highfreq', 'envsounds', 'pitch', 'speech', 'music']

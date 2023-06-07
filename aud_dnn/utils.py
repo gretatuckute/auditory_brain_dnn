@@ -234,14 +234,14 @@ def get_source_features(source_model,
                   'False': ''}
 
     ## External models. Has to be loaded using the PytorchWrapper class.
-    if source_model in ['AST', 'ASTSL01', 'ASTSL10', 'ASTSL01-from-datadir',
+    if source_model in ['AST',
                         'DCASE2020',
                         'DS2',
-                        'metricGAN', 'metricGANSL01', 'metricGANSL10',
-                        'sepformer', 'sepformerSL01', 'sepformerSL10',
+                        'metricGAN',
+                        'sepformer',
                         'S2T',
-                        'VGGish', 'VGGishSL01', 'VGGishSL10', 'VGGishSL100',
-                        'wav2vec', 'wav2vecpower',
+                        'VGGish',
+                        'wav2vec',
                         'ZeroSpeech2020', ]:
         model = PytorchWrapper(model_identifier=source_model, CACHEDIR=CACHEDIR, randnetw=randnetw)
         source_features = model.compile_activations(ID_order=stimuli_IDs, source_layer_of_interest=source_layer_map[source_model][source_layer])
