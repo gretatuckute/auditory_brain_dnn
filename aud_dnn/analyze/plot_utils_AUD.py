@@ -34,7 +34,7 @@ random.seed(0)
 
 #### Paths ####
 DATADIR = (Path(os.getcwd()) / '..' / '..' / 'data').resolve()
-run_locally = True
+run_locally = False
 if user == 'gt':
     if run_locally:
         print(f' ------------- Running locally as {user} -----------')
