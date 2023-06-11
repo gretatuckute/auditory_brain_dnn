@@ -48,3 +48,7 @@ The following repositories were used to extract DNN representations from the ext
 [VQ-VAE (ZeroSpeech)](https://github.com/gretatuckute/ZeroSpeech)<br>
 
 We thank the authors and developers for making these weights publicly available!
+The permuted weight indices that were used to extract permuted model activations can be [downloaded here](https://drive.google.com/drive/folders/1yySqaHAC-Zda23IXaRtNOtg-pgf54dWa?usp=sharing) for each model. 
+
+## Citation
+TO-DO
