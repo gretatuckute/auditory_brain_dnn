@@ -70,6 +70,10 @@ CLEAN_SPEECH_LIST = ['Kell2018word','Kell2018wordClean',
                      'ResNet50word', 'ResNet50wordClean',
                      'Kell2018speaker', 'Kell2018speakerClean',
                      'ResNet50speaker', 'ResNet50speakerClean']
+CLEAN_SPEECH_LIST_PAIRS = [['Kell2018word','Kell2018wordClean'],
+                           ['ResNet50word', 'ResNet50wordClean'],
+                           ['Kell2018speaker', 'Kell2018speakerClean'],
+                           ['ResNet50speaker', 'ResNet50speakerClean']]
 CLEAN_SPEECH_LIST_2SEEDS = [['Kell2018word', 'Kell2018wordSeed2'],
                             ['Kell2018wordClean', 'Kell2018wordCleanSeed2'],
                    ['Kell2018speaker', 'Kell2018speakerSeed2'],
@@ -1243,6 +1247,18 @@ def plot_all_roi_rsa_scatter(rsa_analysis_dict_all_rois,
             ':', '_').replace(' ', '') + '_all_roi_scatter.svg'))
     plt.show()
 
+def run_paper_extra_stats(save_fig_path='rsa_plots'):
+    """
+    Runs statistics for RSA data
+    """
+    # Clean Speech vs. Speech with Noise Models
+    print('### Running stats for clean speech rsa comparison ###')
+    for model_pair in CLEAN_SPEECH_LIST_PAIRS:
+        run_two_model_permutation_test(save_fig_path=save_fig_path,
+                                 model_pair=model_pair,
+                                 extra_title='',
+                                               )
+    
 
 def make_paper_plots(save_fig_path='rsa_plots'):
     """
@@ -1469,6 +1485,58 @@ def make_all_voxel_rsa_bar_plots_from_pckl(pckl_path, save_fig_path,
                                        extra_title_str=dataset + '_Permuted: ',
                                        save_fig_path=save_fig_path)
 
+def bootstrap_dist_two_models(model1_val, model2_val, n_bootstrap=10000):
+    # generate distribution with replacement from model2 -->
+    # take mean over sampled values for each iteration --> get distribution and compare to true value from model1
+    model2_boostrapped_distrib = []
+    for i in range(n_bootstrap):
+        model2_val_sample = np.random.choice(model2_val, size=len(model2_val)) # sample with replacement
+        model2_boostrapped_distrib.append(np.mean(model2_val_sample))
+        
+    model1_mean_val = np.mean(model1_val)
+    p_value = np.sum(np.array(model2_boostrapped_distrib) > model1_mean_val) / n_bootstrap
+    return p_value
+
+def run_two_model_permutation_test(save_fig_path,
+                                   model_pair,
+                                   overwrite=False,
+                                   extra_title='',
+                                   model_order=None,
+                                   bar_placement=None):
+    """
+    Get the plots for the RSA across all models
+    """
+    all_dataset_rsa_dict = {}
+    for dataset in ['B2021', 'NH2015']:
+        rsa_analysis_dict_trained = rsa_cross_validated_all_models(randnetw='False',
+                                                                   roi_name=None,
+                                                                   mean_subtract=True,
+                                                                   with_std=True,
+                                                                   target=dataset,
+                                                                   save_name_base=save_fig_path,
+                                                                   model_list=model_pair,
+                                                                   overwrite=overwrite)
+        model_1_val = [rsa_analysis_dict_trained[model_pair[0]][p]['best_layer_rsa_median_across_splits'] for p in rsa_analysis_dict_trained[model_pair[0]].keys()]
+        model_2_val = [rsa_analysis_dict_trained[model_pair[1]][p]['best_layer_rsa_median_across_splits'] for p in rsa_analysis_dict_trained[model_pair[1]].keys()]
+
+        p_val_perm = bootstrap_dist_two_models(model_1_val, model_2_val) 
+        print(f'{dataset} Trained | Model {model_pair[0]} vs. Model {model_pair[1]}: p={p_val_perm}')
+
+        rsa_analysis_dict_permuted = rsa_cross_validated_all_models(randnetw='True',
+                                                                    roi_name=None,
+                                                                    mean_subtract=True,
+                                                                    with_std=True,
+                                                                    target=dataset,
+                                                                    save_name_base=save_fig_path,
+                                                                    model_list=model_pair,
+                                                                    overwrite=overwrite)
+
+        model_1_val = [rsa_analysis_dict_permuted[model_pair[0]][p]['best_layer_rsa_median_across_splits'] for p in rsa_analysis_dict_permuted[model_pair[0]].keys()]
+        model_2_val = [rsa_analysis_dict_permuted[model_pair[1]][p]['best_layer_rsa_median_across_splits'] for p in rsa_analysis_dict_permuted[model_pair[1]].keys()]
+
+        p_val_perm = bootstrap_dist_two_models(model_1_val, model_2_val)
+        print(f'{dataset} Permuted | Model {model_pair[0]} vs. Model {model_pair[1]}: p={p_val_perm}')
+
 
 def make_all_voxel_rsa_bar_plots(save_fig_path,
                                  overwrite=False,
@@ -1523,3 +1591,4 @@ def make_all_voxel_rsa_bar_plots(save_fig_path,
 
 if __name__ == "__main__":
     make_paper_plots(save_fig_path=os.path.join(RESULTDIR, 'rsa_analysis'))
+    run_paper_extra_stats(save_fig_path=os.path.join(RESULTDIR, 'rsa_analysis'))
