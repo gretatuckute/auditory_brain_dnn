@@ -13,14 +13,6 @@ get_results = False # Obs: large file (~5GB)
 
 print(f'Downloading files to {ROOT}')
 
-TESTDIR = join(ROOT, 'test')
-if not os.path.exists(TESTDIR):
-    os.makedirs(TESTDIR)
-    print(f'Created TESTDIR: {TESTDIR}')
-
-######## for testing
-ROOT = TESTDIR
-
 def download_extract_remove(url, extract_location):
     """
     Base function from Jenelle Feather: https://github.com/jenellefeather/model_metamers_pytorch/blob/master/download_large_files.py
