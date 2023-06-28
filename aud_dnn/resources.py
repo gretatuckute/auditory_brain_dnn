@@ -24,13 +24,17 @@ FIG_7_MODEL_LIST = ['Kell2018word', 'Kell2018speaker',
 				    'AST', 'wav2vec',
                     'VGGish', 'S2T', 'sepformer']
 
+FIG_8_MODEL_LIST = ['Kell2018word', 'Kell2018wordClean',
+                    'ResNet50word', 'ResNet50wordClean',
+                    'Kell2018speaker', 'Kell2018speakerClean',
+                    'ResNet50speaker', 'ResNet50speakerClean']
+
 # In-house models (n=10) (for Figure 9)
-FIG_9_MODEL_LIST = ['Kell2018word', 'Kell2018speaker',
-                    'Kell2018music', 'Kell2018audioset',
-                    'Kell2018multitask',
- 				    'ResNet50word', 'ResNet50speaker',
-                    'ResNet50music', 'ResNet50audioset',
-                    'ResNet50multitask', ]
+FIG_9_MODEL_LIST = ['Kell2018word', 'ResNet50word',
+                    'Kell2018speaker', 'ResNet50speaker',
+                    'Kell2018music', 'ResNet50music',
+                   'Kell2018audioset','ResNet50audioset',
+                    'Kell2018multitask','ResNet50multitask',]
 
 # All unique models (n=24) (including clean speech networks from Figure 8; for use in ED SI Figure). All seed1.
 ALL_MODEL_LIST = ['Kell2018word', 'Kell2018speaker',

@@ -34,17 +34,20 @@ random.seed(0)
 
 #### Paths ####
 DATADIR = (Path(os.getcwd()) / '..' / '..' / 'data').resolve()
-run_locally = True
-if user == 'gt':
-    if run_locally:
-        print(f' ------------- Running locally as {user} -----------')
-        ROOT = f'/Users/{user}/Documents/GitHub/auditory_brain_dnn/'
-    else:
-        print(f' ------------- Running as {user} using SFTP -----------')
-        ROOT = f'/Users/{user}/bur/'
-else:
-    print(f' ------------- Running on openmind as {user} -----------')
-    ROOT = f'/mindhive/mcdermott/u/{user}/auditory_brain_dnn/'
+ROOT = (Path(os.getcwd()) / '..' / '..').resolve()
+print(f'ROOT: {ROOT}')
+
+# run_locally = True
+# if user == 'gt':
+#     if run_locally:
+#         print(f' ------------- Running locally as {user} -----------')
+#         ROOT = f'/Users/{user}/Documents/GitHub/auditory_brain_dnn/'
+#     else:
+#         print(f' ------------- Running as {user} using SFTP -----------')
+#         ROOT = f'/Users/{user}/bur/'
+# else:
+#     print(f' ------------- Running on openmind as {user} -----------')
+#     ROOT = f'/mindhive/mcdermott/u/{user}/auditory_brain_dnn/'
 
 SAVEDIR_CENTRALIZED = f'{ROOT}/results/PLOTS_across-models/'
 STATSDIR_CENTRALIZED = f'{ROOT}/results/STATS_across-models/'

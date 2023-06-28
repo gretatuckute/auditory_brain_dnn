@@ -7,6 +7,7 @@ data
 figure_compilation/**
 manuscript_revised/**
 
+aud_dnn/analyze/htmls_from_notebooks/
 results/*
 
 /model_actv/**
