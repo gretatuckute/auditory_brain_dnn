@@ -1,6 +1,7 @@
 ## Many but not all deep neural network audio models capture brain responses and exhibit correspondence between model stages and brain regions
 
-This repository contains code and data accompanying: Greta Tuckute*, Jenelle Feather*, Dana Boebinger, Josh H. McDermott (2023): Many but not all deep neural network audio models capture brain responses and exhibit correspondence between model stages and brain regions.
+This repository contains code and data accompanying: 
+Greta Tuckute*, Jenelle Feather*, Dana Boebinger, Josh H. McDermott (2023): _Many but not all deep neural network audio models capture brain responses and exhibit correspondence between model stages and brain regions_.
 
 ## Environment
 The environment does not require any sophisticated packages and would run in most Python 3.6 environments with [pandas](https://pandas.pydata.org/), [scikit-learn](https://scikit-learn.org/stable/), [statsmodels](https://www.statsmodels.org/stable/index.html), [seaborn](https://seaborn.pydata.org/) and [matplotlib](https://matplotlib.org/). However, to use the exact Python 3.6.10 environment used in the paper, install it as:
@@ -24,10 +25,7 @@ For both in-house and external models, we denote model activations obtained usin
 
 
 ## Generating plots
-
-TODO
-(In notebooks, mention aggregation, e.g. for fig 7 and fig 2)
-
+The figures in the paper can be reproduced via the notebooks in the [analyze](https://github.com/gretatuckute/auditory_brain_dnn/tree/main/aud_dnn/analyze) directory, e.g., [generate_Figure2.ipynb](https://github.com/gretatuckute/auditory_brain_dnn/blob/main/aud_dnn/analyze/generate_Figure2.ipynb) and so forth.
 
 ## DNN activations
 
@@ -51,4 +49,17 @@ We thank the authors and developers for making these weights publicly available!
 The permuted weight indices that were used to extract permuted model activations can be [downloaded here](https://drive.google.com/drive/folders/1yySqaHAC-Zda23IXaRtNOtg-pgf54dWa?usp=sharing) for each model. 
 
 ## Citation
-TO-DO
+```
+@article{TuckuteFeather2023,
+	author = {Greta Tuckute and Jenelle Feather and Dana Boebinger and Josh H. McDermott},
+	doi = {10.1101/2022.09.06.506680},
+	elocation-id = {2022.09.06.506680},
+	eprint = {https://www.biorxiv.org/content/early/2023/06/14/2022.09.06.506680.full.pdf},
+	journal = {bioRxiv},
+	publisher = {Cold Spring Harbor Laboratory},
+	title = {Many but not all deep neural network audio models capture brain responses and exhibit correspondence between model stages and brain regions},
+	url = {https://www.biorxiv.org/content/early/2023/06/14/2022.09.06.506680},
+	year = {2023},
+	bdsk-url-1 = {https://www.biorxiv.org/content/early/2023/06/14/2022.09.06.506680},
+	bdsk-url-2 = {https://doi.org/10.1101/2022.09.06.506680}}
+```
