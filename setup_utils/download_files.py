@@ -8,8 +8,8 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..'))
 
 # Use the flags below to indicate what you want to download. The flags get_data and get_model_actv are sufficient to run your own models.
 get_data = True
-get_model_actv = True
-get_results = False # Obs: large file (~5GB)
+get_model_actv = False # Obs: large file (~2.7GB)
+get_results = False # Obs: large file (~2.1GB)
 
 print(f'Downloading files to {ROOT}')
 
@@ -49,7 +49,7 @@ if get_model_actv:
     url_model_actv_folder = 'https://mcdermottlab.mit.edu//tuckute_feather_2023/model_actv.tar'
     download_extract_remove(url_model_actv_folder, ROOT)
 
-# Download the results folder (~4.7GB). This folder contains the results of the analyses used in the paper.
+# Download the results folder (~2.1GB). This folder contains the results of the analyses used in the paper.
 if get_results:
     url_results_folder = 'https://mcdermottlab.mit.edu//tuckute_feather_2023/results.tar'
     download_extract_remove(url_results_folder, ROOT)
