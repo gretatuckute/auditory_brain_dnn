@@ -26,14 +26,14 @@ elif method == 'rsa':
 agg_method = 'mean'  # across subjects
 roi = None
 
-save = True
+save = False
 if save:
 	save = SAVEDIR_CENTRALIZED
 else:
 	save = False
 
-layerwise_scatter = False
-layerwise_scatter_within_architecture = True # Reviewer comment
+layerwise_scatter = True
+layerwise_scatter_within_architecture = False # Reviewer comment
 corr_heatmap = False # sanity check, not used in paper
 argmax_layer_scatter = False # sanity check, not used in paper
 dim_vs_layer = False # sanity check, not used in paper
