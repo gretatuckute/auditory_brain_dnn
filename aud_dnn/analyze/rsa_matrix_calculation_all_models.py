@@ -1145,6 +1145,7 @@ def load_all_models_best_layer_df(pckl_path,
 
 def plot_all_roi_rsa_scatter(rsa_analysis_dict_all_rois,
                              extra_title_str='',
+                             model_list=None,
                              use_all_165_sounds=True,
                              save_fig_path=None):
     """
@@ -1168,7 +1169,7 @@ def plot_all_roi_rsa_scatter(rsa_analysis_dict_all_rois,
 
         for model_name, model_info in rsa_analysis_dict.items():
             # We exclude some of the models for this plot.
-            if model_name in ['DCASE2020', 'metricGAN', 'DS2', 'ZeroSpeech2020', 'spectemp']:
+            if model_name not in model_list:
                 continue
             all_model_names.append(model_name)
             # Check for layers that are exactly equal
@@ -1342,7 +1343,8 @@ def make_neural_roi_rdms(save_fig_path):
 
 
 def make_best_layer_roi_scatter_plots_from_pckl(pckl_path,
-                                                save_fig_path):
+                                                save_fig_path,
+                                                model_list=None):
     """
     Makes the best layer scatter plots, using specified saved values.  
     """
@@ -1355,10 +1357,12 @@ def make_best_layer_roi_scatter_plots_from_pckl(pckl_path,
 
     for dataset in ['NH2015', 'B2021']:
         plot_all_roi_rsa_scatter(rsa_analysis_dict_all_rois[dataset],
+                                 model_list=model_list,
                                  extra_title_str=dataset + '_Trained: ',
                                  save_fig_path=save_fig_path)
 
         plot_all_roi_rsa_scatter(rsa_analysis_dict_all_rois_permuted[dataset],
+                                 model_list=model_list,
                                  extra_title_str=dataset + '_Permuted: ',
                                  save_fig_path=save_fig_path)
 
@@ -1385,6 +1389,7 @@ def make_best_layer_roi_scatter_plots(save_fig_path, model_list=None,
             rsa_analysis_dict_all_rois[dataset][ROI] = rsa_analysis_dict
 
         plot_all_roi_rsa_scatter(rsa_analysis_dict_all_rois[dataset],
+                                 model_list=model_list,
                                  extra_title_str=extra_title + dataset + '_Trained: ',
                                  save_fig_path=save_fig_path)
 
@@ -1401,6 +1406,7 @@ def make_best_layer_roi_scatter_plots(save_fig_path, model_list=None,
             rsa_analysis_dict_all_rois_permuted[dataset][ROI] = rsa_analysis_dict
 
         plot_all_roi_rsa_scatter(rsa_analysis_dict_all_rois_permuted[dataset],
+                                 model_list=model_list,
                                  extra_title_str=extra_title + dataset + '_Permuted: ',
                                  save_fig_path=save_fig_path)
 
