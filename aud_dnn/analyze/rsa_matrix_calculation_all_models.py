@@ -1285,7 +1285,7 @@ def make_paper_plots(save_fig_path='rsa_plots'):
                                 extra_title='FIG2_Seed_Scatter_',
                                )
 
-    # Figure ? clean speech bar plot
+    # Figure 8 clean speech bar plot
     make_model_vs_model_scatter(save_fig_path, ax_lims_trained=None,
                                 model_pairs=CLEAN_SPEECH_LIST_2SEEDS,
                                 extra_title='FIG9_Clean_Speech_',
@@ -1561,6 +1561,7 @@ def run_two_model_permutation_test(save_fig_path,
 
 
 def make_all_voxel_rsa_bar_plots(save_fig_path,
+                                 saved_rsa_pckl_path=None,
                                  overwrite=False,
                                  extra_title='',
                                  model_list=None,
@@ -1571,15 +1572,21 @@ def make_all_voxel_rsa_bar_plots(save_fig_path,
     """
     all_dataset_rsa_dict = {}
     for dataset in ['B2021', 'NH2015']:
-        rsa_analysis_dict_trained = rsa_cross_validated_all_models(randnetw='False',
-                                                                   roi_name=None,
-                                                                   mean_subtract=True,
-                                                                   with_std=True,
-                                                                   target=dataset,
-                                                                   save_name_base=save_fig_path,
-                                                                   model_list=model_list,
-                                                                   overwrite=overwrite)
-
+        if saved_rsa_pckl_path is None:
+            rsa_analysis_dict_trained = rsa_cross_validated_all_models(randnetw='False',
+                                                                       roi_name=None,
+                                                                       mean_subtract=True,
+                                                                       with_std=True,
+                                                                       target=dataset,
+                                                                       save_name_base=save_fig_path,
+                                                                       model_list=model_list,
+                                                                       overwrite=overwrite)
+        else:
+            with open(saved_rsa_pckl_path, 'rb') as f:
+                all_dataset_rsa_dict = pickle.load(f)
+            rsa_analysis_dict_trained = all_dataset_rsa_dict[dataset]['trained']
+            rsa_analysis_dict_permuted = all_dataset_rsa_dict[dataset]['permuted']
+    
         all_dataset_rsa_dict[dataset] = {'trained': rsa_analysis_dict_trained}
         model_ordering = plot_ordered_cross_val_RSA(rsa_analysis_dict_trained,
                                                     model_ordering=model_order,
@@ -1588,14 +1595,15 @@ def make_all_voxel_rsa_bar_plots(save_fig_path,
                                                     save_fig_path=save_fig_path,
                                                     bar_placement=bar_placement)
 
-        rsa_analysis_dict_permuted = rsa_cross_validated_all_models(randnetw='True',
-                                                                    roi_name=None,
-                                                                    mean_subtract=True,
-                                                                    with_std=True,
-                                                                    target=dataset,
-                                                                    save_name_base=save_fig_path,
-                                                                    model_list=model_list,
-                                                                    overwrite=overwrite)
+        if saved_rsa_pckl_path is None:
+            rsa_analysis_dict_permuted = rsa_cross_validated_all_models(randnetw='True',
+                                                                        roi_name=None,
+                                                                        mean_subtract=True,
+                                                                        with_std=True,
+                                                                        target=dataset,
+                                                                        save_name_base=save_fig_path,
+                                                                        model_list=model_list,
+                                                                        overwrite=overwrite)
 
         _ = plot_ordered_cross_val_RSA(rsa_analysis_dict_permuted,
                                        model_ordering=model_ordering,
@@ -1606,9 +1614,10 @@ def make_all_voxel_rsa_bar_plots(save_fig_path,
 
         all_dataset_rsa_dict[dataset]['permuted'] = rsa_analysis_dict_permuted
 
-    save_pckl_path = f'{save_fig_path}/{extra_title.replace(":", "_").replace(" ", "")}all_dataset_rsa.pckl'
-    with open(os.path.join(save_pckl_path), 'wb') as f:
-        pickle.dump(all_dataset_rsa_dict, f)
+    if saved_rsa_pckl_path is None:
+        save_pckl_path = f'{save_fig_path}/{extra_title.replace(":", "_").replace(" ", "")}all_dataset_rsa.pckl'
+        with open(os.path.join(save_pckl_path), 'wb') as f:
+            pickle.dump(all_dataset_rsa_dict, f)
 
 
 if __name__ == "__main__":
