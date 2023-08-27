@@ -1341,80 +1341,67 @@ def make_neural_roi_rdms(save_fig_path):
                                   target=dataset,
                                   save_name_base=save_fig_path)
 
-
-def make_best_layer_roi_scatter_plots_from_pckl(pckl_path,
-                                                save_fig_path,
-                                                model_list=None):
-    """
-    Makes the best layer scatter plots, using specified saved values.  
-    """
-    with open(pckl_path, 'rb') as f:
-        best_layer_roi_data_dict = pickle.load(f)
-
-    rsa_analysis_dict_all_rois = best_layer_roi_data_dict['rsa_analysis_dict_all_rois']
-    rsa_analysis_dict_all_rois_permuted = best_layer_roi_data_dict[
-        'rsa_analysis_dict_all_rois_permuted']
-
-    for dataset in ['NH2015', 'B2021']:
-        plot_all_roi_rsa_scatter(rsa_analysis_dict_all_rois[dataset],
-                                 model_list=model_list,
-                                 extra_title_str=dataset + '_Trained: ',
-                                 save_fig_path=save_fig_path)
-
-        plot_all_roi_rsa_scatter(rsa_analysis_dict_all_rois_permuted[dataset],
-                                 model_list=model_list,
-                                 extra_title_str=dataset + '_Permuted: ',
-                                 save_fig_path=save_fig_path)
-
-
-def make_best_layer_roi_scatter_plots(save_fig_path, model_list=None,
+def make_best_layer_roi_scatter_plots(save_fig_path, 
+                                      model_list=None,
+                                      saved_rsa_best_layer_pckl=None,
                                       extra_title='',
                                       overwrite=False):
     """
     Makes the best layer scatter plots. 
     """
-    rsa_analysis_dict_all_rois = {}
-    rsa_analysis_dict_all_rois_permuted = {}
+    if saved_rsa_best_layer_pckl is not None:
+        with open(saved_rsa_best_layer_pckl, 'rb') as f:
+            best_layer_roi_data_dict = pickle.load(f)
+        rsa_analysis_dict_all_rois = best_layer_roi_data_dict['rsa_analysis_dict_all_rois']
+        rsa_analysis_dict_all_rois_permuted = best_layer_roi_data_dict[
+                    'rsa_analysis_dict_all_rois_permuted']
+    else:
+        rsa_analysis_dict_all_rois = {}
+        rsa_analysis_dict_all_rois_permuted = {}
+
     for dataset in ['NH2015', 'B2021']:
-        rsa_analysis_dict_all_rois[dataset] = {}
-        for ROI in ['Primary', 'Lateral', 'Posterior', 'Anterior']:
-            rsa_analysis_dict = rsa_cross_validated_all_models(randnetw='False',
-                                                               roi_name=ROI,
-                                                               mean_subtract=True,
-                                                               with_std=True,
-                                                               target=dataset,
-                                                               save_name_base=save_fig_path,
-                                                               model_list=model_list,
-                                                               overwrite=overwrite)
-            rsa_analysis_dict_all_rois[dataset][ROI] = rsa_analysis_dict
+        if saved_rsa_best_layer_pckl is None:
+            rsa_analysis_dict_all_rois[dataset] = {}
+            for ROI in ['Primary', 'Lateral', 'Posterior', 'Anterior']:
+                rsa_analysis_dict = rsa_cross_validated_all_models(randnetw='False',
+                                                                   roi_name=ROI,
+                                                                   mean_subtract=True,
+                                                                   with_std=True,
+                                                                   target=dataset,
+                                                                   save_name_base=save_fig_path,
+                                                                   model_list=model_list,
+                                                                   overwrite=overwrite)
+                rsa_analysis_dict_all_rois[dataset][ROI] = rsa_analysis_dict
 
         plot_all_roi_rsa_scatter(rsa_analysis_dict_all_rois[dataset],
                                  model_list=model_list,
                                  extra_title_str=extra_title + dataset + '_Trained: ',
                                  save_fig_path=save_fig_path)
 
-        rsa_analysis_dict_all_rois_permuted[dataset] = {}
-        for ROI in ['Primary', 'Lateral', 'Posterior', 'Anterior']:
-            rsa_analysis_dict = rsa_cross_validated_all_models(randnetw='True',
-                                                               roi_name=ROI,
-                                                               mean_subtract=True,
-                                                               with_std=True,
-                                                               target=dataset,
-                                                               save_name_base=save_fig_path, 
-                                                               model_list=model_list,
-                                                               overwrite=overwrite)
-            rsa_analysis_dict_all_rois_permuted[dataset][ROI] = rsa_analysis_dict
+        if saved_rsa_best_layer_pckl is None:
+            rsa_analysis_dict_all_rois_permuted[dataset] = {}
+            for ROI in ['Primary', 'Lateral', 'Posterior', 'Anterior']:
+                rsa_analysis_dict = rsa_cross_validated_all_models(randnetw='True',
+                                                                   roi_name=ROI,
+                                                                   mean_subtract=True,
+                                                                   with_std=True,
+                                                                   target=dataset,
+                                                                   save_name_base=save_fig_path, 
+                                                                   model_list=model_list,
+                                                                   overwrite=overwrite)
+                rsa_analysis_dict_all_rois_permuted[dataset][ROI] = rsa_analysis_dict
 
         plot_all_roi_rsa_scatter(rsa_analysis_dict_all_rois_permuted[dataset],
                                  model_list=model_list,
                                  extra_title_str=extra_title + dataset + '_Permuted: ',
                                  save_fig_path=save_fig_path)
 
-    save_pckl_path = f'{save_fig_path}/{extra_title.replace(":", "_").replace(" ", "")}best_layer_rsa_analysis_dict.pckl'
-    with open(os.path.join(save_pckl_path), 'wb') as f:
-        pickle.dump({'rsa_analysis_dict_all_rois': rsa_analysis_dict_all_rois,
-                     'rsa_analysis_dict_all_rois_permuted': rsa_analysis_dict_all_rois_permuted},
-                    f)
+    if saved_rsa_best_layer_pckl is None:
+        save_pckl_path = f'{save_fig_path}/{extra_title.replace(":", "_").replace(" ", "")}best_layer_rsa_analysis_dict.pckl'
+        with open(os.path.join(save_pckl_path), 'wb') as f:
+             pickle.dump({'rsa_analysis_dict_all_rois': rsa_analysis_dict_all_rois,
+                          'rsa_analysis_dict_all_rois_permuted': rsa_analysis_dict_all_rois_permuted},
+                         f)
 
 def make_model_vs_model_scatter(save_fig_path,
                                 model_pairs,
@@ -1478,34 +1465,6 @@ def make_model_vs_model_scatter(save_fig_path,
                                           ax_lims=None,
                                           xlabel=xlabel,
                                           ylabel=ylabel)
-
-
-def make_all_voxel_rsa_bar_plots_from_pckl(pckl_path, save_fig_path, 
-                                           model_list=None,
-                                           model_order=None):
-    """
-    Make the cross validated RSA bar plots for all models, using saved data. 
-    """
-    with open(pckl_path, 'rb') as f:
-        all_dataset_rsa_dict = pickle.load(f)
-
-    # Get the plots for the RSA across all models (Figure 2)
-    for dataset in ['B2021', 'NH2015']:
-        rsa_analysis_dict_trained = all_dataset_rsa_dict[dataset]['trained']
-        model_ordering = plot_ordered_cross_val_RSA(rsa_analysis_dict_trained,
-                                                    model_list=model_list,
-                                                    model_ordering=model_order,
-                                                    use_165_sounds_for_fMRI_ceiling=False,
-                                                    extra_title_str=dataset + '_Trained: ',
-                                                    save_fig_path=save_fig_path)
-
-        rsa_analysis_dict_permuted = all_dataset_rsa_dict[dataset]['permuted']
-        _ = plot_ordered_cross_val_RSA(rsa_analysis_dict_permuted,
-                                       model_list=model_list,
-                                       model_ordering=model_ordering,
-                                       use_165_sounds_for_fMRI_ceiling=False,
-                                       extra_title_str=dataset + '_Permuted: ',
-                                       save_fig_path=save_fig_path)
 
 def bootstrap_dist_two_models(model1_val, model2_val, n_bootstrap=10000):
     # generate distribution with replacement from model2 -->
@@ -1591,6 +1550,7 @@ def make_all_voxel_rsa_bar_plots(save_fig_path,
         model_ordering = plot_ordered_cross_val_RSA(rsa_analysis_dict_trained,
                                                     model_ordering=model_order,
                                                     use_165_sounds_for_fMRI_ceiling=False,
+                                                    model_list=model_list,
                                                     extra_title_str=extra_title + dataset + '_Trained: ',
                                                     save_fig_path=save_fig_path,
                                                     bar_placement=bar_placement)
@@ -1608,6 +1568,7 @@ def make_all_voxel_rsa_bar_plots(save_fig_path,
         _ = plot_ordered_cross_val_RSA(rsa_analysis_dict_permuted,
                                        model_ordering=model_ordering,
                                        use_165_sounds_for_fMRI_ceiling=False,
+                                       model_list=model_list,
                                        extra_title_str=extra_title + dataset + '_Permuted: ',
                                        save_fig_path=save_fig_path,
                                        bar_placement=bar_placement)
