@@ -2,8 +2,7 @@
 Performs RSA analysis. 
 """
 import sys  # TODO: this is a bit hacky TODO: remove with installation script.
-sys.path.append('/om2/user/jfeather/projects/auditory_brain_dnn')
-print(sys.path)
+sys.path.append('../.')
 
 import pandas as pd
 import matplotlib
@@ -11,7 +10,7 @@ from matplotlib.lines import Line2D
 from scipy.stats import wilcoxon
 from scipy.io import loadmat
 from scipy import stats
-from aud_dnn.utils import get_source_features
+from utils import get_source_features
 import numpy as np
 # import torch as ch
 from pathlib import Path
@@ -20,7 +19,7 @@ import matplotlib.pylab as plt
 import argparse
 import h5py
 import os
-from aud_dnn.resources import d_layer_reindex, d_sound_category_colors, sound_category_order, d_model_colors, d_model_names, source_layer_map
+from resources import d_layer_reindex, d_sound_category_colors, sound_category_order, d_model_colors, d_model_names, source_layer_map
 from sklearn.preprocessing import StandardScaler
 
 try:
@@ -41,61 +40,61 @@ DATADIR = (Path(os.getcwd()) / '..' / 'data').resolve()
 RESULTDIR = (Path(os.getcwd()) / '..' / 'results').resolve()
 CACHEDIR = (Path(os.getcwd()) / '..' / 'model_actv').resolve().as_posix()
 
-# TODO: Move these lists into resources. 
-# Models for the bar plot in Figure 2
-FIG2_MODEL_LIST = ['Kell2018word', 'Kell2018speaker',
-                   'Kell2018music', 'Kell2018audioset',
-                   'Kell2018multitask',
-                   'ResNet50word', 'ResNet50speaker',
-                   'ResNet50music', 'ResNet50audioset',
-                   'ResNet50multitask',
-                   'AST',  'wav2vec', 'DCASE2020',
-                   'DS2',  'VGGish', 'ZeroSpeech2020',
-                   'S2T', 'metricGAN', 'sepformer',
-                   'spectemp']
-
-# Models for the scatter plot of 2 seeds 
-FIG2_SEED_PAIRS = [['Kell2018word', 'Kell2018wordSeed2'],
-                   ['Kell2018speaker', 'Kell2018speakerSeed2'],
-                   ['Kell2018audioset', 'Kell2018audiosetSeed2'],
-                   ['Kell2018multitask', 'Kell2018multitaskSeed2'],
-                   ['ResNet50word', 'ResNet50wordSeed2'],
-                   ['ResNet50speaker', 'ResNet50speakerSeed2'],
-                   ['ResNet50audioset', 'ResNet50audiosetSeed2'],
-                   ['ResNet50multitask', 'ResNet50multitaskSeed2']
-                   ]
-
-# Word trained models with and without background
-CLEAN_SPEECH_LIST = ['Kell2018word','Kell2018wordClean',
-                     'ResNet50word', 'ResNet50wordClean',
-                     'Kell2018speaker', 'Kell2018speakerClean',
-                     'ResNet50speaker', 'ResNet50speakerClean']
-CLEAN_SPEECH_LIST_PAIRS = [['Kell2018word','Kell2018wordClean'],
-                           ['ResNet50word', 'ResNet50wordClean'],
-                           ['Kell2018speaker', 'Kell2018speakerClean'],
-                           ['ResNet50speaker', 'ResNet50speakerClean']]
-CLEAN_SPEECH_LIST_2SEEDS = [['Kell2018word', 'Kell2018wordSeed2'],
-                            ['Kell2018wordClean', 'Kell2018wordCleanSeed2'],
-                   ['Kell2018speaker', 'Kell2018speakerSeed2'],
-                   ['Kell2018speakerClean', 'Kell2018speakerCleanSeed2'],
-                   ['ResNet50word', 'ResNet50wordSeed2'],
-                   ['ResNet50wordClean', 'ResNet50wordCleanSeed2'],
-                   ['ResNet50speaker', 'ResNet50speakerSeed2'],
-                   ['ResNet50speakerClean', 'ResNet50speakerCleanSeed2']]
-               
-
-# Models included in the best-layer scatter plot
-FIG5_MODEL_LIST = ['Kell2018word', 'Kell2018speaker',
-                   'Kell2018music', 'Kell2018audioset',
-                   'Kell2018multitask',
-                   'ResNet50word', 'ResNet50speaker',
-                   'ResNet50music', 'ResNet50audioset',
-                   'ResNet50multitask',
-                   'AST',  'wav2vec',
-                   'VGGish',
-                   'S2T', 'sepformer',
-                   'spectemp']
-
+# # TODO: Move these lists into resources. 
+# # Models for the bar plot in Figure 2
+# FIG2_MODEL_LIST = ['Kell2018word', 'Kell2018speaker',
+#                    'Kell2018music', 'Kell2018audioset',
+#                    'Kell2018multitask',
+#                    'ResNet50word', 'ResNet50speaker',
+#                    'ResNet50music', 'ResNet50audioset',
+#                    'ResNet50multitask',
+#                    'AST',  'wav2vec', 'DCASE2020',
+#                    'DS2',  'VGGish', 'ZeroSpeech2020',
+#                    'S2T', 'metricGAN', 'sepformer',
+#                    'spectemp']
+# 
+# # Models for the scatter plot of 2 seeds 
+# FIG2_SEED_PAIRS = [['Kell2018word', 'Kell2018wordSeed2'],
+#                    ['Kell2018speaker', 'Kell2018speakerSeed2'],
+#                    ['Kell2018audioset', 'Kell2018audiosetSeed2'],
+#                    ['Kell2018multitask', 'Kell2018multitaskSeed2'],
+#                    ['ResNet50word', 'ResNet50wordSeed2'],
+#                    ['ResNet50speaker', 'ResNet50speakerSeed2'],
+#                    ['ResNet50audioset', 'ResNet50audiosetSeed2'],
+#                    ['ResNet50multitask', 'ResNet50multitaskSeed2']
+#                    ]
+# 
+# # Word trained models with and without background
+# CLEAN_SPEECH_LIST = ['Kell2018word','Kell2018wordClean',
+#                      'ResNet50word', 'ResNet50wordClean',
+#                      'Kell2018speaker', 'Kell2018speakerClean',
+#                      'ResNet50speaker', 'ResNet50speakerClean']
+# CLEAN_SPEECH_LIST_PAIRS = [['Kell2018word','Kell2018wordClean'],
+#                            ['ResNet50word', 'ResNet50wordClean'],
+#                            ['Kell2018speaker', 'Kell2018speakerClean'],
+#                            ['ResNet50speaker', 'ResNet50speakerClean']]
+# CLEAN_SPEECH_LIST_2SEEDS = [['Kell2018word', 'Kell2018wordSeed2'],
+#                             ['Kell2018wordClean', 'Kell2018wordCleanSeed2'],
+#                    ['Kell2018speaker', 'Kell2018speakerSeed2'],
+#                    ['Kell2018speakerClean', 'Kell2018speakerCleanSeed2'],
+#                    ['ResNet50word', 'ResNet50wordSeed2'],
+#                    ['ResNet50wordClean', 'ResNet50wordCleanSeed2'],
+#                    ['ResNet50speaker', 'ResNet50speakerSeed2'],
+#                    ['ResNet50speakerClean', 'ResNet50speakerCleanSeed2']]
+#                
+# 
+# # Models included in the best-layer scatter plot
+# FIG5_MODEL_LIST = ['Kell2018word', 'Kell2018speaker',
+#                    'Kell2018music', 'Kell2018audioset',
+#                    'Kell2018multitask',
+#                    'ResNet50word', 'ResNet50speaker',
+#                    'ResNet50music', 'ResNet50audioset',
+#                    'ResNet50multitask',
+#                    'AST',  'wav2vec',
+#                    'VGGish',
+#                    'S2T', 'sepformer',
+#                    'spectemp']
+# 
 # TODO: move this into utils?
 ## Stimuli (original indexing, activations are extracted in this order) ##
 sound_meta = np.load(os.path.join(
@@ -963,6 +962,7 @@ def combine_model_vals_into_df_rsa(rsa_analysis_dict,
 
 
 def plot_ordered_cross_val_RSA(rsa_analysis_dict,
+                               model_list=None,
                                model_ordering=None, 
                                alpha=1, 
                                extra_title_str='', 
@@ -983,6 +983,11 @@ def plot_ordered_cross_val_RSA(rsa_analysis_dict,
     df_spectemp = df_grouped.loc[df_grouped['source_model'] == 'spectemp']
     df_grouped.drop(
         df_grouped.index[df_grouped['source_model'] == 'spectemp'], inplace=True)
+
+    if model_list is not None:
+        for m_name in df_grouped.source_model:
+            if m_name not in model_list:
+                df_grouped.drop(df_grouped.index[df_grouped['source_model'] == m_name], inplace=True)
 
     if model_ordering is None:
         df_grouped = df_grouped.sort_values('mean_values', ascending=False)
@@ -1407,6 +1412,7 @@ def make_best_layer_roi_scatter_plots(save_fig_path, model_list=None,
 
 def make_model_vs_model_scatter(save_fig_path,
                                 model_pairs,
+                                saved_rsa_pckl_path=None,
                                 overwrite=False,
                                 extra_title='',
                                 ax_lims_trained=[0.35,0.55],
@@ -1423,15 +1429,21 @@ def make_model_vs_model_scatter(save_fig_path,
     all_dataset_rsa_dict = {}
     for dataset in ['B2021', 'NH2015']:
         # Make plots for trained model pairs
-        rsa_analysis_dict_trained = rsa_cross_validated_all_models(randnetw='False',
-                                                                   roi_name=None,
-                                                                   mean_subtract=True,
-                                                                   with_std=True,
-                                                                   target=dataset,
-                                                                   save_name_base=save_fig_path,
-                                                                   model_list=model_list,
-                                                                   overwrite=overwrite)
-
+        if saved_rsa_pckl_path is None:
+            rsa_analysis_dict_trained = rsa_cross_validated_all_models(randnetw='False',
+                                                                       roi_name=None,
+                                                                       mean_subtract=True,
+                                                                       with_std=True,
+                                                                       target=dataset,
+                                                                       save_name_base=save_fig_path,
+                                                                       model_list=model_list,
+                                                                       overwrite=overwrite)
+        else:
+            with open(saved_rsa_pckl_path, 'rb') as f:
+                all_dataset_rsa_dict = pickle.load(f)
+            rsa_analysis_dict_trained = all_dataset_rsa_dict[dataset]['trained']
+            rsa_analysis_dict_permuted = all_dataset_rsa_dict[dataset]['permuted']
+    
         plot_scatter_RSA_vals_model_pairs(model_pairs,
                                           rsa_analysis_dict_trained,
                                           save_fig_path=save_fig_path,
@@ -1442,15 +1454,16 @@ def make_model_vs_model_scatter(save_fig_path,
                                           ylabel=ylabel)
 
         # Make plots for permuted model pairs
-        rsa_analysis_dict_permuted = rsa_cross_validated_all_models(randnetw='True',
-                                                                    roi_name=None,
-                                                                    mean_subtract=True,
-                                                                    with_std=True,
-                                                                    target=dataset,
-                                                                    save_name_base=save_fig_path,
-                                                                    model_list=model_list,
-                                                                    overwrite=overwrite)
-
+        if saved_rsa_pckl_path is None:
+            rsa_analysis_dict_permuted = rsa_cross_validated_all_models(randnetw='True',
+                                                                        roi_name=None,
+                                                                        mean_subtract=True,
+                                                                        with_std=True,
+                                                                        target=dataset,
+                                                                        save_name_base=save_fig_path,
+                                                                        model_list=model_list,
+                                                                        overwrite=overwrite)
+    
         plot_scatter_RSA_vals_model_pairs(model_pairs,
                                           rsa_analysis_dict_permuted,
                                           save_fig_path=save_fig_path,
@@ -1462,6 +1475,7 @@ def make_model_vs_model_scatter(save_fig_path,
 
 
 def make_all_voxel_rsa_bar_plots_from_pckl(pckl_path, save_fig_path, 
+                                           model_list=None,
                                            model_order=None):
     """
     Make the cross validated RSA bar plots for all models, using saved data. 
@@ -1473,6 +1487,7 @@ def make_all_voxel_rsa_bar_plots_from_pckl(pckl_path, save_fig_path,
     for dataset in ['B2021', 'NH2015']:
         rsa_analysis_dict_trained = all_dataset_rsa_dict[dataset]['trained']
         model_ordering = plot_ordered_cross_val_RSA(rsa_analysis_dict_trained,
+                                                    model_list=model_list,
                                                     model_ordering=model_order,
                                                     use_165_sounds_for_fMRI_ceiling=False,
                                                     extra_title_str=dataset + '_Trained: ',
@@ -1480,6 +1495,7 @@ def make_all_voxel_rsa_bar_plots_from_pckl(pckl_path, save_fig_path,
 
         rsa_analysis_dict_permuted = all_dataset_rsa_dict[dataset]['permuted']
         _ = plot_ordered_cross_val_RSA(rsa_analysis_dict_permuted,
+                                       model_list=model_list,
                                        model_ordering=model_ordering,
                                        use_165_sounds_for_fMRI_ceiling=False,
                                        extra_title_str=dataset + '_Permuted: ',
