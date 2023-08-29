@@ -14,6 +14,17 @@ FIG_2_5_MODEL_LIST = ['Kell2018word', 'Kell2018speaker',
                       'S2T', 'metricGAN', 'sepformer',
                       'spectemp']
 
+# Pairs of the random seeds used in Figure 2
+FIG2_SEED_PAIRS = [['Kell2018word', 'Kell2018wordSeed2'],
+                   ['Kell2018speaker', 'Kell2018speakerSeed2'],
+                   ['Kell2018audioset', 'Kell2018audiosetSeed2'],
+                   ['Kell2018multitask', 'Kell2018multitaskSeed2'],
+                   ['ResNet50word', 'ResNet50wordSeed2'],
+                   ['ResNet50speaker', 'ResNet50speakerSeed2'],
+                   ['ResNet50audioset', 'ResNet50audiosetSeed2'],
+                   ['ResNet50multitask', 'ResNet50multitaskSeed2']
+                   ]
+
 # Models above spectemp baseline (n=15) (for Figure 7)
 FIG_7_MODEL_LIST = ['Kell2018word', 'Kell2018speaker',
                     'Kell2018music', 'Kell2018audioset',
@@ -24,10 +35,28 @@ FIG_7_MODEL_LIST = ['Kell2018word', 'Kell2018speaker',
 				    'AST', 'wav2vec',
                     'VGGish', 'S2T', 'sepformer']
 
+# Models used for the clean-speech comparison
 FIG_8_MODEL_LIST = ['Kell2018word', 'Kell2018wordClean',
                     'ResNet50word', 'ResNet50wordClean',
                     'Kell2018speaker', 'Kell2018speakerClean',
                     'ResNet50speaker', 'ResNet50speakerClean']
+
+# Random Seed Pairs of the Clean Speech models
+CLEAN_SPEECH_LIST_2SEEDS = [['Kell2018word', 'Kell2018wordSeed2'],
+                            ['Kell2018wordClean', 'Kell2018wordCleanSeed2'],
+                            ['Kell2018speaker', 'Kell2018speakerSeed2'],
+                            ['Kell2018speakerClean', 'Kell2018speakerCleanSeed2'],
+                            ['ResNet50word', 'ResNet50wordSeed2'],
+                            ['ResNet50wordClean', 'ResNet50wordCleanSeed2'],
+                            ['ResNet50speaker', 'ResNet50speakerSeed2'],
+                            ['ResNet50speakerClean', 'ResNet50speakerCleanSeed2']]
+
+# Paired up Clean Speech models, used for Stats comparisons
+CLEAN_SPEECH_LIST_PAIRS = [['Kell2018word','Kell2018wordClean'],
+                           ['ResNet50word', 'ResNet50wordClean'],
+                           ['Kell2018speaker', 'Kell2018speakerClean'],
+                           ['ResNet50speaker', 'ResNet50speakerClean']]
+
 
 # In-house models (n=10) (for Figure 9)
 FIG_9_MODEL_LIST = ['Kell2018word', 'ResNet50word',

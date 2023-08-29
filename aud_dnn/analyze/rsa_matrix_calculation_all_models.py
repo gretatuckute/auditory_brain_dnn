@@ -12,14 +12,13 @@ from scipy.io import loadmat
 from scipy import stats
 from utils import get_source_features
 import numpy as np
-# import torch as ch
 from pathlib import Path
 import pickle
 import matplotlib.pylab as plt
 import argparse
 import h5py
 import os
-from resources import d_layer_reindex, d_sound_category_colors, sound_category_order, d_model_colors, d_model_names, source_layer_map
+from resources import *
 from sklearn.preprocessing import StandardScaler
 
 try:
@@ -40,61 +39,6 @@ DATADIR = (Path(os.getcwd()) / '..' / 'data').resolve()
 RESULTDIR = (Path(os.getcwd()) / '..' / 'results').resolve()
 CACHEDIR = (Path(os.getcwd()) / '..' / 'model_actv').resolve().as_posix()
 
-# # TODO: Move these lists into resources. 
-# # Models for the bar plot in Figure 2
-# FIG2_MODEL_LIST = ['Kell2018word', 'Kell2018speaker',
-#                    'Kell2018music', 'Kell2018audioset',
-#                    'Kell2018multitask',
-#                    'ResNet50word', 'ResNet50speaker',
-#                    'ResNet50music', 'ResNet50audioset',
-#                    'ResNet50multitask',
-#                    'AST',  'wav2vec', 'DCASE2020',
-#                    'DS2',  'VGGish', 'ZeroSpeech2020',
-#                    'S2T', 'metricGAN', 'sepformer',
-#                    'spectemp']
-# 
-# # Models for the scatter plot of 2 seeds 
-# FIG2_SEED_PAIRS = [['Kell2018word', 'Kell2018wordSeed2'],
-#                    ['Kell2018speaker', 'Kell2018speakerSeed2'],
-#                    ['Kell2018audioset', 'Kell2018audiosetSeed2'],
-#                    ['Kell2018multitask', 'Kell2018multitaskSeed2'],
-#                    ['ResNet50word', 'ResNet50wordSeed2'],
-#                    ['ResNet50speaker', 'ResNet50speakerSeed2'],
-#                    ['ResNet50audioset', 'ResNet50audiosetSeed2'],
-#                    ['ResNet50multitask', 'ResNet50multitaskSeed2']
-#                    ]
-# 
-# # Word trained models with and without background
-# CLEAN_SPEECH_LIST = ['Kell2018word','Kell2018wordClean',
-#                      'ResNet50word', 'ResNet50wordClean',
-#                      'Kell2018speaker', 'Kell2018speakerClean',
-#                      'ResNet50speaker', 'ResNet50speakerClean']
-# CLEAN_SPEECH_LIST_PAIRS = [['Kell2018word','Kell2018wordClean'],
-#                            ['ResNet50word', 'ResNet50wordClean'],
-#                            ['Kell2018speaker', 'Kell2018speakerClean'],
-#                            ['ResNet50speaker', 'ResNet50speakerClean']]
-# CLEAN_SPEECH_LIST_2SEEDS = [['Kell2018word', 'Kell2018wordSeed2'],
-#                             ['Kell2018wordClean', 'Kell2018wordCleanSeed2'],
-#                    ['Kell2018speaker', 'Kell2018speakerSeed2'],
-#                    ['Kell2018speakerClean', 'Kell2018speakerCleanSeed2'],
-#                    ['ResNet50word', 'ResNet50wordSeed2'],
-#                    ['ResNet50wordClean', 'ResNet50wordCleanSeed2'],
-#                    ['ResNet50speaker', 'ResNet50speakerSeed2'],
-#                    ['ResNet50speakerClean', 'ResNet50speakerCleanSeed2']]
-#                
-# 
-# # Models included in the best-layer scatter plot
-# FIG5_MODEL_LIST = ['Kell2018word', 'Kell2018speaker',
-#                    'Kell2018music', 'Kell2018audioset',
-#                    'Kell2018multitask',
-#                    'ResNet50word', 'ResNet50speaker',
-#                    'ResNet50music', 'ResNet50audioset',
-#                    'ResNet50multitask',
-#                    'AST',  'wav2vec',
-#                    'VGGish',
-#                    'S2T', 'sepformer',
-#                    'spectemp']
-# 
 # TODO: move this into utils?
 ## Stimuli (original indexing, activations are extracted in this order) ##
 sound_meta = np.load(os.path.join(
@@ -1276,7 +1220,7 @@ def make_paper_plots(save_fig_path='rsa_plots'):
 
     # Figure 2 bar plot, 19 models in main analysis
     make_all_voxel_rsa_bar_plots(save_fig_path=save_fig_path,
-                                 model_list=FIG2_MODEL_LIST,
+                                 model_list=FIG_2_5_MODEL_LIST,
                                  extra_title='FIG2_19Models_')
 
     # Figure 2 scatter plot with 2 seeds of in-house models
@@ -1288,13 +1232,13 @@ def make_paper_plots(save_fig_path='rsa_plots'):
     # Figure 8 clean speech bar plot
     make_model_vs_model_scatter(save_fig_path, ax_lims_trained=None,
                                 model_pairs=CLEAN_SPEECH_LIST_2SEEDS,
-                                extra_title='FIG9_Clean_Speech_',
+                                extra_title='FIG8_Clean_Speech_',
                                )
     offset=0.35
     make_all_voxel_rsa_bar_plots(save_fig_path=save_fig_path,
-                                 model_list=CLEAN_SPEECH_LIST + ['spectemp'],
-                                 model_order=CLEAN_SPEECH_LIST,
-                                 extra_title='FIG9_Clean_Speech_',
+                                 model_list=FIG_8_MODEL_LIST + ['spectemp'],
+                                 model_order=FIG_8_MODEL_LIST,
+                                 extra_title='FIG8_Clean_Speech_',
                                  bar_placement=np.array([0,
                                                 0.35,0.7+offset,
                                                 1.05+offset,1.4+2*offset,
@@ -1307,8 +1251,8 @@ def make_paper_plots(save_fig_path='rsa_plots'):
 
     # Figure 5, and Supplement Fig, best layer scatter plot
     make_best_layer_roi_scatter_plots(save_fig_path,
-                                      model_list=FIG5_MODEL_LIST,
-                                      extra_title='FIG5_BestLayerModels_')
+                                      model_list=FIG_7_MODEL_LIST,
+                                      extra_title='FIG7_BestLayerModels_')
 
     # Figure 5, but including all models
     make_best_layer_roi_scatter_plots(save_fig_path,
