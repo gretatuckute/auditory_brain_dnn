@@ -2,8 +2,8 @@
 Performs RSA analysis. 
 """
 import sys  # TODO: this is a bit hacky TODO: remove with installation script.
-sys.path.append('/om2/user/jfeather/projects/auditory_brain_dnn')
-print(sys.path)
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pandas as pd
 import matplotlib
@@ -11,16 +11,15 @@ from matplotlib.lines import Line2D
 from scipy.stats import wilcoxon
 from scipy.io import loadmat
 from scipy import stats
-from aud_dnn.utils import get_source_features
+from utils import get_source_features
 import numpy as np
-# import torch as ch
 from pathlib import Path
 import pickle
 import matplotlib.pylab as plt
 import argparse
 import h5py
 import os
-from aud_dnn.resources import d_layer_reindex, d_sound_category_colors, sound_category_order, d_model_colors, d_model_names, source_layer_map
+from resources import *
 from sklearn.preprocessing import StandardScaler
 
 try:
@@ -40,61 +39,6 @@ matplotlib.rcParams['svg.fonttype'] = 'none'
 DATADIR = (Path(os.getcwd()) / '..' / 'data').resolve()
 RESULTDIR = (Path(os.getcwd()) / '..' / 'results').resolve()
 CACHEDIR = (Path(os.getcwd()) / '..' / 'model_actv').resolve().as_posix()
-
-# TODO: Move these lists into resources. 
-# Models for the bar plot in Figure 2
-FIG2_MODEL_LIST = ['Kell2018word', 'Kell2018speaker',
-                   'Kell2018music', 'Kell2018audioset',
-                   'Kell2018multitask',
-                   'ResNet50word', 'ResNet50speaker',
-                   'ResNet50music', 'ResNet50audioset',
-                   'ResNet50multitask',
-                   'AST',  'wav2vec', 'DCASE2020',
-                   'DS2',  'VGGish', 'ZeroSpeech2020',
-                   'S2T', 'metricGAN', 'sepformer',
-                   'spectemp']
-
-# Models for the scatter plot of 2 seeds 
-FIG2_SEED_PAIRS = [['Kell2018word', 'Kell2018wordSeed2'],
-                   ['Kell2018speaker', 'Kell2018speakerSeed2'],
-                   ['Kell2018audioset', 'Kell2018audiosetSeed2'],
-                   ['Kell2018multitask', 'Kell2018multitaskSeed2'],
-                   ['ResNet50word', 'ResNet50wordSeed2'],
-                   ['ResNet50speaker', 'ResNet50speakerSeed2'],
-                   ['ResNet50audioset', 'ResNet50audiosetSeed2'],
-                   ['ResNet50multitask', 'ResNet50multitaskSeed2']
-                   ]
-
-# Word trained models with and without background
-CLEAN_SPEECH_LIST = ['Kell2018word','Kell2018wordClean',
-                     'ResNet50word', 'ResNet50wordClean',
-                     'Kell2018speaker', 'Kell2018speakerClean',
-                     'ResNet50speaker', 'ResNet50speakerClean']
-CLEAN_SPEECH_LIST_PAIRS = [['Kell2018word','Kell2018wordClean'],
-                           ['ResNet50word', 'ResNet50wordClean'],
-                           ['Kell2018speaker', 'Kell2018speakerClean'],
-                           ['ResNet50speaker', 'ResNet50speakerClean']]
-CLEAN_SPEECH_LIST_2SEEDS = [['Kell2018word', 'Kell2018wordSeed2'],
-                            ['Kell2018wordClean', 'Kell2018wordCleanSeed2'],
-                   ['Kell2018speaker', 'Kell2018speakerSeed2'],
-                   ['Kell2018speakerClean', 'Kell2018speakerCleanSeed2'],
-                   ['ResNet50word', 'ResNet50wordSeed2'],
-                   ['ResNet50wordClean', 'ResNet50wordCleanSeed2'],
-                   ['ResNet50speaker', 'ResNet50speakerSeed2'],
-                   ['ResNet50speakerClean', 'ResNet50speakerCleanSeed2']]
-               
-
-# Models included in the best-layer scatter plot
-FIG5_MODEL_LIST = ['Kell2018word', 'Kell2018speaker',
-                   'Kell2018music', 'Kell2018audioset',
-                   'Kell2018multitask',
-                   'ResNet50word', 'ResNet50speaker',
-                   'ResNet50music', 'ResNet50audioset',
-                   'ResNet50multitask',
-                   'AST',  'wav2vec',
-                   'VGGish',
-                   'S2T', 'sepformer',
-                   'spectemp']
 
 # TODO: move this into utils?
 ## Stimuli (original indexing, activations are extracted in this order) ##
@@ -963,6 +907,7 @@ def combine_model_vals_into_df_rsa(rsa_analysis_dict,
 
 
 def plot_ordered_cross_val_RSA(rsa_analysis_dict,
+                               model_list=None,
                                model_ordering=None, 
                                alpha=1, 
                                extra_title_str='', 
@@ -983,6 +928,11 @@ def plot_ordered_cross_val_RSA(rsa_analysis_dict,
     df_spectemp = df_grouped.loc[df_grouped['source_model'] == 'spectemp']
     df_grouped.drop(
         df_grouped.index[df_grouped['source_model'] == 'spectemp'], inplace=True)
+
+    if model_list is not None:
+        for m_name in df_grouped.source_model:
+            if m_name not in model_list:
+                df_grouped.drop(df_grouped.index[df_grouped['source_model'] == m_name], inplace=True)
 
     if model_ordering is None:
         df_grouped = df_grouped.sort_values('mean_values', ascending=False)
@@ -1140,6 +1090,7 @@ def load_all_models_best_layer_df(pckl_path,
 
 def plot_all_roi_rsa_scatter(rsa_analysis_dict_all_rois,
                              extra_title_str='',
+                             model_list=None,
                              use_all_165_sounds=True,
                              save_fig_path=None):
     """
@@ -1163,7 +1114,7 @@ def plot_all_roi_rsa_scatter(rsa_analysis_dict_all_rois,
 
         for model_name, model_info in rsa_analysis_dict.items():
             # We exclude some of the models for this plot.
-            if model_name in ['DCASE2020', 'metricGAN', 'DS2', 'ZeroSpeech2020', 'spectemp']:
+            if model_name not in model_list:
                 continue
             all_model_names.append(model_name)
             # Check for layers that are exactly equal
@@ -1270,7 +1221,7 @@ def make_paper_plots(save_fig_path='rsa_plots'):
 
     # Figure 2 bar plot, 19 models in main analysis
     make_all_voxel_rsa_bar_plots(save_fig_path=save_fig_path,
-                                 model_list=FIG2_MODEL_LIST,
+                                 model_list=FIG_2_5_MODEL_LIST,
                                  extra_title='FIG2_19Models_')
 
     # Figure 2 scatter plot with 2 seeds of in-house models
@@ -1279,16 +1230,16 @@ def make_paper_plots(save_fig_path='rsa_plots'):
                                 extra_title='FIG2_Seed_Scatter_',
                                )
 
-    # Figure ? clean speech bar plot
+    # Figure 8 clean speech bar plot
     make_model_vs_model_scatter(save_fig_path, ax_lims_trained=None,
                                 model_pairs=CLEAN_SPEECH_LIST_2SEEDS,
-                                extra_title='FIG9_Clean_Speech_',
+                                extra_title='FIG8_Clean_Speech_',
                                )
     offset=0.35
     make_all_voxel_rsa_bar_plots(save_fig_path=save_fig_path,
-                                 model_list=CLEAN_SPEECH_LIST + ['spectemp'],
-                                 model_order=CLEAN_SPEECH_LIST,
-                                 extra_title='FIG9_Clean_Speech_',
+                                 model_list=FIG_8_MODEL_LIST + ['spectemp'],
+                                 model_order=FIG_8_MODEL_LIST,
+                                 extra_title='FIG8_Clean_Speech_',
                                  bar_placement=np.array([0,
                                                 0.35,0.7+offset,
                                                 1.05+offset,1.4+2*offset,
@@ -1301,8 +1252,8 @@ def make_paper_plots(save_fig_path='rsa_plots'):
 
     # Figure 5, and Supplement Fig, best layer scatter plot
     make_best_layer_roi_scatter_plots(save_fig_path,
-                                      model_list=FIG5_MODEL_LIST,
-                                      extra_title='FIG5_BestLayerModels_')
+                                      model_list=FIG_7_MODEL_LIST,
+                                      extra_title='FIG7_BestLayerModels_')
 
     # Figure 5, but including all models
     make_best_layer_roi_scatter_plots(save_fig_path,
@@ -1335,78 +1286,71 @@ def make_neural_roi_rdms(save_fig_path):
                                   target=dataset,
                                   save_name_base=save_fig_path)
 
-
-def make_best_layer_roi_scatter_plots_from_pckl(pckl_path,
-                                                save_fig_path):
-    """
-    Makes the best layer scatter plots, using specified saved values.  
-    """
-    with open(pckl_path, 'rb') as f:
-        best_layer_roi_data_dict = pickle.load(f)
-
-    rsa_analysis_dict_all_rois = best_layer_roi_data_dict['rsa_analysis_dict_all_rois']
-    rsa_analysis_dict_all_rois_permuted = best_layer_roi_data_dict[
-        'rsa_analysis_dict_all_rois_permuted']
-
-    for dataset in ['NH2015', 'B2021']:
-        plot_all_roi_rsa_scatter(rsa_analysis_dict_all_rois[dataset],
-                                 extra_title_str=dataset + '_Trained: ',
-                                 save_fig_path=save_fig_path)
-
-        plot_all_roi_rsa_scatter(rsa_analysis_dict_all_rois_permuted[dataset],
-                                 extra_title_str=dataset + '_Permuted: ',
-                                 save_fig_path=save_fig_path)
-
-
-def make_best_layer_roi_scatter_plots(save_fig_path, model_list=None,
+def make_best_layer_roi_scatter_plots(save_fig_path, 
+                                      model_list=None,
+                                      saved_rsa_best_layer_pckl=None,
                                       extra_title='',
                                       overwrite=False):
     """
     Makes the best layer scatter plots. 
     """
-    rsa_analysis_dict_all_rois = {}
-    rsa_analysis_dict_all_rois_permuted = {}
+    if saved_rsa_best_layer_pckl is not None:
+        with open(saved_rsa_best_layer_pckl, 'rb') as f:
+            best_layer_roi_data_dict = pickle.load(f)
+        rsa_analysis_dict_all_rois = best_layer_roi_data_dict['rsa_analysis_dict_all_rois']
+        rsa_analysis_dict_all_rois_permuted = best_layer_roi_data_dict[
+                    'rsa_analysis_dict_all_rois_permuted']
+    else:
+        rsa_analysis_dict_all_rois = {}
+        rsa_analysis_dict_all_rois_permuted = {}
+
     for dataset in ['NH2015', 'B2021']:
-        rsa_analysis_dict_all_rois[dataset] = {}
-        for ROI in ['Primary', 'Lateral', 'Posterior', 'Anterior']:
-            rsa_analysis_dict = rsa_cross_validated_all_models(randnetw='False',
-                                                               roi_name=ROI,
-                                                               mean_subtract=True,
-                                                               with_std=True,
-                                                               target=dataset,
-                                                               save_name_base=save_fig_path,
-                                                               model_list=model_list,
-                                                               overwrite=overwrite)
-            rsa_analysis_dict_all_rois[dataset][ROI] = rsa_analysis_dict
+        if saved_rsa_best_layer_pckl is None:
+            rsa_analysis_dict_all_rois[dataset] = {}
+            for ROI in ['Primary', 'Lateral', 'Posterior', 'Anterior']:
+                rsa_analysis_dict = rsa_cross_validated_all_models(randnetw='False',
+                                                                   roi_name=ROI,
+                                                                   mean_subtract=True,
+                                                                   with_std=True,
+                                                                   target=dataset,
+                                                                   save_name_base=save_fig_path,
+                                                                   model_list=model_list,
+                                                                   overwrite=overwrite)
+                rsa_analysis_dict_all_rois[dataset][ROI] = rsa_analysis_dict
 
         plot_all_roi_rsa_scatter(rsa_analysis_dict_all_rois[dataset],
+                                 model_list=model_list,
                                  extra_title_str=extra_title + dataset + '_Trained: ',
                                  save_fig_path=save_fig_path)
 
-        rsa_analysis_dict_all_rois_permuted[dataset] = {}
-        for ROI in ['Primary', 'Lateral', 'Posterior', 'Anterior']:
-            rsa_analysis_dict = rsa_cross_validated_all_models(randnetw='True',
-                                                               roi_name=ROI,
-                                                               mean_subtract=True,
-                                                               with_std=True,
-                                                               target=dataset,
-                                                               save_name_base=save_fig_path, 
-                                                               model_list=model_list,
-                                                               overwrite=overwrite)
-            rsa_analysis_dict_all_rois_permuted[dataset][ROI] = rsa_analysis_dict
+        if saved_rsa_best_layer_pckl is None:
+            rsa_analysis_dict_all_rois_permuted[dataset] = {}
+            for ROI in ['Primary', 'Lateral', 'Posterior', 'Anterior']:
+                rsa_analysis_dict = rsa_cross_validated_all_models(randnetw='True',
+                                                                   roi_name=ROI,
+                                                                   mean_subtract=True,
+                                                                   with_std=True,
+                                                                   target=dataset,
+                                                                   save_name_base=save_fig_path, 
+                                                                   model_list=model_list,
+                                                                   overwrite=overwrite)
+                rsa_analysis_dict_all_rois_permuted[dataset][ROI] = rsa_analysis_dict
 
         plot_all_roi_rsa_scatter(rsa_analysis_dict_all_rois_permuted[dataset],
+                                 model_list=model_list,
                                  extra_title_str=extra_title + dataset + '_Permuted: ',
                                  save_fig_path=save_fig_path)
 
-    save_pckl_path = f'{save_fig_path}/{extra_title.replace(":", "_").replace(" ", "")}best_layer_rsa_analysis_dict.pckl'
-    with open(os.path.join(save_pckl_path), 'wb') as f:
-        pickle.dump({'rsa_analysis_dict_all_rois': rsa_analysis_dict_all_rois,
-                     'rsa_analysis_dict_all_rois_permuted': rsa_analysis_dict_all_rois_permuted},
-                    f)
+    if saved_rsa_best_layer_pckl is None:
+        save_pckl_path = f'{save_fig_path}/{extra_title.replace(":", "_").replace(" ", "")}best_layer_rsa_analysis_dict.pckl'
+        with open(os.path.join(save_pckl_path), 'wb') as f:
+             pickle.dump({'rsa_analysis_dict_all_rois': rsa_analysis_dict_all_rois,
+                          'rsa_analysis_dict_all_rois_permuted': rsa_analysis_dict_all_rois_permuted},
+                         f)
 
 def make_model_vs_model_scatter(save_fig_path,
                                 model_pairs,
+                                saved_rsa_pckl_path=None,
                                 overwrite=False,
                                 extra_title='',
                                 ax_lims_trained=[0.35,0.55],
@@ -1423,15 +1367,21 @@ def make_model_vs_model_scatter(save_fig_path,
     all_dataset_rsa_dict = {}
     for dataset in ['B2021', 'NH2015']:
         # Make plots for trained model pairs
-        rsa_analysis_dict_trained = rsa_cross_validated_all_models(randnetw='False',
-                                                                   roi_name=None,
-                                                                   mean_subtract=True,
-                                                                   with_std=True,
-                                                                   target=dataset,
-                                                                   save_name_base=save_fig_path,
-                                                                   model_list=model_list,
-                                                                   overwrite=overwrite)
-
+        if saved_rsa_pckl_path is None:
+            rsa_analysis_dict_trained = rsa_cross_validated_all_models(randnetw='False',
+                                                                       roi_name=None,
+                                                                       mean_subtract=True,
+                                                                       with_std=True,
+                                                                       target=dataset,
+                                                                       save_name_base=save_fig_path,
+                                                                       model_list=model_list,
+                                                                       overwrite=overwrite)
+        else:
+            with open(saved_rsa_pckl_path, 'rb') as f:
+                all_dataset_rsa_dict = pickle.load(f)
+            rsa_analysis_dict_trained = all_dataset_rsa_dict[dataset]['trained']
+            rsa_analysis_dict_permuted = all_dataset_rsa_dict[dataset]['permuted']
+    
         plot_scatter_RSA_vals_model_pairs(model_pairs,
                                           rsa_analysis_dict_trained,
                                           save_fig_path=save_fig_path,
@@ -1442,15 +1392,16 @@ def make_model_vs_model_scatter(save_fig_path,
                                           ylabel=ylabel)
 
         # Make plots for permuted model pairs
-        rsa_analysis_dict_permuted = rsa_cross_validated_all_models(randnetw='True',
-                                                                    roi_name=None,
-                                                                    mean_subtract=True,
-                                                                    with_std=True,
-                                                                    target=dataset,
-                                                                    save_name_base=save_fig_path,
-                                                                    model_list=model_list,
-                                                                    overwrite=overwrite)
-
+        if saved_rsa_pckl_path is None:
+            rsa_analysis_dict_permuted = rsa_cross_validated_all_models(randnetw='True',
+                                                                        roi_name=None,
+                                                                        mean_subtract=True,
+                                                                        with_std=True,
+                                                                        target=dataset,
+                                                                        save_name_base=save_fig_path,
+                                                                        model_list=model_list,
+                                                                        overwrite=overwrite)
+    
         plot_scatter_RSA_vals_model_pairs(model_pairs,
                                           rsa_analysis_dict_permuted,
                                           save_fig_path=save_fig_path,
@@ -1459,31 +1410,6 @@ def make_model_vs_model_scatter(save_fig_path,
                                           ax_lims=None,
                                           xlabel=xlabel,
                                           ylabel=ylabel)
-
-
-def make_all_voxel_rsa_bar_plots_from_pckl(pckl_path, save_fig_path, 
-                                           model_order=None):
-    """
-    Make the cross validated RSA bar plots for all models, using saved data. 
-    """
-    with open(pckl_path, 'rb') as f:
-        all_dataset_rsa_dict = pickle.load(f)
-
-    # Get the plots for the RSA across all models (Figure 2)
-    for dataset in ['B2021', 'NH2015']:
-        rsa_analysis_dict_trained = all_dataset_rsa_dict[dataset]['trained']
-        model_ordering = plot_ordered_cross_val_RSA(rsa_analysis_dict_trained,
-                                                    model_ordering=model_order,
-                                                    use_165_sounds_for_fMRI_ceiling=False,
-                                                    extra_title_str=dataset + '_Trained: ',
-                                                    save_fig_path=save_fig_path)
-
-        rsa_analysis_dict_permuted = all_dataset_rsa_dict[dataset]['permuted']
-        _ = plot_ordered_cross_val_RSA(rsa_analysis_dict_permuted,
-                                       model_ordering=model_ordering,
-                                       use_165_sounds_for_fMRI_ceiling=False,
-                                       extra_title_str=dataset + '_Permuted: ',
-                                       save_fig_path=save_fig_path)
 
 def bootstrap_dist_two_models(model1_val, model2_val, n_bootstrap=10000):
     # generate distribution with replacement from model2 -->
@@ -1539,6 +1465,7 @@ def run_two_model_permutation_test(save_fig_path,
 
 
 def make_all_voxel_rsa_bar_plots(save_fig_path,
+                                 saved_rsa_pckl_path=None,
                                  overwrite=False,
                                  extra_title='',
                                  model_list=None,
@@ -1549,44 +1476,54 @@ def make_all_voxel_rsa_bar_plots(save_fig_path,
     """
     all_dataset_rsa_dict = {}
     for dataset in ['B2021', 'NH2015']:
-        rsa_analysis_dict_trained = rsa_cross_validated_all_models(randnetw='False',
-                                                                   roi_name=None,
-                                                                   mean_subtract=True,
-                                                                   with_std=True,
-                                                                   target=dataset,
-                                                                   save_name_base=save_fig_path,
-                                                                   model_list=model_list,
-                                                                   overwrite=overwrite)
-
+        if saved_rsa_pckl_path is None:
+            rsa_analysis_dict_trained = rsa_cross_validated_all_models(randnetw='False',
+                                                                       roi_name=None,
+                                                                       mean_subtract=True,
+                                                                       with_std=True,
+                                                                       target=dataset,
+                                                                       save_name_base=save_fig_path,
+                                                                       model_list=model_list,
+                                                                       overwrite=overwrite)
+        else:
+            with open(saved_rsa_pckl_path, 'rb') as f:
+                all_dataset_rsa_dict = pickle.load(f)
+            rsa_analysis_dict_trained = all_dataset_rsa_dict[dataset]['trained']
+            rsa_analysis_dict_permuted = all_dataset_rsa_dict[dataset]['permuted']
+    
         all_dataset_rsa_dict[dataset] = {'trained': rsa_analysis_dict_trained}
         model_ordering = plot_ordered_cross_val_RSA(rsa_analysis_dict_trained,
                                                     model_ordering=model_order,
                                                     use_165_sounds_for_fMRI_ceiling=False,
+                                                    model_list=model_list,
                                                     extra_title_str=extra_title + dataset + '_Trained: ',
                                                     save_fig_path=save_fig_path,
                                                     bar_placement=bar_placement)
 
-        rsa_analysis_dict_permuted = rsa_cross_validated_all_models(randnetw='True',
-                                                                    roi_name=None,
-                                                                    mean_subtract=True,
-                                                                    with_std=True,
-                                                                    target=dataset,
-                                                                    save_name_base=save_fig_path,
-                                                                    model_list=model_list,
-                                                                    overwrite=overwrite)
+        if saved_rsa_pckl_path is None:
+            rsa_analysis_dict_permuted = rsa_cross_validated_all_models(randnetw='True',
+                                                                        roi_name=None,
+                                                                        mean_subtract=True,
+                                                                        with_std=True,
+                                                                        target=dataset,
+                                                                        save_name_base=save_fig_path,
+                                                                        model_list=model_list,
+                                                                        overwrite=overwrite)
 
         _ = plot_ordered_cross_val_RSA(rsa_analysis_dict_permuted,
                                        model_ordering=model_ordering,
                                        use_165_sounds_for_fMRI_ceiling=False,
+                                       model_list=model_list,
                                        extra_title_str=extra_title + dataset + '_Permuted: ',
                                        save_fig_path=save_fig_path,
                                        bar_placement=bar_placement)
 
         all_dataset_rsa_dict[dataset]['permuted'] = rsa_analysis_dict_permuted
 
-    save_pckl_path = f'{save_fig_path}/{extra_title.replace(":", "_").replace(" ", "")}all_dataset_rsa.pckl'
-    with open(os.path.join(save_pckl_path), 'wb') as f:
-        pickle.dump(all_dataset_rsa_dict, f)
+    if saved_rsa_pckl_path is None:
+        save_pckl_path = f'{save_fig_path}/{extra_title.replace(":", "_").replace(" ", "")}all_dataset_rsa.pckl'
+        with open(os.path.join(save_pckl_path), 'wb') as f:
+            pickle.dump(all_dataset_rsa_dict, f)
 
 
 if __name__ == "__main__":
