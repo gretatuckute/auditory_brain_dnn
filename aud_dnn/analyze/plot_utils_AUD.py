@@ -23,8 +23,6 @@ import scipy.stats as stats
 import statsmodels.stats.descriptivestats as ds
 import sys
 user = getpass.getuser()
-# Go one directory up to import resources
-sys.path.append(str(Path(os.getcwd()).parent))
 from resources import *
 now = datetime.datetime.now()
 datetag = now.strftime("%Y%m%d-%H%M")
@@ -33,9 +31,9 @@ np.random.seed(0)
 random.seed(0)
 
 #### Paths ####
-DATADIR = (Path(os.getcwd()) / '..' / '..' / 'data').resolve()
-ROOT = (Path(os.getcwd()) / '..' / '..').resolve()
-print(f'ROOT: {ROOT}')
+DATADIR = (Path(__file__).parent.parent.parent / 'data').resolve()
+ROOT = Path(__file__).parent.parent.parent.resolve()
+print(f'ROOT: {ROOT}') # We expect e.g., /Users/gt/Documents/GitHub/auditory_brain_dnn/
 
 # run_locally = True
 # if user == 'gt':
