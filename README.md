@@ -11,7 +11,7 @@ conda env create -f env_auditory_brain_dnn.yml
 ```
 
 ## Downloading data
-To download data used in the paper, run the [download_files.py](https://github.com/gretatuckute/auditory_brain_dnn/blob/main/setup_utils/download_files.py) script. You can specify what you want to download according to the three flags: 1) _get_data = True_ will download the two neural datasets (NH2015, B2021) and the component dataset (NH2015comp). 2) _get_model_actv = True_ will download the activations of the models used in the paper. 3) _get_results = True_ will download the outputs of the analyses in the paper.
+To download data used in the paper, run the [download_files.py](https://github.com/gretatuckute/auditory_brain_dnn/blob/main/setup_utils/download_files.py) script. You can specify what you want to download according to the four flags: 1) _get_data = True_ will download the two neural datasets (NH2015, B2021) and the component dataset (NH2015comp). 2) _get_model_actv = True_ will download the activations of the models used in the paper. 3) _get_results = True_ will download the outputs of the analyses in the paper. 4) _get_fsavg_surf = True_ will download the surface maps in the paper.
 
 ## Obtaining predictivity scores for DNNs
 We used to common model-brain evaluation metrics, namely regression and representational similarity analysis (RSA), as demonstrated in the figure below.
