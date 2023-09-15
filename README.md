@@ -36,7 +36,9 @@ The figures in the paper can be reproduced via the notebooks in the [analyze](ht
 ## DNN activations
 
 ### In-house models
-TO-DO
+The following repository contains checkpoints for loading the in-house trained CochCNN9 and CochResNet50 models:
+
+[CochDNN](https://github.com/jenellefeather/cochdnn)<br>
 
 ### External models (publicly available)
 The following repositories were used to extract DNN representations from the external DNN models:
