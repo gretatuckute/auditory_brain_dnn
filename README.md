@@ -57,6 +57,7 @@ We thank the authors and developers for making these weights publicly available!
 The permuted weight indices that were used to extract permuted model activations can be [downloaded here](https://drive.google.com/drive/folders/1yySqaHAC-Zda23IXaRtNOtg-pgf54dWa?usp=sharing) for each model. 
 
 ## Citation
+To be updated with the true reference.
 ```
 @article{TuckuteFeather2023,
 	author = {Greta Tuckute and Jenelle Feather and Dana Boebinger and Josh H. McDermott},
