@@ -31,7 +31,7 @@ For both in-house and external models, we denote model activations obtained usin
 
 
 ## Generating plots
-The figures in the paper can be reproduced via the notebooks in the [analyze](https://github.com/gretatuckute/auditory_brain_dnn/tree/main/aud_dnn/analyze) directory, e.g., [generate_Figure2.ipynb](https://github.com/gretatuckute/auditory_brain_dnn/blob/main/aud_dnn/analyze/generate_Figure2.ipynb) and so forth.
+The figures in the paper can be reproduced via the notebooks in the [analyze/generate_figures/](https://github.com/gretatuckute/auditory_brain_dnn/tree/main/aud_dnn/analyze/generate_figures) directory, e.g., [generate_Figure2.ipynb](https://github.com/gretatuckute/auditory_brain_dnn/blob/main/aud_dnn/analyze/generate_figures/generate_Figure2.ipynb) and so forth.
 
 ## DNN activations
 
