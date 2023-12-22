@@ -1,7 +1,7 @@
 ## Many but not all deep neural network audio models capture brain responses and exhibit correspondence between model stages and brain regions
 
 This repository contains code and data accompanying: 
-Greta Tuckute*, Jenelle Feather*, Dana Boebinger, Josh H. McDermott (2023): _Many but not all deep neural network audio models capture brain responses and exhibit correspondence between model stages and brain regions_.
+Greta Tuckute*, Jenelle Feather*, Dana Boebinger, Josh H. McDermott (2023): _Many but not all deep neural network audio models capture brain responses and exhibit correspondence between model stages and brain regions_. PLoS Biol 21(12): e3002366. https://doi.org/10.1371/journal.pbio.3002366
 
 [![DOI](https://zenodo.org/badge/592514950.svg)](https://zenodo.org/badge/latestdoi/592514950)
 
@@ -59,18 +59,19 @@ We thank the authors and developers for making these weights publicly available!
 The permuted weight indices that were used to extract permuted model activations can be [downloaded here](https://drive.google.com/drive/folders/1yySqaHAC-Zda23IXaRtNOtg-pgf54dWa?usp=sharing) for each model. 
 
 ## Citation
-To be updated with the true reference.
 ```
-@article{TuckuteFeather2023,
-	author = {Greta Tuckute and Jenelle Feather and Dana Boebinger and Josh H. McDermott},
-	doi = {10.1101/2022.09.06.506680},
-	elocation-id = {2022.09.06.506680},
-	eprint = {https://www.biorxiv.org/content/early/2023/06/14/2022.09.06.506680.full.pdf},
-	journal = {bioRxiv},
-	publisher = {Cold Spring Harbor Laboratory},
-	title = {Many but not all deep neural network audio models capture brain responses and exhibit correspondence between model stages and brain regions},
-	url = {https://www.biorxiv.org/content/early/2023/06/14/2022.09.06.506680},
-	year = {2023},
-	bdsk-url-1 = {https://www.biorxiv.org/content/early/2023/06/14/2022.09.06.506680},
-	bdsk-url-2 = {https://doi.org/10.1101/2022.09.06.506680}}
+@article{10.1371/journal.pbio.3002366,
+    doi = {10.1371/journal.pbio.3002366},
+    author = {Tuckute, Greta AND Feather, Jenelle AND Boebinger, Dana AND McDermott, Josh H.},
+    journal = {PLOS Biology},
+    publisher = {Public Library of Science},
+    title = {Many but not all deep neural network audio models capture brain responses and exhibit correspondence between model stages and brain regions},
+    year = {2023},
+    month = {12},
+    volume = {21},
+    url = {https://doi.org/10.1371/journal.pbio.3002366},
+    pages = {1-70},
+    abstract = {Models that predict brain responses to stimuli provide one measure of understanding of a sensory system and have many potential applications in science and engineering. Deep artificial neural networks have emerged as the leading such predictive models of the visual system but are less explored in audition. Prior work provided examples of audio-trained neural networks that produced good predictions of auditory cortical fMRI responses and exhibited correspondence between model stages and brain regions, but left it unclear whether these results generalize to other neural network models and, thus, how to further improve models in this domain. We evaluated model-brain correspondence for publicly available audio neural network models along with in-house models trained on 4 different tasks. Most tested models outpredicted standard spectromporal filter-bank models of auditory cortex and exhibited systematic model-brain correspondence: Middle stages best predicted primary auditory cortex, while deep stages best predicted non-primary cortex. However, some state-of-the-art models produced substantially worse brain predictions. Models trained to recognize speech in background noise produced better brain predictions than models trained to recognize speech in quiet, potentially because hearing in noise imposes constraints on biological auditory representations. The training task influenced the prediction quality for specific cortical tuning properties, with best overall predictions resulting from models trained on multiple tasks. The results generally support the promise of deep neural networks as models of audition, though they also indicate that current models do not explain auditory cortical responses in their entirety.},
+    number = {12},
+}
 ```
