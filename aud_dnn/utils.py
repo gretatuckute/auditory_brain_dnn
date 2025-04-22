@@ -707,3 +707,52 @@ def count_dead_units_all_models(randnetw='False',
             model, randnetw=randnetw, mean_subtract=mean_subtract, with_std=with_std)
     return num_sounds_with_all_same_activations
 
+def dump_for_surface_writing(vals, meta, source_model, SURFDIR, randnetw, subfolder_name='subj-argmax'):
+    """
+    Iterates over subjects specified in meta df, and writes a subject-wise surface file for each.
+    
+    Take <vals> and x_ras, y_ras (from meta) and dump a matlab structure in SURFDIR.
+    Writes a unique mat for each subject.
+
+    to actually write the surfaces, use the write_surfs.m matlab function
+        (which takes advantage of freesurfer's matlab library)
+    
+    Base function from Alex Kell.
+    
+    :param vals: Set of values to plot, indexed by voxel_id
+    :param meta: df with metadata, indexed by voxel_id
+    :param source_model: str
+    :param SURFDIR: str
+    :param subfolder_name: str
+
+    :return: stores .mat files in SURFDIR
+    """
+    # must be one d
+    # if vals.ndim > 1:
+    #     raise Exception('need to have 1-d input')
+    
+    # assert that vals and meta match
+    assert (np.array_equal(vals.index, meta.voxel_id.values))
+    
+    SAVEFOLDER = os.path.join(SURFDIR, f'{source_model}{d_randnetw[randnetw]}', f'{subfolder_name}')
+    Path(SAVEFOLDER).mkdir(parents=True, exist_ok=True)
+    
+    subj_ids = list(set(meta['subj_idx']))
+    
+    for subj_id in subj_ids:
+        is_subj = meta['subj_idx'].values == subj_id
+        hemis = list(set(meta['hemi'][is_subj]))
+        
+        for hemi in hemis:
+            is_hemi = meta['hemi'].values == hemi
+            
+            file = os.path.join(f'{source_model}_'
+                                f'{subj_id}_{hemi}.mat')
+            
+            is_subhemi = np.logical_and(is_subj, is_hemi)
+            # print(f'Number of speech selective voxels for subject {subj_id}, hemi {hemi}: {int(np.sum(vals[is_subhemi]))}')
+            dict_ = {'vals': vals.values[is_subhemi],
+                     'x_ras': meta['x_ras'][is_subhemi].astype('int64').values,
+                     'y_ras': meta['y_ras'][is_subhemi].astype('int64').values}
+            savemat(os.path.join(SAVEFOLDER, file), dict_)
+            print(f'Saved mat file for subject {subj_id} named: {file}, number of vertices {np.sum(is_subhemi)}')
