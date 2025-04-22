@@ -11,6 +11,7 @@ get_data = True # ~180MB
 get_model_actv = False # Obs: large file (~2.7GB)
 get_results = False # Obs: large file (~2.1GB)
 get_fsavg_surf = False # ~480MB
+get_vox_matrix = False # ~200MB This is only used as metadata for surface plotting
 
 print(f'Downloading files to {ROOT}')
 
@@ -59,3 +60,9 @@ if get_results:
 if get_fsavg_surf:
     url_fsavg_surf_folder = 'https://mcdermottlab.mit.edu//tuckute_feather_2023/fsavg_surf.tar'
     download_extract_remove(url_fsavg_surf_folder, ROOT)
+
+
+# Download the voxel matrix mat file (~200MB). This file is used as metadata for the surface plotting.
+if get_vox_matrix:
+    url_vox_matrix_folder = 'https://mcdermottlab.mit.edu//tuckute_feather_2023/voxel_matrix_for_alex.tar'
+    download_extract_remove(url_vox_matrix_folder, ROOT)
